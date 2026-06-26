@@ -37,6 +37,11 @@
   status = 200
 
 [[redirects]]
+  from = "/portal"
+  to = "/portal.html"
+  status = 200
+
+[[redirects]]
   from = "/api/validate-token"
   to = "/.netlify/functions/validate-token"
   status = 200
@@ -45,5 +50,23 @@
 [[redirects]]
   from = "/api/crane"
   to = "/.netlify/functions/crane"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-tokens"
+  to = "/.netlify/functions/portal-tokens"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-generate"
+  to = "/.netlify/functions/portal-generate"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-stats"
+  to = "/.netlify/functions/portal-stats"
   status = 200
   force = true
