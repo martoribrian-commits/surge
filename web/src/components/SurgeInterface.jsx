@@ -3,71 +3,61 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSurgeEngine } from '../hooks/useSurgeEngine';
 import { useTokenManager } from '../hooks/useTokenManager';
 
-const GROUNDING_LINES = [
-  'You are here.',
-  'Your body is slowing down.',
-  'Notice the weight of your feet.',
-  'Notice the air entering your lungs.',
-  'You are safe in this moment.',
-];
+/** Photosensitive-safe modulation ceiling (~1.5 Hz, well below 3–30 Hz trigger range). */
+const CHAOS_CYCLE_DURATION = 0.67;
+
+/** 60 BPM breathing rhythm — one full expand/contract per second. */
+const BREATH_CYCLE_DURATION = 1.0;
 
 /**
- * Primary somatic de-escalation interface.
+ * Primary somatic interface — wires useSurgeEngine + useTokenManager.
  *
- * Dead-man's switch: user must press and hold to run the cycle.
- * Releasing instantly stops procedural audio synthesis.
+ * Dead-man's switch: press and hold to run; release aborts instantly.
  */
 export default function SurgeInterface() {
   const { isHeronUnlocked, submitToken } = useTokenManager();
-  const { intensity, isActive, isComplete, heartbeatPhase, startSurge, stopSurge } =
-    useSurgeEngine(90);
+  const { intensity, isActive, isComplete, startSurge, stopSurge } = useSurgeEngine(90);
 
-  const [isPressed, setIsPressed] = useState(false);
-  const [completionView, setCompletionView] = useState(null); // 'heron' | 'grounding' | null
+  const [aborted, setAborted] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
-  const [visibleLines, setVisibleLines] = useState(0);
+  const [heronRouted, setHeronRouted] = useState(false);
   const pointerActiveRef = useRef(false);
+
+  // Simulate Heron routing after 2-second stillness
+  useEffect(() => {
+    if (!isComplete || !isHeronUnlocked || heronRouted) return;
+
+    const timer = setTimeout(() => {
+      setHeronRouted(true);
+      routeToHeron();
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [isComplete, isHeronUnlocked, heronRouted]);
 
   const handlePointerDown = useCallback(
     (event) => {
       event.preventDefault();
-      if (completionView) return;
+      if (isComplete) return;
 
       pointerActiveRef.current = true;
-      setIsPressed(true);
+      setAborted(false);
       startSurge();
     },
-    [startSurge, completionView],
+    [isComplete, startSurge],
   );
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerRelease = useCallback(() => {
     if (!pointerActiveRef.current) return;
+
+    const wasActive = isActive;
     pointerActiveRef.current = false;
-    setIsPressed(false);
     stopSurge();
-  }, [stopSurge]);
 
-  // Route to completion view when cycle finishes naturally
-  useEffect(() => {
-    if (!isComplete) return;
-
-    const timer = setTimeout(() => {
-      setCompletionView(isHeronUnlocked ? 'heron' : 'grounding');
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [isComplete, isHeronUnlocked]);
-
-  // Sequentially reveal grounding lines
-  useEffect(() => {
-    if (completionView !== 'grounding') return;
-
-    const timers = GROUNDING_LINES.map((_, index) =>
-      setTimeout(() => setVisibleLines(index + 1), index * 1800),
-    );
-
-    return () => timers.forEach(clearTimeout);
-  }, [completionView]);
+    if (wasActive && !isComplete) {
+      setAborted(true);
+    }
+  }, [isActive, isComplete, stopSurge]);
 
   const handleTokenSubmit = (event) => {
     event.preventDefault();
@@ -76,149 +66,150 @@ export default function SurgeInterface() {
     }
   };
 
-  const showStrobe = intensity > 0.3 && !completionView;
-  const showBreathing = intensity <= 0.3 && intensity > 0 && !completionView;
+  // Copy opacity: active phrase fades as intensity drops below 0.5
+  const activeCopyOpacity = isActive ? Math.min(1, intensity / 0.5) : 0;
+
+  // Visual mode thresholds
+  const showChaos = isActive && !isComplete && intensity > 0.8;
+  const showBreathing = isActive && !isComplete && intensity <= 0.8;
+
+  // Blend factor for smooth chaos → breathing handoff
+  const breathingWeight = isActive ? Math.max(0, Math.min(1, (0.8 - intensity) / 0.8)) : 0;
 
   return (
     <div
-      className="fixed inset-0 select-none touch-none bg-black overflow-hidden"
+      className="relative bg-black h-screen w-screen flex items-center justify-center overflow-hidden select-none touch-none"
       onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      onPointerUp={handlePointerRelease}
+      onPointerLeave={handlePointerRelease}
+      onPointerCancel={handlePointerRelease}
       style={{ touchAction: 'none' }}
     >
-      {/* Visual somatic layers */}
-      <AnimatePresence mode="wait">
-        {showStrobe && <StrobeOverlay key="strobe" intensity={intensity} />}
-        {showBreathing && (
-          <BreathingGradient key="breathing" phase={heartbeatPhase} intensity={intensity} />
-        )}
-      </AnimatePresence>
-
-      {/* Hold indicator when idle */}
-      {!isActive && isPressed && !completionView && (
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <motion.div
-            className="w-28 h-28 rounded-full border border-white/10"
-            animate={{ scale: isPressed ? 0.92 : 1 }}
-            transition={{ duration: 0.2 }}
-          />
-        </motion.div>
-      )}
-
-      {/* Completion: Heron transition */}
+      {/* ── Visual overlay layer (beneath text) ── */}
       <AnimatePresence>
-        {completionView === 'heron' && (
-          <CompletionOverlay key="heron">
-            <motion.p
-              className="text-2xl font-extralight tracking-[0.35em] text-white/90 uppercase"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-            >
-              Heron
-            </motion.p>
-            <motion.p
-              className="mt-6 text-base font-light text-white/50 text-center max-w-xs"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 1 }}
-            >
-              Transitioning to your somatic guide&hellip;
-            </motion.p>
-          </CompletionOverlay>
-        )}
-
-        {completionView === 'grounding' && (
-          <CompletionOverlay key="grounding">
-            <div className="flex flex-col items-center gap-6 px-10 max-w-md">
-              {GROUNDING_LINES.slice(0, visibleLines).map((line) => (
-                <motion.p
-                  key={line}
-                  className="text-xl font-light text-white/85 text-center"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                >
-                  {line}
-                </motion.p>
-              ))}
-            </div>
-
-            {!isHeronUnlocked && (
-              <motion.form
-                onSubmit={handleTokenSubmit}
-                className="mt-16 flex flex-col items-center gap-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 2, duration: 0.8 }}
-              >
-                <label htmlFor="clinical-token" className="sr-only">
-                  Clinical Token
-                </label>
-                <input
-                  id="clinical-token"
-                  type="text"
-                  value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value.toUpperCase().slice(0, 6))}
-                  placeholder="Enter Clinical Token"
-                  maxLength={6}
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="w-48 bg-transparent border-b border-white/15 text-center text-2xl font-light tracking-[0.3em] text-white placeholder:text-white/20 focus:outline-none focus:border-white/30"
-                />
-                <button
-                  type="submit"
-                  disabled={tokenInput.length !== 6}
-                  className="mt-2 px-8 py-3 text-sm tracking-widest text-white/60 border border-white/15 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white/80 hover:border-white/25 transition-colors"
-                >
-                  Unlock
-                </button>
-              </motion.form>
+        {isActive && !isComplete && (
+          <motion.div
+            key="somatic-overlay"
+            className="absolute inset-0 pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            {/* Chaos: high-contrast white/amber modulation at photosensitive-safe frequency */}
+            {showChaos && (
+              <ChaosOverlay intensity={intensity} breathingWeight={breathingWeight} />
             )}
 
-            <motion.button
-              type="button"
-              onClick={() => {
-                setCompletionView(null);
-                setVisibleLines(0);
-              }}
-              className="mt-12 px-8 py-3 text-sm tracking-widest text-white/50 border border-white/10 hover:text-white/70 transition-colors"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 3 }}
-            >
-              Done
-            </motion.button>
-          </CompletionOverlay>
+            {/* Breathing whitespace: radial gradient at 60 BPM */}
+            {showBreathing && (
+              <BreathingOverlay intensity={intensity} breathingWeight={breathingWeight} />
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Typography layer ── */}
+      <div className="relative z-10 flex flex-col items-center px-8">
+        <AnimatePresence mode="wait">
+          {isComplete ? (
+            <CompletionCopy
+              key="complete"
+              isHeronUnlocked={isHeronUnlocked}
+              heronRouted={heronRouted}
+              tokenInput={tokenInput}
+              onTokenChange={setTokenInput}
+              onTokenSubmit={handleTokenSubmit}
+            />
+          ) : isActive ? (
+            <motion.p
+              key="active"
+              className="font-sans text-sm tracking-[0.2em] uppercase text-gray-400"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: activeCopyOpacity }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              style={{ color: activeCopyOpacity > 0.6 ? '#fff' : undefined }}
+            >
+              The system is resetting.
+            </motion.p>
+          ) : aborted ? (
+            <motion.p
+              key="aborted"
+              className="font-sans text-sm tracking-[0.2em] uppercase text-gray-400"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              Release when ready.
+            </motion.p>
+          ) : (
+            <motion.p
+              key="idle"
+              className="font-sans text-sm tracking-[0.2em] uppercase text-gray-400"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              Press and hold.
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-/** Photosensitive-safe 1 Hz alpha strobe (~well below 3–30 Hz trigger range). */
-function StrobeOverlay({ intensity }) {
+// ─── Visual sub-components ───────────────────────────────────────────────────
+
+/**
+ * Chaos phase — rapid alpha modulation between amber, white, and black.
+ * Cycled at ~1.5 Hz to demand focus without entering photosensitive range.
+ */
+function ChaosOverlay({ intensity, breathingWeight }) {
+  const peakOpacity = intensity * 0.35 * (1 - breathingWeight * 0.5);
+
   return (
     <motion.div
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0"
+      animate={{
+        backgroundColor: ['#000000', '#fbbf24', '#ffffff', '#000000'],
+        opacity: [peakOpacity * 0.4, peakOpacity, peakOpacity * 0.6, peakOpacity * 0.3],
+      }}
+      transition={{
+        duration: CHAOS_CYCLE_DURATION,
+        repeat: Infinity,
+        ease: 'linear',
+      }}
+    />
+  );
+}
+
+/**
+ * Decay phase — slow expanding/contracting radial gradient at 60 BPM.
+ */
+function BreathingOverlay({ intensity, breathingWeight }) {
+  const calmOpacity = (1 - intensity) * 0.18 * (0.3 + breathingWeight * 0.7);
+
+  return (
+    <motion.div
+      className="absolute inset-0 flex items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.8, ease: 'easeInOut' }}
     >
       <motion.div
-        className="absolute inset-0 bg-white"
-        animate={{
-          opacity: [intensity * 0.08, intensity * 0.2, intensity * 0.08],
+        className="rounded-full"
+        style={{
+          width: '130vmax',
+          height: '130vmax',
+          background: `radial-gradient(circle, rgba(255,255,255,${calmOpacity}) 0%, rgba(255,255,255,${calmOpacity * 0.25}) 45%, transparent 72%)`,
         }}
+        animate={{ scale: [0.45, 1, 0.45] }}
         transition={{
-          duration: 1,
+          duration: BREATH_CYCLE_DURATION,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
@@ -227,43 +218,63 @@ function StrobeOverlay({ intensity }) {
   );
 }
 
-/** Expanding/contracting radial gradient synced to 60 BPM heartbeat. */
-function BreathingGradient({ phase, intensity }) {
-  const breathScale = 0.4 + 0.6 * Math.sin(phase * Math.PI);
-  const opacity = (1 - intensity) * 0.15;
+// ─── Completion / Heron handoff ────────────────────────────────────────────
+
+function CompletionCopy({
+  isHeronUnlocked,
+  heronRouted,
+  tokenInput,
+  onTokenChange,
+  onTokenSubmit,
+}) {
+  if (isHeronUnlocked) {
+    return (
+      <motion.p
+        className="font-sans text-sm tracking-[0.2em] uppercase text-white"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: heronRouted ? 0.4 : 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        Transitioning to Heron.
+      </motion.p>
+    );
+  }
 
   return (
-    <motion.div
-      className="absolute inset-0 pointer-events-none flex items-center justify-center"
+    <motion.form
+      onSubmit={onTokenSubmit}
+      className="flex flex-col items-center gap-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <motion.div
-        className="rounded-full"
-        style={{
-          width: '120vmax',
-          height: '120vmax',
-          background: `radial-gradient(circle, rgba(255,255,255,${opacity}) 0%, rgba(255,255,255,${opacity * 0.3}) 40%, transparent 70%)`,
-        }}
-        animate={{ scale: breathScale }}
-        transition={{ duration: 1, ease: 'easeInOut', repeat: Infinity }}
+      <label htmlFor="clinical-token" className="sr-only">
+        Clinical Token
+      </label>
+      <input
+        id="clinical-token"
+        type="text"
+        value={tokenInput}
+        onChange={(e) => onTokenChange(e.target.value.toUpperCase().slice(0, 6))}
+        placeholder="Clinical Token"
+        maxLength={6}
+        autoComplete="off"
+        spellCheck={false}
+        className="w-44 bg-transparent text-center font-sans text-lg tracking-[0.35em] text-white placeholder:text-gray-600 focus:outline-none"
       />
-    </motion.div>
+      <button
+        type="submit"
+        disabled={tokenInput.length !== 6}
+        className="font-sans text-xs tracking-[0.25em] uppercase text-gray-400 hover:text-white disabled:text-gray-700 disabled:cursor-default transition-colors duration-300"
+      >
+        Submit
+      </button>
+    </motion.form>
   );
 }
 
-function CompletionOverlay({ children }) {
-  return (
-    <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.8 }}
-    >
-      {children}
-    </motion.div>
-  );
+/** Placeholder routing — replace with React Router / deep link when Heron module ships. */
+function routeToHeron() {
+  // eslint-disable-next-line no-console
+  console.info('[Surge] Routing to Heron recovery engine.');
 }
