@@ -3,11 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSurgeEngine } from '../hooks/useSurgeEngine';
 import { useTokenManager } from '../hooks/useTokenManager';
 
-/** Photosensitive-safe modulation ceiling (~1.5 Hz, well below 3–30 Hz trigger range). */
-const CHAOS_CYCLE_DURATION = 0.67;
+/** Hard ceiling: 1 Hz — one full beacon cycle per second at peak intensity. */
+const MAX_PULSE_HZ = 1.0;
 
-/** 60 BPM breathing rhythm — one full expand/contract per second. */
-const BREATH_CYCLE_DURATION = 1.0;
+/** Resting cadence at baseline: 0.5 Hz (60 BPM half-cycle / one breath every 2 s). */
+const MIN_PULSE_HZ = 0.5;
 
 /**
  * Primary somatic interface — wires useSurgeEngine + useTokenManager.
@@ -23,7 +23,6 @@ export default function SurgeInterface() {
   const [heronRouted, setHeronRouted] = useState(false);
   const pointerActiveRef = useRef(false);
 
-  // Simulate Heron routing after 2-second stillness
   useEffect(() => {
     if (!isComplete || !isHeronUnlocked || heronRouted) return;
 
@@ -67,45 +66,36 @@ export default function SurgeInterface() {
     }
   };
 
-  // Copy opacity: active phrase fades as intensity drops below 0.5
   const activeCopyOpacity = isActive ? Math.min(1, intensity / 0.5) : 0;
 
-  // Visual mode thresholds
-  const showChaos = isActive && !isComplete && intensity > 0.8;
-  const showBreathing = isActive && !isComplete && intensity <= 0.8;
-
-  // Blend factor for smooth chaos → breathing handoff
-  const breathingWeight = isActive ? Math.max(0, Math.min(1, (0.8 - intensity) / 0.8)) : 0;
+  // Pulse frequency: 1 Hz at peak → 0.5 Hz as intensity decays to 0
+  const pulseHz = MIN_PULSE_HZ + intensity * (MAX_PULSE_HZ - MIN_PULSE_HZ);
+  const pulseDuration = 1 / pulseHz;
 
   return (
-    <div
-      className="relative bg-black h-screen w-screen flex items-center justify-center overflow-hidden select-none touch-none"
+    <motion.div
+      className="relative flex h-screen w-screen items-center justify-center overflow-hidden bg-[#000000] select-none touch-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerRelease}
       onPointerLeave={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
       style={{ touchAction: 'none' }}
     >
-      {/* ── Visual overlay layer (beneath text) ── */}
+      {/* ── Safe emergency beacon overlay (beneath text) ── */}
       <AnimatePresence>
         {isActive && !isComplete && (
           <motion.div
             key="somatic-overlay"
-            className="absolute inset-0 pointer-events-none"
+            className="pointer-events-none absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           >
-            {/* Chaos: high-contrast white/amber modulation at photosensitive-safe frequency */}
-            {showChaos && (
-              <ChaosOverlay intensity={intensity} breathingWeight={breathingWeight} />
-            )}
-
-            {/* Breathing whitespace: radial gradient at 60 BPM */}
-            {showBreathing && (
-              <BreathingOverlay intensity={intensity} breathingWeight={breathingWeight} />
-            )}
+            <EmergencyBeaconOverlay intensity={intensity} pulseDuration={pulseDuration} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -126,7 +116,7 @@ export default function SurgeInterface() {
           ) : isActive ? (
             <motion.p
               key="active"
-              className="font-sans text-sm tracking-[0.2em] uppercase text-gray-400"
+              className="font-sans text-sm uppercase tracking-[0.2em] text-gray-400"
               initial={{ opacity: 0 }}
               animate={{ opacity: activeCopyOpacity }}
               exit={{ opacity: 0 }}
@@ -138,7 +128,7 @@ export default function SurgeInterface() {
           ) : aborted ? (
             <motion.p
               key="aborted"
-              className="font-sans text-sm tracking-[0.2em] uppercase text-gray-400"
+              className="font-sans text-sm uppercase tracking-[0.2em] text-gray-400"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -149,7 +139,7 @@ export default function SurgeInterface() {
           ) : (
             <motion.p
               key="idle"
-              className="font-sans text-sm tracking-[0.2em] uppercase text-gray-400"
+              className="font-sans text-sm uppercase tracking-[0.2em] text-gray-400"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -160,63 +150,66 @@ export default function SurgeInterface() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 // ─── Visual sub-components ───────────────────────────────────────────────────
 
 /**
- * Chaos phase — rapid alpha modulation between amber, white, and black.
- * Cycled at ~1.5 Hz to demand focus without entering photosensitive range.
+ * Heavy, deliberate emergency beacon — true black → dark amber → soft white.
+ * Never exceeds 1 Hz; frequency decays with somatic intensity.
  */
-function ChaosOverlay({ intensity, breathingWeight }) {
-  const peakOpacity = intensity * 0.35 * (1 - breathingWeight * 0.5);
+function EmergencyBeaconOverlay({ intensity, pulseDuration }) {
+  const peakGlow = 0.08 + intensity * 0.22;
+  const radialOpacity = (1 - intensity) * 0.14;
 
   return (
-    <motion.div
-      className="absolute inset-0"
-      animate={{
-        backgroundColor: ['#000000', '#fbbf24', '#ffffff', '#000000'],
-        opacity: [peakOpacity * 0.4, peakOpacity, peakOpacity * 0.6, peakOpacity * 0.3],
-      }}
-      transition={{
-        duration: CHAOS_CYCLE_DURATION,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
-    />
-  );
-}
-
-/**
- * Decay phase — slow expanding/contracting radial gradient at 60 BPM.
- */
-function BreathingOverlay({ intensity, breathingWeight }) {
-  const calmOpacity = (1 - intensity) * 0.18 * (0.3 + breathingWeight * 0.7);
-
-  return (
-    <motion.div
-      className="absolute inset-0 flex items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8, ease: 'easeInOut' }}
-    >
+    <>
+      {/* Full-screen beacon throb */}
       <motion.div
-        className="rounded-full"
-        style={{
-          width: '130vmax',
-          height: '130vmax',
-          background: `radial-gradient(circle, rgba(255,255,255,${calmOpacity}) 0%, rgba(255,255,255,${calmOpacity * 0.25}) 45%, transparent 72%)`,
+        className="absolute inset-0"
+        animate={{
+          backgroundColor: [
+            '#000000',
+            '#1a1208',
+            '#2d1f0a',
+            '#fbbf24',
+            '#e8e0d4',
+            '#2d1f0a',
+            '#000000',
+          ],
+          opacity: [0, peakGlow * 0.5, peakGlow * 0.85, peakGlow, peakGlow * 0.7, peakGlow * 0.3, 0],
         }}
-        animate={{ scale: [0.45, 1, 0.45] }}
         transition={{
-          duration: BREATH_CYCLE_DURATION,
+          duration: pulseDuration,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
       />
-    </motion.div>
+
+      {/* Breathing whitespace — radial gradient intensifies as beacon calms */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        animate={{ opacity: 1 - intensity * 0.35 }}
+        transition={{ duration: 0.8, ease: 'easeInOut' }}
+      >
+        <motion.div
+          className="rounded-full"
+          style={{
+            width: '130vmax',
+            height: '130vmax',
+            background: `radial-gradient(circle, rgba(255,255,255,${radialOpacity}) 0%, rgba(251,191,36,${radialOpacity * 0.2}) 40%, transparent 72%)`,
+          }}
+          animate={{ scale: [0.5, 1, 0.5] }}
+          transition={{
+            duration: pulseDuration * 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      </motion.div>
+    </>
   );
 }
 
@@ -233,7 +226,7 @@ function CompletionCopy({
   if (isHeronUnlocked) {
     return (
       <motion.p
-        className="font-sans text-sm tracking-[0.2em] uppercase text-white"
+        className="font-sans text-sm uppercase tracking-[0.2em] text-white"
         initial={{ opacity: 0 }}
         animate={{ opacity: heronRouted ? 0.4 : 1 }}
         transition={{ duration: 0.6 }}
@@ -268,7 +261,7 @@ function CompletionCopy({
       <button
         type="submit"
         disabled={tokenInput.length !== 6}
-        className="font-sans text-xs tracking-[0.25em] uppercase text-gray-400 hover:text-white disabled:text-gray-700 disabled:cursor-default transition-colors duration-300"
+        className="font-sans text-xs uppercase tracking-[0.25em] text-gray-400 transition-colors duration-300 hover:text-white disabled:cursor-default disabled:text-gray-700"
       >
         Submit
       </button>
@@ -279,7 +272,6 @@ function CompletionCopy({
   );
 }
 
-/** Placeholder routing — replace with React Router / deep link when Heron module ships. */
 function routeToHeron() {
   // eslint-disable-next-line no-console
   console.info('[Surge] Routing to Heron recovery engine.');
