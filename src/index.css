@@ -1,0 +1,49 @@
+/*
+ * Surge — Slow Tech Aesthetics.
+ * Dark-mode native, true black default. Functional color only.
+ */
+
+:root {
+  --surge-black: #000000;
+  --surge-charcoal: #1c1c1e;
+  --surge-gray-soft: #3a3a3c;
+  --surge-white: #ffffff;
+  --surge-amber: #ff9f0a;
+
+  color-scheme: dark;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+html,
+body {
+  background: var(--surge-black);
+  overflow: hidden;
+  /* No accidental selection or callouts during a hold. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+}
