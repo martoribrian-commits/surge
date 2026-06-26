@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <title>Surge — Provider Portal</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <!-- State 1: Logged out -->
+  <div id="login-state" class="portal-login">
+    <h1>Provider Access.</h1>
+    <form id="login-form" class="portal-login-form">
+      <input type="email" id="email" placeholder="Email" required autocomplete="email">
+      <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
+      <button type="submit" class="btn-signin">Sign in</button>
+    </form>
+    <p id="login-error" class="portal-login-error" hidden>Sign in failed.</p>
+  </div>
+
+  <!-- State 2: Dashboard -->
+  <div id="dashboard-state" class="portal-dashboard" hidden>
+    <header class="portal-topbar">
+      <span class="portal-topbar-title">Surge Provider Dashboard</span>
+      <span class="portal-topbar-right">
+        <span id="org-name" class="portal-org"></span>
+        <button type="button" id="sign-out" class="portal-signout">Sign out</button>
+      </span>
+    </header>
+
+    <main class="portal-main">
+      <section class="portal-section">
+        <p class="label">Tokens</p>
+        <div class="portal-table-wrap">
+          <table class="portal-table">
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Issued</th>
+                <th>Expires</th>
+                <th>Uses remaining</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="token-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="portal-section">
+        <p class="label">Issue new token</p>
+        <div id="token-reveal" class="token-reveal" hidden>
+          <p class="token-reveal-code mono" id="reveal-code"></p>
+          <button type="button" id="copy-btn" class="btn">Copy</button>
+        </div>
+        <form id="generate-form" class="portal-generate-form">
+          <div class="form-field">
+            <label for="expires-in">Expires in</label>
+            <select id="expires-in" required>
+              <option value="7 days">7 days</option>
+              <option value="30 days" selected>30 days</option>
+              <option value="90 days">90 days</option>
+              <option value="No expiry">No expiry</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="uses-count">Number of uses</label>
+            <select id="uses-count" required>
+              <option value="1">1</option>
+              <option value="3" selected>3</option>
+              <option value="unlimited">unlimited</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Generate token</button>
+        </form>
+      </section>
+
+      <section class="portal-section">
+        <p class="label">Activation stats</p>
+        <div class="stats">
+          <div>
+            <span class="stat-value" id="stat-issued">0</span>
+            <span class="stat-label">Tokens issued</span>
+          </div>
+          <div>
+            <span class="stat-value" id="stat-activated">0</span>
+            <span class="stat-label">Tokens activated</span>
+          </div>
+          <div>
+            <span class="stat-value" id="stat-sessions">0</span>
+            <span class="stat-label">Sessions completed</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/portal.js"></script>
+</body>
+</html>

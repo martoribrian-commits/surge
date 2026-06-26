@@ -20,3 +20,11 @@ Deploy via Netlify with `publish = "site"` in `netlify.toml`.
 | for-providers.html | /for-providers |
 | clinical-token.html | /clinical-token |
 | crane.html | /crane |
+| portal.html | /portal |
+
+## Provider portal setup
+
+1. Create Auth user in Supabase Dashboard
+2. Run `supabase/seed-providers.sql` with matching user UID as `providers.id`
+3. Set `site/js/supabase-config.js` with public URL and anon key
+4. Netlify env: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`

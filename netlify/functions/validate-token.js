@@ -74,7 +74,7 @@ export default async (request) => {
       return json({ valid: false });
     }
 
-    if (new Date(row.expires_at) <= new Date()) {
+    if (row.expires_at && new Date(row.expires_at) <= new Date()) {
       return json({ valid: false });
     }
 
