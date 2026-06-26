@@ -11,6 +11,29 @@ export const HERON_INITIAL_MESSAGE =
   'Surge cycle complete. Initiate post-regulation guidance.';
 
 /**
+ * Builds Heron's telemetry-aware opener from Supabase context.
+ * Shown immediately on chat mount — no LLM round-trip required.
+ */
+export function buildHeronTelemetryOpener(supabaseContext) {
+  const telemetry = supabaseContext?.telemetry;
+
+  if (telemetry?.completed_full_cycle) {
+    return "The system registered a full reset. You held on. Let's process the trigger when you're ready.";
+  }
+
+  const duration = telemetry?.duration_in_seconds;
+  if (typeof duration === 'number' && duration > 0) {
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    const held =
+      minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    return `The system logged ${held} of containment. Cycle incomplete. We can work from here when you're ready.`;
+  }
+
+  return 'Contact established. The Surge phase is behind you. Speak when ready.';
+}
+
+/**
  * Step A — Fetch compiled Supabase context (telemetry + vector history).
  */
 export async function fetchHeronContext(sessionId) {
