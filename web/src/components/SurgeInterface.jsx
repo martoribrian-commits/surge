@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSurgeEngine, SURGE_STATES } from '../hooks/useSurgeEngine';
+import { useSurgeEngine } from '../hooks/useSurgeEngine';
 import { useTokenManager } from '../hooks/useTokenManager';
 
 const GROUNDING_LINES = [
@@ -15,11 +15,12 @@ const GROUNDING_LINES = [
  * Primary somatic de-escalation interface.
  *
  * Dead-man's switch: user must press and hold to run the cycle.
- * Releasing pauses audio and fades visuals over 0.5 s.
+ * Releasing instantly stops procedural audio synthesis.
  */
 export default function SurgeInterface() {
   const { isHeronUnlocked, submitToken } = useTokenManager();
-  const { state, intensity, heartbeatPhase, activate, release } = useSurgeEngine();
+  const { intensity, isActive, isComplete, heartbeatPhase, startSurge, stopSurge } =
+    useSurgeEngine(90);
 
   const [isPressed, setIsPressed] = useState(false);
   const [completionView, setCompletionView] = useState(null); // 'heron' | 'grounding' | null
@@ -34,28 +35,28 @@ export default function SurgeInterface() {
 
       pointerActiveRef.current = true;
       setIsPressed(true);
-      activate();
+      startSurge();
     },
-    [activate, completionView],
+    [startSurge, completionView],
   );
 
   const handlePointerUp = useCallback(() => {
     if (!pointerActiveRef.current) return;
     pointerActiveRef.current = false;
     setIsPressed(false);
-    release();
-  }, [release]);
+    stopSurge();
+  }, [stopSurge]);
 
   // Route to completion view when cycle finishes naturally
   useEffect(() => {
-    if (state !== SURGE_STATES.COOLDOWN) return;
+    if (!isComplete) return;
 
     const timer = setTimeout(() => {
       setCompletionView(isHeronUnlocked ? 'heron' : 'grounding');
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [state, isHeronUnlocked]);
+  }, [isComplete, isHeronUnlocked]);
 
   // Sequentially reveal grounding lines
   useEffect(() => {
@@ -89,16 +90,14 @@ export default function SurgeInterface() {
     >
       {/* Visual somatic layers */}
       <AnimatePresence mode="wait">
-        {showStrobe && (
-          <StrobeOverlay key="strobe" intensity={intensity} />
-        )}
+        {showStrobe && <StrobeOverlay key="strobe" intensity={intensity} />}
         {showBreathing && (
           <BreathingGradient key="breathing" phase={heartbeatPhase} intensity={intensity} />
         )}
       </AnimatePresence>
 
       {/* Hold indicator when idle */}
-      {state === SURGE_STATES.IDLE && isPressed && !completionView && (
+      {!isActive && isPressed && !completionView && (
         <motion.div
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
           initial={{ opacity: 0 }}
@@ -216,11 +215,7 @@ function StrobeOverlay({ intensity }) {
       <motion.div
         className="absolute inset-0 bg-white"
         animate={{
-          opacity: [
-            intensity * 0.08,
-            intensity * 0.2,
-            intensity * 0.08,
-          ],
+          opacity: [intensity * 0.08, intensity * 0.2, intensity * 0.08],
         }}
         transition={{
           duration: 1,
@@ -253,7 +248,7 @@ function BreathingGradient({ phase, intensity }) {
           background: `radial-gradient(circle, rgba(255,255,255,${opacity}) 0%, rgba(255,255,255,${opacity * 0.3}) 40%, transparent 70%)`,
         }}
         animate={{ scale: breathScale }}
-        transition={{ duration: 60 / 60, ease: 'easeInOut', repeat: Infinity }}
+        transition={{ duration: 1, ease: 'easeInOut', repeat: Infinity }}
       />
     </motion.div>
   );

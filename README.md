@@ -16,9 +16,6 @@ web/
 │   │   └── SurgeInterface.jsx      # Dead-man's switch UI + Framer Motion
 │   ├── App.jsx
 │   └── main.jsx
-├── public/
-│   ├── chaosNoise.mp3              # Add before deploy
-│   └── heartbeat.mp3
 ├── netlify.toml
 └── package.json
 ```
@@ -29,7 +26,6 @@ web/
 cd web
 npm install
 cp .env.example .env   # set VITE_SUPABASE_VALIDATE_URL
-# Add chaosNoise.mp3 and heartbeat.mp3 to public/
 npm run dev
 ```
 
