@@ -17,7 +17,9 @@ function json(body, status = 200) {
 
 function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key =
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
     throw new Error('Supabase credentials not configured');
   }
@@ -55,9 +57,7 @@ export default async (request) => {
 
     const { data: row, error: fetchError } = await supabase
       .from('clinical_tokens')
-      .select(
-        'token, uses_remaining, expires_at, activated_at, provider_id, providers(tier, active)',
-      )
+      .select('token, uses_remaining, expires_at, activated_at, provider_id, providers(active)')
       .eq('token', token)
       .maybeSingle();
 
@@ -66,7 +66,7 @@ export default async (request) => {
     }
 
     const provider = row.providers;
-    if (!provider?.active) {
+    if (provider && provider.active === false) {
       return json({ valid: false });
     }
 
@@ -74,7 +74,7 @@ export default async (request) => {
       return json({ valid: false });
     }
 
-    if (new Date(row.expires_at) < new Date()) {
+    if (new Date(row.expires_at) <= new Date()) {
       return json({ valid: false });
     }
 
@@ -95,7 +95,7 @@ export default async (request) => {
       return json({ valid: false });
     }
 
-    return json({ valid: true, tier: provider.tier ?? 'standard' });
+    return json({ valid: true });
   } catch (err) {
     console.error('[validate-token]', err);
     return json({ valid: false }, 500);

@@ -1,61 +1,49 @@
 [build]
-  base = "web"
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "20"
+  publish = "site"
 
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Legacy companion inference redirects
+# Clean URL redirects
 [[redirects]]
-  from = "/.netlify/functions/heron-inference"
-  to = "/.netlify/functions/crane-inference"
-  status = 301
+  from = "/"
+  to = "/index.html"
+  status = 200
 
 [[redirects]]
-  from = "/.netlify/functions/egret-inference"
-  to = "/.netlify/functions/crane-inference"
-  status = 301
+  from = "/engine"
+  to = "/engine.html"
+  status = 200
 
-# Token validation API
+[[redirects]]
+  from = "/how-it-works"
+  to = "/how-it-works.html"
+  status = 200
+
+[[redirects]]
+  from = "/for-providers"
+  to = "/for-providers.html"
+  status = 200
+
+[[redirects]]
+  from = "/clinical-token"
+  to = "/clinical-token.html"
+  status = 200
+
+[[redirects]]
+  from = "/crane"
+  to = "/crane.html"
+  status = 200
+
 [[redirects]]
   from = "/api/validate-token"
   to = "/.netlify/functions/validate-token"
   status = 200
   force = true
 
-# React SPA routes
 [[redirects]]
-  from = "/surge"
-  to = "/index.html"
+  from = "/api/crane"
+  to = "/.netlify/functions/crane"
   status = 200
-
-[[redirects]]
-  from = "/crane"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/heron"
-  to = "/crane"
-  status = 301
-
-[[redirects]]
-  from = "/egret"
-  to = "/crane"
-  status = 301
-
-[[redirects]]
-  from = "/portal"
-  to = "/index.html"
-  status = 200
-
-# SPA fallback
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  force = true
