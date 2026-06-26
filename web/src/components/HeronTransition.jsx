@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   buildSessionPayload,
   cacheSessionPayload,
+  getSessionCache,
   submitSessionTelemetry,
 } from '../lib/sessionPayload';
 import { fetchHeronContext } from '../lib/heronClient';
@@ -31,10 +32,14 @@ export default function HeronTransition({ durationInSeconds, completedFullCycle 
   const [phase, setPhase] = useState('pulsing'); // pulsing | fading | ready
   const [isHandoffActive, setIsHandoffActive] = useState(false);
 
-  const sessionPayload = useMemo(
-    () => buildSessionPayload(durationInSeconds, completedFullCycle),
-    [durationInSeconds, completedFullCycle],
-  );
+  const sessionPayload = useMemo(() => {
+    const cached = getSessionCache();
+    return buildSessionPayload(
+      durationInSeconds,
+      completedFullCycle,
+      cached?.sessionId,
+    );
+  }, [durationInSeconds, completedFullCycle]);
 
   // Cache payload immediately — before the user clicks the button
   useEffect(() => {

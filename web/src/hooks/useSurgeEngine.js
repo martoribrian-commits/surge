@@ -1,18 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  SPIN_UP_MS,
+  SPIN_DOWN_MS,
+  easeOutCubic,
+  intensityAtElapsed,
+  deriveSurgeOutputs,
+} from '../lib/surgeCurve';
+import { createSessionId, writeSessionCache } from '../lib/sessionPayload';
 
-const SPIN_UP_MS = 500;
-const SPIN_DOWN_MS = 1800;
 const CHAOS_FILE = '/chaosNoise.wav';
 const HEARTBEAT_FILE = '/heartbeat.wav';
-
-function easeOutCubic(t) {
-  return 1 - Math.pow(1 - t, 3);
-}
-
-function decayIntensity(progress) {
-  if (progress <= 0.15) return 1.0;
-  return Math.pow((1.0 - progress) / 0.85, 2);
-}
 
 async function fetchDecode(ctx, url) {
   const response = await fetch(url);
@@ -21,14 +18,20 @@ async function fetchDecode(ctx, url) {
   return ctx.decodeAudioData(arrayBuffer);
 }
 
+function elapsedDurationSeconds(sessionStartMs, nowMs) {
+  if (sessionStartMs === null) return 0;
+  return Math.max(0, Math.round((nowMs - sessionStartMs) / 1000));
+}
+
 /**
- * Cinematic somatic engine — pre-loaded WAV stems, spin-up/down weight,
- * crossfade + low-pass sweep linked to intensity.
+ * Cinematic somatic engine — single decay curve drives visuals, audio, and haptics.
  */
 export const useSurgeEngine = (duration = 90) => {
   const [intensity, setIntensity] = useState(0);
+  const [outputs, setOutputs] = useState(() => deriveSurgeOutputs(0, 0));
   const [isActive, setIsActive] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isInterrupted, setIsInterrupted] = useState(false);
   const [isPreloaded, setIsPreloaded] = useState(false);
 
   const audioCtxRef = useRef(null);
@@ -46,16 +49,26 @@ export const useSurgeEngine = (duration = 90) => {
   const phaseRef = useRef('idle');
   const spinUpStartRef = useRef(null);
   const decayStartRef = useRef(null);
+  const decayElapsedRef = useRef(0);
   const spinDownStartRef = useRef(null);
   const spinDownFromRef = useRef(0);
   const intensityRef = useRef(0);
   const lastVibrateRef = useRef(0);
+  const sessionIdRef = useRef(null);
+  const sessionStartRef = useRef(null);
+  const interruptedAtRef = useRef(null);
 
   useEffect(() => {
     intensityRef.current = intensity;
   }, [intensity]);
 
-  // Pre-load stems on mount — zero touch latency
+  const publishOutputs = useCallback((t, elapsedMs = 0) => {
+    const derived = deriveSurgeOutputs(t, elapsedMs);
+    setIntensity(derived.t);
+    setOutputs(derived);
+    return derived;
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -86,40 +99,30 @@ export const useSurgeEngine = (duration = 90) => {
     };
   }, []);
 
-  const pulseVibration = useCallback((t) => {
-    if (!navigator.vibrate || t <= 0) return;
+  const pulseVibration = useCallback((derived) => {
+    if (!navigator.vibrate || derived.t <= 0) return;
     const now = performance.now();
+    if (now - lastVibrateRef.current < derived.vibrateInterval) return;
+    lastVibrateRef.current = now;
     try {
-      if (t > 0.15) {
-        const interval = 80 + (1 - t) * 120;
-        if (now - lastVibrateRef.current < interval) return;
-        lastVibrateRef.current = now;
-        navigator.vibrate(Math.round(t * 180 + 30));
-      } else {
-        if (now - lastVibrateRef.current < 1000) return;
-        lastVibrateRef.current = now;
-        navigator.vibrate([120, 80]);
-      }
+      navigator.vibrate(derived.vibratePattern);
     } catch {
       // iOS Safari
     }
   }, []);
 
-  const applyAudio = useCallback((t, masterMul = 1) => {
+  const applyAudio = useCallback((derived, masterMul = 1) => {
     const ctx = audioCtxRef.current;
     if (!ctx || !chaosGainRef.current) return;
 
     const now = ctx.currentTime;
-
-    const chaosVol = Math.max(0, Math.min(1, (t - 0.15) / 0.85)) * 0.85;
-    chaosGainRef.current.gain.setTargetAtTime(chaosVol * masterMul, now, 0.04);
-
-    const heartbeatVol = Math.max(0, Math.min(0.9, (0.75 - t) / 0.75));
-    heartbeatGainRef.current.gain.setTargetAtTime(heartbeatVol * masterMul, now, 0.06);
-
-    const filterFreq = 120 + t * 9000;
-    chaosFilterRef.current.frequency.setTargetAtTime(filterFreq, now, 0.08);
-
+    chaosGainRef.current.gain.setTargetAtTime(derived.chaosVol * masterMul, now, 0.04);
+    heartbeatGainRef.current.gain.setTargetAtTime(
+      derived.heartbeatVol * masterMul,
+      now,
+      0.06,
+    );
+    chaosFilterRef.current.frequency.setTargetAtTime(derived.filterFreq, now, 0.08);
     masterGainRef.current.gain.setTargetAtTime(masterMul, now, 0.05);
   }, []);
 
@@ -189,10 +192,45 @@ export const useSurgeEngine = (duration = 90) => {
     heartbeatSourceRef.current = heartbeat;
   }, []);
 
+  const persistSession = useCallback((completionState) => {
+    const now = performance.now();
+    writeSessionCache({
+      sessionId: sessionIdRef.current ?? createSessionId(),
+      duration: elapsedDurationSeconds(sessionStartRef.current, now),
+      completionState,
+      timestamp: Date.now(),
+    });
+  }, []);
+
+  const pauseForInterruption = useCallback(() => {
+    if (phaseRef.current !== 'spin_up' && phaseRef.current !== 'decay') return;
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    interruptedAtRef.current = performance.now();
+
+    if (phaseRef.current === 'decay' && decayStartRef.current !== null) {
+      decayElapsedRef.current = performance.now() - decayStartRef.current;
+    }
+
+    phaseRef.current = 'interrupted_paused';
+    setIsActive(false);
+    setIsInterrupted(true);
+
+    const ctx = audioCtxRef.current;
+    if (ctx?.state === 'running') {
+      ctx.suspend().catch(() => {});
+    }
+
+    persistSession('interrupted');
+  }, [persistSession]);
+
   const completeSurge = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     phaseRef.current = 'complete';
+
+    persistSession('complete');
 
     const ctx = audioCtxRef.current;
     if (ctx && masterGainRef.current) {
@@ -203,8 +241,9 @@ export const useSurgeEngine = (duration = 90) => {
 
     setIsActive(false);
     setIsComplete(true);
-    setIntensity(0);
-  }, [stopSources]);
+    setIsInterrupted(false);
+    publishOutputs(0, 0);
+  }, [stopSources, persistSession, publishOutputs]);
 
   const tick = useCallback(
     function updateLoop(now) {
@@ -214,24 +253,22 @@ export const useSurgeEngine = (duration = 90) => {
         const elapsed = now - spinUpStartRef.current;
         const progress = Math.min(elapsed / SPIN_UP_MS, 1);
         const t = easeOutCubic(progress);
-
-        setIntensity(t);
-        applyAudio(t, t);
+        const derived = publishOutputs(t, 0);
+        applyAudio(derived, t);
 
         if (progress >= 1) {
           phaseRef.current = 'decay';
           decayStartRef.current = now;
+          decayElapsedRef.current = 0;
         }
       } else if (phase === 'decay' && decayStartRef.current !== null) {
         const elapsed = now - decayStartRef.current;
-        const progress = Math.min(elapsed / (duration * 1000), 1);
-        const t = decayIntensity(progress);
+        const t = intensityAtElapsed(elapsed, duration);
+        const derived = publishOutputs(t, elapsed);
+        applyAudio(derived, 1);
+        pulseVibration(derived);
 
-        setIntensity(t);
-        applyAudio(t, 1);
-        pulseVibration(t);
-
-        if (progress >= 1) {
+        if (elapsed >= duration * 1000) {
           completeSurge();
           return;
         }
@@ -240,9 +277,8 @@ export const useSurgeEngine = (duration = 90) => {
         const progress = Math.min(elapsed / SPIN_DOWN_MS, 1);
         const fade = 1 - easeOutCubic(progress);
         const t = spinDownFromRef.current * fade;
-
-        setIntensity(t);
-        applyAudio(t, fade * 0.85);
+        const derived = publishOutputs(t, decayElapsedRef.current);
+        applyAudio(derived, fade * 0.85);
 
         if (progress >= 1) {
           cancelAnimationFrame(rafRef.current);
@@ -250,24 +286,20 @@ export const useSurgeEngine = (duration = 90) => {
           phaseRef.current = 'idle';
           stopSources();
           setIsActive(false);
-          setIntensity(0);
+          publishOutputs(0, 0);
           return;
         }
       }
 
       rafRef.current = requestAnimationFrame(updateLoop);
     },
-    [duration, applyAudio, pulseVibration, completeSurge, stopSources],
+    [duration, applyAudio, pulseVibration, completeSurge, stopSources, publishOutputs],
   );
 
-  const startSurge = useCallback(() => {
-    if (phaseRef.current === 'spin_up' || phaseRef.current === 'decay') return;
-
-    cancelAnimationFrame(rafRef.current);
-
+  const ensureAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
+      if (!AudioCtx) return null;
       audioCtxRef.current = new AudioCtx();
     }
 
@@ -275,38 +307,101 @@ export const useSurgeEngine = (duration = 90) => {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
+    return audioCtx;
+  }, []);
+
+  const startSurge = useCallback(() => {
+    if (phaseRef.current === 'spin_up' || phaseRef.current === 'decay') return;
+
+    cancelAnimationFrame(rafRef.current);
+
+    const audioCtx = ensureAudioContext();
+    if (!audioCtx) return;
 
     stopSources();
     wireAudioGraph(audioCtx);
     startSources(audioCtx);
 
+    if (!sessionIdRef.current) {
+      sessionIdRef.current = createSessionId();
+      sessionStartRef.current = performance.now();
+    }
+
     setIsActive(true);
     setIsComplete(false);
-    setIntensity(0);
+    setIsInterrupted(false);
+    publishOutputs(0, 0);
     phaseRef.current = 'spin_up';
     spinUpStartRef.current = performance.now();
     decayStartRef.current = null;
     spinDownStartRef.current = null;
 
     rafRef.current = requestAnimationFrame(tick);
-  }, [stopSources, wireAudioGraph, startSources, tick]);
+  }, [
+    ensureAudioContext,
+    stopSources,
+    wireAudioGraph,
+    startSources,
+    tick,
+    publishOutputs,
+  ]);
+
+  const resumeSurge = useCallback(() => {
+    if (phaseRef.current !== 'interrupted_paused') return;
+
+    const audioCtx = ensureAudioContext();
+    if (!audioCtx) return;
+
+    if (!chaosSourceRef.current) {
+      wireAudioGraph(audioCtx);
+      startSources(audioCtx);
+    }
+
+    setIsActive(true);
+    setIsInterrupted(false);
+    interruptedAtRef.current = null;
+
+    if (decayStartRef.current !== null || decayElapsedRef.current > 0) {
+      phaseRef.current = 'decay';
+      decayStartRef.current = performance.now() - decayElapsedRef.current;
+    } else {
+      phaseRef.current = 'spin_up';
+      spinUpStartRef.current = performance.now();
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, [ensureAudioContext, wireAudioGraph, startSources, tick]);
 
   const stopSurge = useCallback(() => {
     if (
       phaseRef.current === 'idle' ||
       phaseRef.current === 'spin_down' ||
-      phaseRef.current === 'complete'
+      phaseRef.current === 'complete' ||
+      phaseRef.current === 'interrupted_paused'
     ) {
       return;
     }
 
     cancelAnimationFrame(rafRef.current);
+    persistSession('interrupted');
     spinDownFromRef.current = intensityRef.current;
     phaseRef.current = 'spin_down';
     spinDownStartRef.current = performance.now();
 
     rafRef.current = requestAnimationFrame(tick);
-  }, [tick]);
+  }, [tick, persistSession]);
+
+  // Interruption recovery — page visibility (lock screen, tab switch)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        pauseForInterruption();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [pauseForInterruption]);
 
   useEffect(() => {
     return () => {
@@ -320,10 +415,14 @@ export const useSurgeEngine = (duration = 90) => {
 
   return {
     intensity,
+    outputs,
     isActive,
     isComplete,
+    isInterrupted,
     isPreloaded,
+    sessionId: sessionIdRef.current,
     startSurge,
     stopSurge,
+    resumeSurge,
   };
 };

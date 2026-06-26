@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 
 const STORAGE_KEY = 'surge.sessionPayload';
+const SESSION_CACHE_KEY = 'surge.sessionCache';
 const PENDING_KEY = 'surge.pendingTelemetry';
 const TELEMETRY_FUNCTION = 'process-surge-telemetry';
 const MAX_PENDING = 20;
@@ -8,9 +9,13 @@ const MAX_PENDING = 20;
 /**
  * Builds a session payload for Heron / Marrow ingestion.
  */
-export function buildSessionPayload(durationInSeconds, completedFullCycle) {
+export function buildSessionPayload(
+  durationInSeconds,
+  completedFullCycle,
+  sessionId = createSessionId(),
+) {
   return {
-    sessionId: crypto.randomUUID(),
+    sessionId,
     durationInSeconds: Math.round(durationInSeconds),
     completedFullCycle: Boolean(completedFullCycle),
   };
@@ -34,6 +39,41 @@ export function getCachedSessionPayload() {
   } catch {
     return null;
   }
+}
+
+/**
+ * Offline-resilient session cache (sessionStorage) — survives tab refresh,
+ * syncs to Supabase when connectivity returns.
+ *
+ * @param {{ sessionId: string, duration: number, completionState: 'complete'|'interrupted', timestamp?: number }} record
+ */
+export function writeSessionCache(record) {
+  try {
+    sessionStorage.setItem(
+      SESSION_CACHE_KEY,
+      JSON.stringify({
+        sessionId: record.sessionId,
+        duration: Math.round(record.duration),
+        completionState: record.completionState,
+        timestamp: record.timestamp ?? Date.now(),
+      }),
+    );
+  } catch {
+    // Private browsing — non-fatal
+  }
+}
+
+export function getSessionCache() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function createSessionId() {
+  return crypto.randomUUID();
 }
 
 function getPendingQueue() {
