@@ -1,18 +1,49 @@
 [build]
-  base = "web"
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "20"
+  publish = "site"
 
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Surge is a single-page app; route all paths to the SPA entry.
-# Netlify Functions are served at /.netlify/functions/* automatically.
+# Clean URL redirects
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/engine"
+  to = "/engine.html"
+  status = 200
+
+[[redirects]]
+  from = "/how-it-works"
+  to = "/how-it-works.html"
+  status = 200
+
+[[redirects]]
+  from = "/for-providers"
+  to = "/for-providers.html"
+  status = 200
+
+[[redirects]]
+  from = "/clinical-token"
+  to = "/clinical-token.html"
+  status = 200
+
+[[redirects]]
+  from = "/crane"
+  to = "/crane.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/validate-token"
+  to = "/.netlify/functions/validate-token"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/crane"
+  to = "/.netlify/functions/crane"
+  status = 200
+  force = true

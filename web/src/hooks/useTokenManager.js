@@ -1,31 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { validateClinicalToken } from '../lib/craneClient';
 
 const STORAGE_KEYS = {
   token: 'surge.clinicalToken',
-  heronUnlocked: 'surge.isHeronUnlocked',
+  craneUnlocked: 'surge.isCraneUnlocked',
 };
 
 const TOKEN_PATTERN = /^[A-Za-z0-9]{6}$/;
 const VALIDATION_TIMEOUT_MS = 10_000;
 const INVALID_TOKEN_MESSAGE = 'Invalid token.';
 
-/** Edge Function name — used when direct table access is unavailable. */
-const VALIDATE_FUNCTION = 'validate-clinical-token';
-
 /**
  * B2B authentication hook for anonymous Clinical Tokens.
- *
- * Validates against Supabase (`clinical_tokens` table or Edge Function).
- * Network failures never block the crisis UI — cached unlock state is preserved.
+ * Validates via Netlify /api/validate-token — no PII returned.
  */
 export function useTokenManager() {
   const [token, setToken] = useState('');
-  const [isHeronUnlocked, setIsHeronUnlocked] = useState(false);
+  const [isCraneUnlocked, setIsCraneUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Prevent stale background validations from overwriting newer state
   const validationSeqRef = useRef(0);
 
   const persistToken = useCallback((value) => {
@@ -37,14 +31,14 @@ export function useTokenManager() {
         localStorage.removeItem(STORAGE_KEYS.token);
       }
     } catch {
-      // Private browsing — in-memory only
+      // Private browsing
     }
   }, []);
 
-  const persistHeronUnlocked = useCallback((unlocked) => {
-    setIsHeronUnlocked(unlocked);
+  const persistCraneUnlocked = useCallback((unlocked) => {
+    setIsCraneUnlocked(unlocked);
     try {
-      localStorage.setItem(STORAGE_KEYS.heronUnlocked, String(unlocked));
+      localStorage.setItem(STORAGE_KEYS.craneUnlocked, String(unlocked));
     } catch {
       // Non-fatal
     }
@@ -52,70 +46,34 @@ export function useTokenManager() {
 
   const wipeCachedToken = useCallback(() => {
     persistToken('');
-    persistHeronUnlocked(false);
+    persistCraneUnlocked(false);
     try {
       localStorage.removeItem(STORAGE_KEYS.token);
-      localStorage.removeItem(STORAGE_KEYS.heronUnlocked);
+      localStorage.removeItem(STORAGE_KEYS.craneUnlocked);
     } catch {
       // Non-fatal
     }
-  }, [persistToken, persistHeronUnlocked]);
+  }, [persistToken, persistCraneUnlocked]);
 
   const readCachedUnlockState = useCallback(() => {
     try {
-      return localStorage.getItem(STORAGE_KEYS.heronUnlocked) === 'true';
+      if (localStorage.getItem(STORAGE_KEYS.craneUnlocked) === 'true') return true;
+      // Legacy key from prior companion names
+      return localStorage.getItem('surge.isHeronUnlocked') === 'true' ||
+        localStorage.getItem('surge.isEgretUnlocked') === 'true';
     } catch {
-      return isHeronUnlocked;
+      return isCraneUnlocked;
     }
-  }, [isHeronUnlocked]);
+  }, [isCraneUnlocked]);
 
-  /**
-   * Query Supabase for token validity.
-   * Tries `clinical_tokens` table first, then Edge Function fallback.
-   */
   const queryTokenValidity = useCallback(async (normalizedToken) => {
-    if (!supabase) {
-      throw new Error('offline');
-    }
-
-    const queryPromise = (async () => {
-      const { data, error: tableError } = await supabase
-        .from('clinical_tokens')
-        .select('token')
-        .eq('token', normalizedToken)
-        .eq('active', true)
-        .maybeSingle();
-
-      if (tableError) {
-        // RLS denial or schema unavailable — fall back to Edge Function
-        const { data: fnData, error: fnError } = await supabase.functions.invoke(
-          VALIDATE_FUNCTION,
-          { body: { token: normalizedToken } },
-        );
-
-        if (fnError) {
-          throw fnError;
-        }
-
-        return Boolean(fnData?.valid);
-      }
-
-      return Boolean(data);
-    })();
-
+    const queryPromise = validateClinicalToken(normalizedToken).then((r) => r.valid);
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('timeout')), VALIDATION_TIMEOUT_MS);
     });
-
     return Promise.race([queryPromise, timeoutPromise]);
   }, []);
 
-  /**
-   * Validates a 6-character clinical token against Supabase.
-   *
-   * Never throws — returns `{ valid, offline }` for optional UI feedback.
-   * `isLoading` is set but never gates the somatic engine.
-   */
   const validateToken = useCallback(
     async (inputToken) => {
       const normalized = inputToken.toUpperCase().trim();
@@ -133,14 +91,13 @@ export function useTokenManager() {
       try {
         const valid = await queryTokenValidity(normalized);
 
-        // Discard if a newer validation superseded this one
         if (seq !== validationSeqRef.current) {
           return { valid: false, offline: false };
         }
 
         if (valid) {
           persistToken(normalized);
-          persistHeronUnlocked(true);
+          persistCraneUnlocked(true);
           setError('');
           return { valid: true, offline: false };
         }
@@ -149,13 +106,12 @@ export function useTokenManager() {
         wipeCachedToken();
         return { valid: false, offline: false };
       } catch {
-        // Network timeout / offline — preserve last cached unlock state
         if (seq !== validationSeqRef.current) {
           return { valid: false, offline: true };
         }
 
         const cachedUnlock = readCachedUnlockState();
-        persistHeronUnlocked(cachedUnlock);
+        persistCraneUnlocked(cachedUnlock);
 
         try {
           const cachedToken = localStorage.getItem(STORAGE_KEYS.token) ?? '';
@@ -166,7 +122,6 @@ export function useTokenManager() {
           // Non-fatal
         }
 
-        // Do not surface network errors during a crisis — zero friction
         setError('');
         return { valid: cachedUnlock, offline: true };
       } finally {
@@ -175,24 +130,23 @@ export function useTokenManager() {
         }
       }
     },
-    [queryTokenValidity, persistToken, persistHeronUnlocked, wipeCachedToken, readCachedUnlockState],
+    [queryTokenValidity, persistToken, persistCraneUnlocked, wipeCachedToken, readCachedUnlockState],
   );
 
-  // Hydrate from localStorage and silently re-validate in background (once on mount)
   useEffect(() => {
     try {
       const cachedToken = localStorage.getItem(STORAGE_KEYS.token) ?? '';
-      const cachedUnlock = localStorage.getItem(STORAGE_KEYS.heronUnlocked) === 'true';
+      const cachedUnlock = readCachedUnlockState();
 
       if (cachedToken && TOKEN_PATTERN.test(cachedToken)) {
         setToken(cachedToken);
-        setIsHeronUnlocked(cachedUnlock);
+        setIsCraneUnlocked(cachedUnlock);
         validateToken(cachedToken);
       }
     } catch {
-      // Private browsing — continue without persistence
+      // Private browsing
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hydration
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const clearToken = useCallback(() => {
@@ -204,7 +158,10 @@ export function useTokenManager() {
 
   return {
     token,
-    isHeronUnlocked,
+    isCraneUnlocked,
+    /** @deprecated use isCraneUnlocked */
+    isEgretUnlocked: isCraneUnlocked,
+    isHeronUnlocked: isCraneUnlocked,
     isLoading,
     error,
     validateToken,

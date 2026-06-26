@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surge — For Providers</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="index.html" class="site-logo">Surge</a>
+    <nav class="site-nav">
+      <a href="how-it-works.html">Science</a>
+      <a href="for-providers.html">Providers</a>
+      <a href="clinical-token.html">Token</a>
+    </nav>
+  </header>
+
+  <main class="prose">
+    <section>
+      <p class="label">The clinical gap</p>
+      <p>
+        Patients arrive dysregulated, or dysregulate between sessions. Your clinical time is too valuable
+        to spend on baseline recovery. Surge gives patients a deterministic somatic tool they can use
+        in the parking lot, the bathroom, or at 2 a.m., without creating another account or another
+        relationship to manage.
+      </p>
+    </section>
+
+    <section>
+      <p class="label">How it works for your practice</p>
+      <p>
+        You provision Clinical Tokens through the Surge provider portal. Each token is a six-character
+        code with a set expiry and use count. Patients enter the token once. No login. No password.
+        No PHI transmitted at the point of access.
+      </p>
+      <p>
+        You see activation counts and session completion signals. You do not see session content unless
+        the patient brings it into your room.
+      </p>
+    </section>
+
+    <section>
+      <p class="label">What your patients experience</p>
+      <p>
+        Ninety seconds. Press and hold. Visual and haptic intensity decay on a fixed curve. When the
+        cycle completes, the screen softens and holds. Optionally, they can enter Crane, a recovery
+        guide that offers presence without therapy-speak or diagnosis.
+      </p>
+      <p>
+        If they lock their phone mid-cycle, the system pauses. They hold to resume. No data loss.
+        No penalty. No streak broken.
+      </p>
+    </section>
+
+    <section>
+      <p class="label">Privacy architecture</p>
+      <p>
+        The somatic engine runs entirely in the browser. Session records write to sessionStorage on
+        the device. Token validation checks a hashed lookup server-side and returns only valid or invalid.
+        No patient name. No provider name. No session transcript leaves the device unless the patient
+        initiates a Crane conversation, which is not persisted between visits.
+      </p>
+    </section>
+
+    <section id="pricing">
+      <p class="label">Pricing</p>
+      <div class="tiers">
+        <div class="tier">
+          <p class="tier-name">Starter</p>
+          <p>Single clinician. Token pool, standard support.</p>
+          <p style="margin-top: 1.5rem;"><a href="#contact" class="btn">Contact for pricing</a></p>
+        </div>
+        <div class="tier">
+          <p class="tier-name">Clinical</p>
+          <p>Multi-clinician practice. Expanded token volume, onboarding.</p>
+          <p style="margin-top: 1.5rem;"><a href="#contact" class="btn">Contact for pricing</a></p>
+        </div>
+        <div class="tier">
+          <p class="tier-name">Enterprise</p>
+          <p>Health system or residential program. Custom provisioning, SLA, compliance documentation.</p>
+          <p style="margin-top: 1.5rem;"><a href="#contact" class="btn">Contact for pricing</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <p class="label">Get access</p>
+      <form name="provider-contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="provider-contact">
+        <p style="display: none;">
+          <label>Do not fill: <input name="bot-field"></label>
+        </p>
+        <div class="form-field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-field">
+          <label for="organization">Organization</label>
+          <input type="text" id="organization" name="organization" required>
+        </div>
+        <div class="form-field">
+          <label for="role">Role</label>
+          <input type="text" id="role" name="role" required>
+        </div>
+        <div class="form-field">
+          <label for="volume">Patient volume</label>
+          <select id="volume" name="volume" required>
+            <option value="">Select</option>
+            <option value="Under 25">Under 25</option>
+            <option value="25 to 150">25 to 150</option>
+            <option value="150 plus">150 plus</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="message">Message (optional)</label>
+          <textarea id="message" name="message"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit inquiry</button>
+      </form>
+    </section>
+
+    <div class="footer-cta">
+      <p style="color: var(--muted); margin-bottom: 1.5rem;">
+        Experience the cycle yourself before provisioning it for your patients.
+      </p>
+      <a href="engine.html" class="btn">Begin the cycle</a>
+    </div>
+  </main>
+</body>
+</html>

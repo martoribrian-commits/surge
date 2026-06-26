@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surge — Clinical Token</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="token-page">
+    <p class="token-prompt">Enter your Clinical Token.</p>
+    <input
+      type="text"
+      id="token-input"
+      class="token-input"
+      maxlength="6"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="characters"
+      spellcheck="false"
+      inputmode="text"
+    >
+    <p id="token-error" class="token-error">Token not recognized.</p>
+  </div>
+  <script src="js/clinical-token.js"></script>
+</body>
+</html>

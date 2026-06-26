@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surge — Engine</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="engine-screen" class="engine-screen">
+    <p id="engine-copy" class="engine-copy">Press and hold.</p>
+
+    <div id="engine-complete" class="engine-complete">
+      <p id="reset-line" class="reset-line">The system has reset.</p>
+      <div id="crane-block" style="display: none;">
+        <p class="crane-line">Crane is here, if you want to talk.</p>
+        <button type="button" id="enter-crane" class="btn">Enter</button>
+      </div>
+      <p id="no-token-block" class="engine-soft-link" style="display: none;">
+        <a href="clinical-token.html">Get access through your provider</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/curve.js"></script>
+  <script src="js/engine.js"></script>
+</body>
+</html>
