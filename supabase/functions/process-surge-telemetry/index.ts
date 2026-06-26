@@ -5,6 +5,8 @@ interface SurgeTelemetryPayload {
   sessionId: string;
   durationInSeconds: number;
   completedFullCycle: boolean;
+  clinicalToken?: string;
+  completionState?: "complete" | "interrupted";
 }
 
 interface FetchContextBody {
@@ -31,10 +33,8 @@ function jsonResponse(body: unknown, status = 200) {
 function validatePayload(body: unknown): SurgeTelemetryPayload | null {
   if (!body || typeof body !== "object") return null;
 
-  const { sessionId, durationInSeconds, completedFullCycle } = body as Record<
-    string,
-    unknown
-  >;
+  const { sessionId, durationInSeconds, completedFullCycle, clinicalToken, completionState } =
+    body as Record<string, unknown>;
 
   if (typeof sessionId !== "string" || !UUID_RE.test(sessionId)) return null;
   if (
@@ -46,11 +46,20 @@ function validatePayload(body: unknown): SurgeTelemetryPayload | null {
   }
   if (typeof completedFullCycle !== "boolean") return null;
 
-  return {
+  const result: SurgeTelemetryPayload = {
     sessionId,
     durationInSeconds: Math.round(durationInSeconds),
     completedFullCycle,
   };
+
+  if (typeof clinicalToken === "string" && /^[A-Za-z0-9]{6}$/.test(clinicalToken)) {
+    result.clinicalToken = clinicalToken.toUpperCase();
+  }
+  if (completionState === "complete" || completionState === "interrupted") {
+    result.completionState = completionState;
+  }
+
+  return result;
 }
 
 function isFetchContextBody(body: unknown): body is FetchContextBody {
@@ -91,7 +100,7 @@ async function assembleSupabaseContext(
   }
 
   const { data: vectorHistory, error: vectorError } = await admin
-    .from("heron_vector_snapshots")
+    .from("egret_vector_snapshots")
     .select("id, session_id, summary, metadata, created_at")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
@@ -111,7 +120,7 @@ async function assembleSupabaseContext(
 }
 
 /**
- * Ingests Surge telemetry (POST) or assembles Heron context (POST fetchContext).
+ * Ingests Surge telemetry (POST) or assembles Egret context (POST fetchContext).
  */
 export default {
   fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
@@ -166,6 +175,23 @@ export default {
     if (error) {
       console.error("[process-surge-telemetry] insert failed:", error.message);
       return jsonResponse({ error: "Failed to store telemetry" }, 500);
+    }
+
+    const state = payload.completionState ??
+      (payload.completedFullCycle ? "complete" : "interrupted");
+
+    if (payload.clinicalToken) {
+      const { error: sessionError } = await ctx.supabaseAdmin
+        .from("sessions")
+        .insert({
+          token_used: payload.clinicalToken,
+          duration: payload.durationInSeconds,
+          completion_state: state,
+        });
+
+      if (sessionError) {
+        console.warn("[process-surge-telemetry] session insert:", sessionError.message);
+      }
     }
 
     return jsonResponse({ ok: true, sessionId: data.session_id });

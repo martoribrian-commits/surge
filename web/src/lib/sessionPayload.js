@@ -1,16 +1,22 @@
 import { supabase } from './supabaseClient';
 
 const STORAGE_KEY = 'surge.sessionPayload';
+const SESSION_CACHE_KEY = 'surge.sessionCache';
+const CLINICAL_TOKEN_KEY = 'surge.clinicalToken';
 const PENDING_KEY = 'surge.pendingTelemetry';
 const TELEMETRY_FUNCTION = 'process-surge-telemetry';
 const MAX_PENDING = 20;
 
 /**
- * Builds a session payload for Heron / Marrow ingestion.
+ * Builds a session payload for Egret / Marrow ingestion.
  */
-export function buildSessionPayload(durationInSeconds, completedFullCycle) {
+export function buildSessionPayload(
+  durationInSeconds,
+  completedFullCycle,
+  sessionId = crypto.randomUUID(),
+) {
   return {
-    sessionId: crypto.randomUUID(),
+    sessionId,
     durationInSeconds: Math.round(durationInSeconds),
     completedFullCycle: Boolean(completedFullCycle),
   };
@@ -33,6 +39,23 @@ export function getCachedSessionPayload() {
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+export function getSessionCache() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getClinicalToken() {
+  try {
+    return localStorage.getItem(CLINICAL_TOKEN_KEY) ?? undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -79,8 +102,15 @@ export async function submitSessionTelemetry(payload) {
   }
 
   try {
+    const cache = getSessionCache();
+    const body = {
+      ...payload,
+      clinicalToken: getClinicalToken(),
+      completionState: cache?.completionState ?? (payload.completedFullCycle ? 'complete' : 'interrupted'),
+    };
+
     const { data, error } = await supabase.functions.invoke(TELEMETRY_FUNCTION, {
-      body: payload,
+      body,
     });
 
     if (error) throw error;

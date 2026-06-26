@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FilmGrainOverlay from './FilmGrainOverlay';
-import HeronTransition from './HeronTransition';
+import EgretTransition from './EgretTransition';
 import { useSurgeEngine } from '../hooks/useSurgeEngine';
 
 const MAX_PULSE_HZ = 1.0;
@@ -132,7 +132,7 @@ export default function SurgeInterface() {
       )}
 
       {isComplete && (
-        <HeronTransition
+        <EgretTransition
           durationInSeconds={completedDuration}
           completedFullCycle
         />

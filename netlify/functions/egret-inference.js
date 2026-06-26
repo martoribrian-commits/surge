@@ -18,7 +18,7 @@ function json(body, status = 200) {
 function buildSystemPrompt(supabaseContext) {
   const contextBlock = JSON.stringify(supabaseContext ?? {}, null, 2);
 
-  return `You are Heron — a secular somatic recovery guide within the Surge system.
+  return `You are Egret — a secular somatic recovery guide within the Surge system.
 
 ROLE
 - Guide the user through post-crisis nervous system regulation with precision and restraint.
@@ -68,7 +68,6 @@ export default async (request) => {
   }
 
   try {
-    // Netlify AI Gateway auto-injects ANTHROPIC_API_KEY + ANTHROPIC_BASE_URL
     const anthropic = new Anthropic();
 
     const message = await anthropic.messages.create({
@@ -83,7 +82,7 @@ export default async (request) => {
 
     return json({ text, model: MODEL });
   } catch (err) {
-    console.error('[heron-inference]', err);
+    console.error('[egret-inference]', err);
     return json({ error: 'Inference failed' }, 500);
   }
 };

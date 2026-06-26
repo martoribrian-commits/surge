@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import SurgeInterface from './components/SurgeInterface';
-import HeronChat from './components/HeronChat';
+import EgretChat from './components/EgretChat';
+import ProviderPortal from './components/ProviderPortal';
 import TelemetryFlush from './components/TelemetryFlush';
 
 export default function App() {
@@ -11,7 +12,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/surge" element={<SurgeInterface />} />
-        <Route path="/heron" element={<HeronChat />} />
+        <Route path="/egret" element={<EgretChat />} />
+        <Route path="/heron" element={<Navigate to="/egret" replace />} />
+        <Route path="/portal" element={<ProviderPortal />} />
       </Routes>
     </>
   );

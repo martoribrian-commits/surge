@@ -3,10 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FilmGrainOverlay from './FilmGrainOverlay';
 import {
-  buildHeronTelemetryOpener,
-  fetchHeronContext,
-  requestHeronInference,
-} from '../lib/heronClient';
+  buildEgretTelemetryOpener,
+  fetchEgretContext,
+  requestEgretInference,
+} from '../lib/egretClient';
 import { getCachedSessionPayload } from '../lib/sessionPayload';
 
 const EASE = [0.25, 0.1, 0.25, 1];
@@ -16,11 +16,10 @@ function createMessage(role, content, { reveal = false } = {}) {
     id: crypto.randomUUID(),
     role,
     content,
-    reveal: role === 'heron' && reveal,
+    reveal: role === 'egret' && reveal,
   };
 }
 
-/** Staggered word fade — text bleeding out of darkness. */
 function CinematicTextReveal({ text, onComplete }) {
   const tokens = text.match(/\S+|\s+/g) ?? [text];
   const lastIndex = tokens.length - 1;
@@ -32,11 +31,7 @@ function CinematicTextReveal({ text, onComplete }) {
           key={`${index}-${token.slice(0, 8)}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.55,
-            delay: index * 0.038,
-            ease: EASE,
-          }}
+          transition={{ duration: 0.55, delay: index * 0.038, ease: EASE }}
           onAnimationComplete={
             index === lastIndex && onComplete ? onComplete : undefined
           }
@@ -50,7 +45,7 @@ function CinematicTextReveal({ text, onComplete }) {
 }
 
 function StreamMessage({ message, isFocal, onRevealComplete }) {
-  const showReveal = message.role === 'heron' && message.reveal && isFocal;
+  const showReveal = message.role === 'egret' && message.reveal && isFocal;
 
   return (
     <motion.div
@@ -81,12 +76,9 @@ function StreamMessage({ message, isFocal, onRevealComplete }) {
 }
 
 /**
- * Immersive Heron chat — focal stream, cinematic reveal, submerged input.
- *
- * Accepts `supabaseContext` via router state from HeronTransition.
- * Falls back to fetching context when navigated directly.
+ * Immersive Egret chat — Surge's post-regulation companion (distinct from Marrow's Heron).
  */
-export default function HeronChat() {
+export default function EgretChat() {
   const navigate = useNavigate();
   const location = useLocation();
   const passedContext = location.state?.supabaseContext ?? null;
@@ -102,20 +94,15 @@ export default function HeronChat() {
   const inferenceLockRef = useRef(false);
 
   const scrollToPresent = useCallback(() => {
-    const node = scrollRef.current;
-    if (!node) return;
-    node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, []);
 
   const markRevealed = useCallback((messageId) => {
     setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId ? { ...msg, reveal: false } : msg,
-      ),
+      prev.map((msg) => (msg.id === messageId ? { ...msg, reveal: false } : msg)),
     );
   }, []);
 
-  // Initialize stream with telemetry opener
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -131,12 +118,12 @@ export default function HeronChat() {
       try {
         let context = passedContext;
         if (!context) {
-          context = await fetchHeronContext(session.sessionId);
+          context = await fetchEgretContext(session.sessionId);
         }
 
         setSupabaseContext(context);
         setMessages([
-          createMessage('heron', buildHeronTelemetryOpener(context), { reveal: true }),
+          createMessage('egret', buildEgretTelemetryOpener(context), { reveal: true }),
         ]);
         setStatus('ready');
       } catch (err) {
@@ -162,20 +149,15 @@ export default function HeronChat() {
 
     inferenceLockRef.current = true;
     try {
-      const inference = await requestHeronInference({
-        userMessage: trimmed,
-        supabaseContext,
-      });
+      const inference = await requestEgretInference({ userMessage: trimmed, supabaseContext });
       setMessages((prev) => [
         ...prev,
-        createMessage('heron', inference.text, { reveal: true }),
+        createMessage('egret', inference.text, { reveal: true }),
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        createMessage('heron', 'Signal lost. Rest. Try again when stable.', {
-          reveal: true,
-        }),
+        createMessage('egret', 'Signal lost. Rest. Try again when stable.', { reveal: true }),
       ]);
     } finally {
       inferenceLockRef.current = false;
@@ -201,7 +183,6 @@ export default function HeronChat() {
     >
       <FilmGrainOverlay />
 
-      {/* Ambient vignette */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-[1]"
@@ -211,7 +192,6 @@ export default function HeronChat() {
         }}
       />
 
-      {/* Ghost exit */}
       <button
         type="button"
         onClick={() => navigate('/')}
@@ -220,7 +200,6 @@ export default function HeronChat() {
         Exit
       </button>
 
-      {/* Focal stream */}
       <div
         ref={scrollRef}
         className="relative z-10 flex flex-1 flex-col justify-end overflow-y-auto overflow-x-hidden"
@@ -228,15 +207,11 @@ export default function HeronChat() {
         <LayoutGroup>
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-14 py-24">
             {status === 'connecting' && (
-              <p className="font-sans text-sm tracking-[0.2em] text-white/20">
-                Establishing contact.
-              </p>
+              <p className="font-sans text-sm tracking-[0.2em] text-white/20">Establishing contact.</p>
             )}
-
             {status === 'error' && (
               <p className="font-sans text-sm tracking-[0.2em] text-white/30">{error}</p>
             )}
-
             {messages.map((message, index) => (
               <StreamMessage
                 key={message.id}
@@ -249,11 +224,7 @@ export default function HeronChat() {
         </LayoutGroup>
       </div>
 
-      {/* Submerged input */}
-      <form
-        onSubmit={handleSubmit}
-        className="relative z-10 shrink-0 px-14 pb-14 pt-6"
-      >
+      <form onSubmit={handleSubmit} className="relative z-10 shrink-0 px-14 pb-14 pt-6">
         <textarea
           ref={inputRef}
           value={input}
@@ -262,7 +233,7 @@ export default function HeronChat() {
           disabled={status !== 'ready'}
           placeholder="Speak directly."
           rows={1}
-          aria-label="Message to Heron"
+          aria-label="Message to Egret"
           className="mx-auto block w-full max-w-2xl resize-none border-0 bg-transparent text-center font-sans text-sm tracking-[0.28em] text-white/35 placeholder:text-white/12 focus:outline-none focus:ring-0 disabled:opacity-30"
         />
       </form>

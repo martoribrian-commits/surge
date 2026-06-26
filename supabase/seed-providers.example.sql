@@ -1,0 +1,10 @@
+-- Example: link a Supabase Auth user to a provider record after signup.
+-- Replace UUIDs and values with your deployment data.
+--
+-- insert into public.providers (auth_user_id, name, org_name, tier)
+-- values (
+--   '00000000-0000-0000-0000-000000000000',  -- auth.users.id
+--   'Dr. Example',
+--   'Example Clinical',
+--   'standard'
+-- );

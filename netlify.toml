@@ -10,8 +10,41 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Surge is a single-page app; route all paths to the SPA entry.
-# Netlify Functions are served at /.netlify/functions/* automatically.
+# Legacy companion inference redirect
+[[redirects]]
+  from = "/.netlify/functions/heron-inference"
+  to = "/.netlify/functions/egret-inference"
+  status = 301
+
+# Token validation API
+[[redirects]]
+  from = "/api/validate-token"
+  to = "/.netlify/functions/validate-token"
+  status = 200
+  force = true
+
+# React SPA routes
+[[redirects]]
+  from = "/surge"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/egret"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/heron"
+  to = "/egret"
+  status = 301
+
+[[redirects]]
+  from = "/portal"
+  to = "/index.html"
+  status = 200
+
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
