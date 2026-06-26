@@ -16,9 +16,9 @@ It is a piece of high-end, slow-tech utility disguised as software:
   waiting for them to return — forcing physical anchoring.
 - **The 90-second curve.** A single normalized curve drives every sensory
   channel from the chaotic peak down to baseline (`0.0`).
-- **Seamless handoff.** When the curve hits `0.0`, the heartbeat pulses three
-  final times, the screen fades to a softer gray, and a single button appears:
-  **Begin Recovery (Heron)**.
+- **Seamless handoff.** When the curve hits `0.0`, the screen fades and routes
+  to **Heron** recovery (if unlocked via Clinical Token) or a minimalist
+  token entry prompt.
 
 The reward is the physical relief. There are no streaks, badges, or
 congratulations.
@@ -34,29 +34,118 @@ congratulations.
 The visual strobe is intentionally capped at ≤ 2.5 Hz with low amplitude and is
 disabled under `prefers-reduced-motion`, to avoid triggering photosensitivity.
 
-## Tech stack
+---
 
-- [Vite](https://vite.dev/) + [React](https://react.dev/) + TypeScript
-- Web Audio API (sonic brand), Vibration API (haptic brand), Canvas 2D (visual)
-- No backend, no network calls, no accounts — it works offline once loaded.
+## Web MVP — React (`web/`)
 
-## Development
+Production deploy target (Netlify). Supabase-backed Clinical Token auth,
+Tailwind CSS, Framer Motion, procedural Web Audio synthesis.
 
-```bash
-npm install      # install dependencies
-npm run dev      # start the Vite dev server (http://localhost:5173)
-npm run lint     # ESLint
-npm run typecheck# TypeScript, no emit
-npm run build    # typecheck + production build to dist/
-npm run preview  # serve the production build
+```
+web/
+├── src/
+│   ├── hooks/
+│   │   ├── useTokenManager.js      # B2B clinical token auth (localStorage + Supabase)
+│   │   └── useSurgeEngine.js       # Procedural Web Audio somatic state machine
+│   ├── components/
+│   │   └── SurgeInterface.jsx      # Dead-man's switch UI
+│   └── lib/
+│       └── supabaseClient.js
+├── netlify.toml
+└── package.json
 ```
 
-### Shortening a session while testing
+### Quick Start
 
-A full session is 90 seconds. Append `?d=<seconds>` to the URL to shorten the
-curve during development, e.g. `http://localhost:5173/?d=12`.
+```bash
+cd web
+npm install
+cp .env.example .env.local   # VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
+npm run dev
+```
+
+### Components
+
+**`useTokenManager`** — Exposes `token`, `isHeronUnlocked`, `isLoading`, `error`.
+Validates via `@supabase/supabase-js` against `clinical_tokens` (Edge Function
+fallback). Network failures preserve cached unlock state.
+
+**`useSurgeEngine`** — 90-second decay curve with pink noise + 55 Hz sub-bass
+heartbeat. `navigator.vibrate` on Android (silent on iOS).
+
+**`SurgeInterface`** — Full-screen dead-man's switch, intensity-bound visuals,
+Heron handoff or token entry on completion.
+
+---
+
+## Web Reference — TypeScript (`src/`)
+
+Canvas 2D + class-based Web Audio engine. Offline-first, no backend.
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build
+npm run lint
+npm run typecheck
+```
+
+Append `?d=<seconds>` to shorten the 90 s curve during testing
+(e.g. `http://localhost:5173/?d=12`).
+
+---
+
+## iOS — Swift/SwiftUI (`Surge/`)
+
+Native app with `CHHapticEngine`, `AVFoundation`, and `TokenManager`.
+
+```
+Surge/
+├── Core/
+│   ├── Authentication/TokenManager.swift
+│   └── Engine/SurgeEngine.swift
+├── Features/Surge/Views/SurgeView.swift
+└── App/SurgeApp.swift
+```
+
+Requires iOS 17+, Xcode 15+. Add `chaosNoise.mp3` and `heartbeat.mp3` to the
+bundle before shipping.
+
+---
+
+## Unity (`unity/`)
+
+`ClinicalTokenManager.cs` and `HeronBridge.cs` — B2B Clinical Token model with
+Supabase verification for the Unity runtime.
+
+---
 
 ## Deployment
 
-Configured for Netlify (`netlify.toml`): build command `npm run build`, publish
-directory `dist`, with an SPA fallback redirect.
+Netlify (`netlify.toml` at repo root) builds from `web/`:
+
+```bash
+cd web && npm run build
+```
+
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Netlify dashboard.
+
+### Supabase Schema
+
+```sql
+create table clinical_tokens (
+  token text primary key,
+  active boolean default true
+);
+```
+
+## Privacy
+
+- No accounts, no PII
+- Clinical tokens are anonymous 6-character codes
+- Token validation is optional background I/O
+- Somatic output runs fully offline once loaded
+
+## License
+
+Proprietary — Surge Health
