@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   buildSessionPayload,
   cacheSessionPayload,
-  routeToMarrow,
   submitSessionTelemetry,
 } from '../lib/sessionPayload';
 
@@ -25,6 +25,7 @@ const FINAL_PULSE_COUNT = 3;
  * Voice: commanding, grounded. No gamification or toxic positivity.
  */
 export default function HeronTransition({ durationInSeconds, completedFullCycle }) {
+  const navigate = useNavigate();
   const [pulseIndex, setPulseIndex] = useState(0);
   const [phase, setPhase] = useState('pulsing'); // pulsing | fading | ready
 
@@ -97,7 +98,7 @@ export default function HeronTransition({ durationInSeconds, completedFullCycle 
           >
             <motion.button
               type="button"
-              onClick={routeToMarrow}
+              onClick={() => navigate('/heron')}
               className="group relative overflow-hidden rounded-full px-12 py-4 font-sans text-xs uppercase tracking-[0.35em] text-gray-300"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
