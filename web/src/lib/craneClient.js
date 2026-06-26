@@ -3,20 +3,20 @@ import { getCachedSessionPayload } from './sessionPayload';
 
 const TELEMETRY_FUNCTION = 'process-surge-telemetry';
 
-const EGRET_INFERENCE_URL =
-  import.meta.env.VITE_EGRET_INFERENCE_URL ?? '/.netlify/functions/egret-inference';
+const CRANE_INFERENCE_URL =
+  import.meta.env.VITE_CRANE_INFERENCE_URL ?? '/.netlify/functions/crane-inference';
 
 const VALIDATE_TOKEN_URL =
   import.meta.env.VITE_VALIDATE_TOKEN_URL ?? '/api/validate-token';
 
 /** Default opening directive after Surge completion — not a feeling prompt. */
-export const EGRET_INITIAL_MESSAGE =
+export const CRANE_INITIAL_MESSAGE =
   'Surge cycle complete. Initiate post-regulation guidance.';
 
 /**
- * Builds Egret's telemetry-aware opener from Supabase context.
+ * Builds Crane's telemetry-aware opener from Supabase context.
  */
-export function buildEgretTelemetryOpener(supabaseContext) {
+export function buildCraneTelemetryOpener(supabaseContext) {
   const telemetry = supabaseContext?.telemetry;
 
   if (telemetry?.completed_full_cycle) {
@@ -51,7 +51,7 @@ export async function validateClinicalToken(token) {
 /**
  * Step A — Fetch compiled Supabase context (telemetry + vector history).
  */
-export async function fetchEgretContext(sessionId) {
+export async function fetchCraneContext(sessionId) {
   if (!supabase) {
     throw new Error('Supabase client unavailable');
   }
@@ -67,10 +67,10 @@ export async function fetchEgretContext(sessionId) {
 }
 
 /**
- * Step B — Run Egret inference via Netlify Function + AI Gateway.
+ * Step B — Run Crane inference via Netlify Function + AI Gateway.
  */
-export async function requestEgretInference({ userMessage, supabaseContext }) {
-  const response = await fetch(EGRET_INFERENCE_URL, {
+export async function requestCraneInference({ userMessage, supabaseContext }) {
+  const response = await fetch(CRANE_INFERENCE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userMessage, supabaseContext }),
@@ -79,16 +79,16 @@ export async function requestEgretInference({ userMessage, supabaseContext }) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data?.error ?? 'Egret inference failed');
+    throw new Error(data?.error ?? 'Crane inference failed');
   }
 
   return data;
 }
 
 /**
- * Two-step Egret contact flow: context fetch → inference.
+ * Two-step Crane contact flow: context fetch → inference.
  */
-export async function initiateEgretContact(userMessage = EGRET_INITIAL_MESSAGE) {
+export async function initiateCraneContact(userMessage = CRANE_INITIAL_MESSAGE) {
   const session = getCachedSessionPayload();
   const sessionId = session?.sessionId;
 
@@ -96,8 +96,8 @@ export async function initiateEgretContact(userMessage = EGRET_INITIAL_MESSAGE) 
     throw new Error('No Surge session found');
   }
 
-  const supabaseContext = await fetchEgretContext(sessionId);
-  const inference = await requestEgretInference({ userMessage, supabaseContext });
+  const supabaseContext = await fetchCraneContext(sessionId);
+  const inference = await requestCraneInference({ userMessage, supabaseContext });
 
   return {
     supabaseContext,

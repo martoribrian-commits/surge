@@ -8,7 +8,7 @@ const TELEMETRY_FUNCTION = 'process-surge-telemetry';
 const MAX_PENDING = 20;
 
 /**
- * Builds a session payload for Egret / Marrow ingestion.
+ * Builds a session payload for Crane / Marrow ingestion.
  */
 export function buildSessionPayload(
   durationInSeconds,

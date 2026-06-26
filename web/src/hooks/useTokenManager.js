@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { validateClinicalToken } from '../lib/egretClient';
+import { validateClinicalToken } from '../lib/craneClient';
 
 const STORAGE_KEYS = {
   token: 'surge.clinicalToken',
-  egretUnlocked: 'surge.isEgretUnlocked',
+  craneUnlocked: 'surge.isCraneUnlocked',
 };
 
 const TOKEN_PATTERN = /^[A-Za-z0-9]{6}$/;
@@ -16,7 +16,7 @@ const INVALID_TOKEN_MESSAGE = 'Invalid token.';
  */
 export function useTokenManager() {
   const [token, setToken] = useState('');
-  const [isEgretUnlocked, setIsEgretUnlocked] = useState(false);
+  const [isCraneUnlocked, setIsCraneUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,10 +35,10 @@ export function useTokenManager() {
     }
   }, []);
 
-  const persistEgretUnlocked = useCallback((unlocked) => {
-    setIsEgretUnlocked(unlocked);
+  const persistCraneUnlocked = useCallback((unlocked) => {
+    setIsCraneUnlocked(unlocked);
     try {
-      localStorage.setItem(STORAGE_KEYS.egretUnlocked, String(unlocked));
+      localStorage.setItem(STORAGE_KEYS.craneUnlocked, String(unlocked));
     } catch {
       // Non-fatal
     }
@@ -46,22 +46,25 @@ export function useTokenManager() {
 
   const wipeCachedToken = useCallback(() => {
     persistToken('');
-    persistEgretUnlocked(false);
+    persistCraneUnlocked(false);
     try {
       localStorage.removeItem(STORAGE_KEYS.token);
-      localStorage.removeItem(STORAGE_KEYS.egretUnlocked);
+      localStorage.removeItem(STORAGE_KEYS.craneUnlocked);
     } catch {
       // Non-fatal
     }
-  }, [persistToken, persistEgretUnlocked]);
+  }, [persistToken, persistCraneUnlocked]);
 
   const readCachedUnlockState = useCallback(() => {
     try {
-      return localStorage.getItem(STORAGE_KEYS.egretUnlocked) === 'true';
+      if (localStorage.getItem(STORAGE_KEYS.craneUnlocked) === 'true') return true;
+      // Legacy key from prior companion names
+      return localStorage.getItem('surge.isHeronUnlocked') === 'true' ||
+        localStorage.getItem('surge.isEgretUnlocked') === 'true';
     } catch {
-      return isEgretUnlocked;
+      return isCraneUnlocked;
     }
-  }, [isEgretUnlocked]);
+  }, [isCraneUnlocked]);
 
   const queryTokenValidity = useCallback(async (normalizedToken) => {
     const queryPromise = validateClinicalToken(normalizedToken).then((r) => r.valid);
@@ -94,7 +97,7 @@ export function useTokenManager() {
 
         if (valid) {
           persistToken(normalized);
-          persistEgretUnlocked(true);
+          persistCraneUnlocked(true);
           setError('');
           return { valid: true, offline: false };
         }
@@ -108,7 +111,7 @@ export function useTokenManager() {
         }
 
         const cachedUnlock = readCachedUnlockState();
-        persistEgretUnlocked(cachedUnlock);
+        persistCraneUnlocked(cachedUnlock);
 
         try {
           const cachedToken = localStorage.getItem(STORAGE_KEYS.token) ?? '';
@@ -127,17 +130,17 @@ export function useTokenManager() {
         }
       }
     },
-    [queryTokenValidity, persistToken, persistEgretUnlocked, wipeCachedToken, readCachedUnlockState],
+    [queryTokenValidity, persistToken, persistCraneUnlocked, wipeCachedToken, readCachedUnlockState],
   );
 
   useEffect(() => {
     try {
       const cachedToken = localStorage.getItem(STORAGE_KEYS.token) ?? '';
-      const cachedUnlock = localStorage.getItem(STORAGE_KEYS.egretUnlocked) === 'true';
+      const cachedUnlock = readCachedUnlockState();
 
       if (cachedToken && TOKEN_PATTERN.test(cachedToken)) {
         setToken(cachedToken);
-        setIsEgretUnlocked(cachedUnlock);
+        setIsCraneUnlocked(cachedUnlock);
         validateToken(cachedToken);
       }
     } catch {
@@ -155,7 +158,10 @@ export function useTokenManager() {
 
   return {
     token,
-    isEgretUnlocked,
+    isCraneUnlocked,
+    /** @deprecated use isCraneUnlocked */
+    isEgretUnlocked: isCraneUnlocked,
+    isHeronUnlocked: isCraneUnlocked,
     isLoading,
     error,
     validateToken,

@@ -100,7 +100,7 @@ async function assembleSupabaseContext(
   }
 
   const { data: vectorHistory, error: vectorError } = await admin
-    .from("egret_vector_snapshots")
+    .from("crane_vector_snapshots")
     .select("id, session_id, summary, metadata, created_at")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
@@ -120,7 +120,7 @@ async function assembleSupabaseContext(
 }
 
 /**
- * Ingests Surge telemetry (POST) or assembles Egret context (POST fetchContext).
+ * Ingests Surge telemetry (POST) or assembles Crane context (POST fetchContext).
  */
 export default {
   fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {

@@ -10,10 +10,15 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Legacy companion inference redirect
+# Legacy companion inference redirects
 [[redirects]]
   from = "/.netlify/functions/heron-inference"
-  to = "/.netlify/functions/egret-inference"
+  to = "/.netlify/functions/crane-inference"
+  status = 301
+
+[[redirects]]
+  from = "/.netlify/functions/egret-inference"
+  to = "/.netlify/functions/crane-inference"
   status = 301
 
 # Token validation API
@@ -30,13 +35,18 @@
   status = 200
 
 [[redirects]]
-  from = "/egret"
+  from = "/crane"
   to = "/index.html"
   status = 200
 
 [[redirects]]
   from = "/heron"
-  to = "/egret"
+  to = "/crane"
+  status = 301
+
+[[redirects]]
+  from = "/egret"
+  to = "/crane"
   status = 301
 
 [[redirects]]

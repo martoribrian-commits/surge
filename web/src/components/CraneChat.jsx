@@ -3,10 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FilmGrainOverlay from './FilmGrainOverlay';
 import {
-  buildEgretTelemetryOpener,
-  fetchEgretContext,
-  requestEgretInference,
-} from '../lib/egretClient';
+  buildCraneTelemetryOpener,
+  fetchCraneContext,
+  requestCraneInference,
+} from '../lib/craneClient';
 import { getCachedSessionPayload } from '../lib/sessionPayload';
 
 const EASE = [0.25, 0.1, 0.25, 1];
@@ -16,7 +16,7 @@ function createMessage(role, content, { reveal = false } = {}) {
     id: crypto.randomUUID(),
     role,
     content,
-    reveal: role === 'egret' && reveal,
+    reveal: role === 'crane' && reveal,
   };
 }
 
@@ -45,7 +45,7 @@ function CinematicTextReveal({ text, onComplete }) {
 }
 
 function StreamMessage({ message, isFocal, onRevealComplete }) {
-  const showReveal = message.role === 'egret' && message.reveal && isFocal;
+  const showReveal = message.role === 'crane' && message.reveal && isFocal;
 
   return (
     <motion.div
@@ -76,9 +76,9 @@ function StreamMessage({ message, isFocal, onRevealComplete }) {
 }
 
 /**
- * Immersive Egret chat — Surge's post-regulation companion (distinct from Marrow's Heron).
+ * Immersive Crane chat — Surge's post-regulation companion (distinct from Marrow's Heron).
  */
-export default function EgretChat() {
+export default function CraneChat() {
   const navigate = useNavigate();
   const location = useLocation();
   const passedContext = location.state?.supabaseContext ?? null;
@@ -118,12 +118,12 @@ export default function EgretChat() {
       try {
         let context = passedContext;
         if (!context) {
-          context = await fetchEgretContext(session.sessionId);
+          context = await fetchCraneContext(session.sessionId);
         }
 
         setSupabaseContext(context);
         setMessages([
-          createMessage('egret', buildEgretTelemetryOpener(context), { reveal: true }),
+          createMessage('crane', buildCraneTelemetryOpener(context), { reveal: true }),
         ]);
         setStatus('ready');
       } catch (err) {
@@ -149,15 +149,15 @@ export default function EgretChat() {
 
     inferenceLockRef.current = true;
     try {
-      const inference = await requestEgretInference({ userMessage: trimmed, supabaseContext });
+      const inference = await requestCraneInference({ userMessage: trimmed, supabaseContext });
       setMessages((prev) => [
         ...prev,
-        createMessage('egret', inference.text, { reveal: true }),
+        createMessage('crane', inference.text, { reveal: true }),
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        createMessage('egret', 'Signal lost. Rest. Try again when stable.', { reveal: true }),
+        createMessage('crane', 'Signal lost. Rest. Try again when stable.', { reveal: true }),
       ]);
     } finally {
       inferenceLockRef.current = false;
@@ -233,7 +233,7 @@ export default function EgretChat() {
           disabled={status !== 'ready'}
           placeholder="Speak directly."
           rows={1}
-          aria-label="Message to Egret"
+          aria-label="Message to Crane"
           className="mx-auto block w-full max-w-2xl resize-none border-0 bg-transparent text-center font-sans text-sm tracking-[0.28em] text-white/35 placeholder:text-white/12 focus:outline-none focus:ring-0 disabled:opacity-30"
         />
       </form>

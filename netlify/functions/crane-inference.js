@@ -18,7 +18,7 @@ function json(body, status = 200) {
 function buildSystemPrompt(supabaseContext) {
   const contextBlock = JSON.stringify(supabaseContext ?? {}, null, 2);
 
-  return `You are Egret — a secular somatic recovery guide within the Surge system.
+  return `You are Crane — a secular somatic recovery guide within the Surge system.
 
 ROLE
 - Guide the user through post-crisis nervous system regulation with precision and restraint.
@@ -82,7 +82,7 @@ export default async (request) => {
 
     return json({ text, model: MODEL });
   } catch (err) {
-    console.error('[egret-inference]', err);
+    console.error('[crane-inference]', err);
     return json({ error: 'Inference failed' }, 500);
   }
 };
