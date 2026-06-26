@@ -1,140 +1,213 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const STORAGE_KEYS = {
-  clinicalToken: 'surge.clinicalToken',
+  token: 'surge.clinicalToken',
   heronUnlocked: 'surge.isHeronUnlocked',
 };
 
 const TOKEN_PATTERN = /^[A-Za-z0-9]{6}$/;
+const VALIDATION_TIMEOUT_MS = 10_000;
+const INVALID_TOKEN_MESSAGE = 'Invalid token.';
 
-const VALIDATION_ENDPOINT =
-  import.meta.env.VITE_SUPABASE_VALIDATE_URL ??
-  'https://YOUR_PROJECT.supabase.co/functions/v1/validate-clinical-token';
+/** Edge Function name — used when direct table access is unavailable. */
+const VALIDATE_FUNCTION = 'validate-clinical-token';
 
 /**
  * B2B authentication hook for anonymous Clinical Tokens.
  *
- * Tokens unlock premium features (Heron AI guide). Validation is
- * fire-and-forget — network failures never block the crisis UI.
+ * Validates against Supabase (`clinical_tokens` table or Edge Function).
+ * Network failures never block the crisis UI — cached unlock state is preserved.
  */
 export function useTokenManager() {
-  const [clinicalToken, setClinicalTokenState] = useState(null);
+  const [token, setToken] = useState('');
   const [isHeronUnlocked, setIsHeronUnlocked] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const setHeronUnlocked = useCallback((unlocked) => {
+  // Prevent stale background validations from overwriting newer state
+  const validationSeqRef = useRef(0);
+
+  const persistToken = useCallback((value) => {
+    setToken(value);
+    try {
+      if (value) {
+        localStorage.setItem(STORAGE_KEYS.token, value);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.token);
+      }
+    } catch {
+      // Private browsing — in-memory only
+    }
+  }, []);
+
+  const persistHeronUnlocked = useCallback((unlocked) => {
     setIsHeronUnlocked(unlocked);
     try {
       localStorage.setItem(STORAGE_KEYS.heronUnlocked, String(unlocked));
     } catch {
-      // localStorage unavailable — continue in-memory
+      // Non-fatal
     }
   }, []);
 
-  /**
-   * Validates token against Supabase Edge Function.
-   * Never throws — all errors fail gracefully.
-   */
-  const validateTokenRemotely = useCallback(
-    async (token) => {
-      setIsValidating(true);
-
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10_000);
-
-        const response = await fetch(VALIDATION_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json();
-          setHeronUnlocked(Boolean(data.valid));
-
-          if (!data.valid) {
-            setClinicalTokenState(null);
-            localStorage.removeItem(STORAGE_KEYS.clinicalToken);
-          }
-        } else if (response.status === 401 || response.status === 403) {
-          setClinicalTokenState(null);
-          setHeronUnlocked(false);
-          localStorage.removeItem(STORAGE_KEYS.clinicalToken);
-          localStorage.removeItem(STORAGE_KEYS.heronUnlocked);
-        }
-      } catch {
-        // Network unreachable, timeout — crisis flow unaffected
-      } finally {
-        setIsValidating(false);
-      }
-    },
-    [setHeronUnlocked],
-  );
-
-  // Hydrate from localStorage on mount
-  useEffect(() => {
+  const wipeCachedToken = useCallback(() => {
+    persistToken('');
+    persistHeronUnlocked(false);
     try {
-      const cached = localStorage.getItem(STORAGE_KEYS.clinicalToken);
-      const unlocked = localStorage.getItem(STORAGE_KEYS.heronUnlocked) === 'true';
-
-      if (cached && TOKEN_PATTERN.test(cached)) {
-        setClinicalTokenState(cached);
-        setIsHeronUnlocked(unlocked);
-        validateTokenRemotely(cached);
-      }
-    } catch {
-      // Private browsing — continue offline
-    }
-  }, [validateTokenRemotely]);
-
-  /**
-   * Persists token locally and kicks off async validation.
-   * Returns immediately — never blocks the UI.
-   */
-  const submitToken = useCallback(
-    (rawToken) => {
-      const normalized = rawToken.toUpperCase().trim();
-
-      if (!TOKEN_PATTERN.test(normalized)) {
-        return false;
-      }
-
-      setClinicalTokenState(normalized);
-
-      try {
-        localStorage.setItem(STORAGE_KEYS.clinicalToken, normalized);
-      } catch {
-        // Continue with in-memory token
-      }
-
-      setHeronUnlocked(true);
-      validateTokenRemotely(normalized);
-      return true;
-    },
-    [setHeronUnlocked, validateTokenRemotely],
-  );
-
-  const clearToken = useCallback(() => {
-    setClinicalTokenState(null);
-    setHeronUnlocked(false);
-
-    try {
-      localStorage.removeItem(STORAGE_KEYS.clinicalToken);
+      localStorage.removeItem(STORAGE_KEYS.token);
       localStorage.removeItem(STORAGE_KEYS.heronUnlocked);
     } catch {
       // Non-fatal
     }
-  }, [setHeronUnlocked]);
+  }, [persistToken, persistHeronUnlocked]);
+
+  const readCachedUnlockState = useCallback(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.heronUnlocked) === 'true';
+    } catch {
+      return isHeronUnlocked;
+    }
+  }, [isHeronUnlocked]);
+
+  /**
+   * Query Supabase for token validity.
+   * Tries `clinical_tokens` table first, then Edge Function fallback.
+   */
+  const queryTokenValidity = useCallback(async (normalizedToken) => {
+    if (!supabase) {
+      throw new Error('offline');
+    }
+
+    const queryPromise = (async () => {
+      const { data, error: tableError } = await supabase
+        .from('clinical_tokens')
+        .select('token')
+        .eq('token', normalizedToken)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (tableError) {
+        // RLS denial or schema unavailable — fall back to Edge Function
+        const { data: fnData, error: fnError } = await supabase.functions.invoke(
+          VALIDATE_FUNCTION,
+          { body: { token: normalizedToken } },
+        );
+
+        if (fnError) {
+          throw fnError;
+        }
+
+        return Boolean(fnData?.valid);
+      }
+
+      return Boolean(data);
+    })();
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('timeout')), VALIDATION_TIMEOUT_MS);
+    });
+
+    return Promise.race([queryPromise, timeoutPromise]);
+  }, []);
+
+  /**
+   * Validates a 6-character clinical token against Supabase.
+   *
+   * Never throws — returns `{ valid, offline }` for optional UI feedback.
+   * `isLoading` is set but never gates the somatic engine.
+   */
+  const validateToken = useCallback(
+    async (inputToken) => {
+      const normalized = inputToken.toUpperCase().trim();
+      const seq = ++validationSeqRef.current;
+
+      if (!TOKEN_PATTERN.test(normalized)) {
+        setError(INVALID_TOKEN_MESSAGE);
+        wipeCachedToken();
+        return { valid: false, offline: false };
+      }
+
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const valid = await queryTokenValidity(normalized);
+
+        // Discard if a newer validation superseded this one
+        if (seq !== validationSeqRef.current) {
+          return { valid: false, offline: false };
+        }
+
+        if (valid) {
+          persistToken(normalized);
+          persistHeronUnlocked(true);
+          setError('');
+          return { valid: true, offline: false };
+        }
+
+        setError(INVALID_TOKEN_MESSAGE);
+        wipeCachedToken();
+        return { valid: false, offline: false };
+      } catch {
+        // Network timeout / offline — preserve last cached unlock state
+        if (seq !== validationSeqRef.current) {
+          return { valid: false, offline: true };
+        }
+
+        const cachedUnlock = readCachedUnlockState();
+        persistHeronUnlocked(cachedUnlock);
+
+        try {
+          const cachedToken = localStorage.getItem(STORAGE_KEYS.token) ?? '';
+          if (cachedToken && TOKEN_PATTERN.test(cachedToken)) {
+            setToken(cachedToken);
+          }
+        } catch {
+          // Non-fatal
+        }
+
+        // Do not surface network errors during a crisis — zero friction
+        setError('');
+        return { valid: cachedUnlock, offline: true };
+      } finally {
+        if (seq === validationSeqRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [queryTokenValidity, persistToken, persistHeronUnlocked, wipeCachedToken, readCachedUnlockState],
+  );
+
+  // Hydrate from localStorage and silently re-validate in background (once on mount)
+  useEffect(() => {
+    try {
+      const cachedToken = localStorage.getItem(STORAGE_KEYS.token) ?? '';
+      const cachedUnlock = localStorage.getItem(STORAGE_KEYS.heronUnlocked) === 'true';
+
+      if (cachedToken && TOKEN_PATTERN.test(cachedToken)) {
+        setToken(cachedToken);
+        setIsHeronUnlocked(cachedUnlock);
+        validateToken(cachedToken);
+      }
+    } catch {
+      // Private browsing — continue without persistence
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hydration
+  }, []);
+
+  const clearToken = useCallback(() => {
+    validationSeqRef.current += 1;
+    setError('');
+    setIsLoading(false);
+    wipeCachedToken();
+  }, [wipeCachedToken]);
 
   return {
-    clinicalToken,
+    token,
     isHeronUnlocked,
-    isValidating,
-    submitToken,
+    isLoading,
+    error,
+    validateToken,
     clearToken,
   };
 }

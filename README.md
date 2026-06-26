@@ -33,7 +33,7 @@ npm run dev
 
 **`useTokenManager`** — Caches 6-character Clinical Token in `localStorage`, exposes `isHeronUnlocked`, validates via `fetch` to Supabase Edge Function. Network failures never block the UI.
 
-**`useSurgeEngine`** — 90-second decay curve (1.0 → 0.0) driven by `requestAnimationFrame`. Web Audio graph with `GainNode` crossfade and `BiquadFilterNode` lowpass sweep. `navigator.vibrate` for Android (silent on iOS).
+**`useSurgeEngine`** — 90-second decay curve (1.0 → 0.0) driven by `requestAnimationFrame`. Procedurally synthesizes pink noise chaos + 55 Hz sub-bass heartbeat — no audio assets required. `BiquadFilterNode` lowpass sweep and Iso Principle crossfade. `navigator.vibrate` for Android (silent on iOS).
 
 **`SurgeInterface`** — Full-screen `bg-black` canvas with pointer dead-man's switch. Framer Motion strobe (1 Hz, photosensitive-safe) transitions to 60 BPM breathing gradient. Routes to Heron or offline grounding + token entry.
 

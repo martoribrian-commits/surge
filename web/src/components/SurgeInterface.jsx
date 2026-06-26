@@ -15,7 +15,7 @@ const BREATH_CYCLE_DURATION = 1.0;
  * Dead-man's switch: press and hold to run; release aborts instantly.
  */
 export default function SurgeInterface() {
-  const { isHeronUnlocked, submitToken } = useTokenManager();
+  const { isHeronUnlocked, validateToken, error } = useTokenManager();
   const { intensity, isActive, isComplete, startSurge, stopSurge } = useSurgeEngine(90);
 
   const [aborted, setAborted] = useState(false);
@@ -59,9 +59,10 @@ export default function SurgeInterface() {
     }
   }, [isActive, isComplete, stopSurge]);
 
-  const handleTokenSubmit = (event) => {
+  const handleTokenSubmit = async (event) => {
     event.preventDefault();
-    if (submitToken(tokenInput)) {
+    const result = await validateToken(tokenInput);
+    if (result.valid) {
       setTokenInput('');
     }
   };
@@ -118,6 +119,7 @@ export default function SurgeInterface() {
               isHeronUnlocked={isHeronUnlocked}
               heronRouted={heronRouted}
               tokenInput={tokenInput}
+              error={error}
               onTokenChange={setTokenInput}
               onTokenSubmit={handleTokenSubmit}
             />
@@ -224,6 +226,7 @@ function CompletionCopy({
   isHeronUnlocked,
   heronRouted,
   tokenInput,
+  error,
   onTokenChange,
   onTokenSubmit,
 }) {
@@ -269,6 +272,9 @@ function CompletionCopy({
       >
         Submit
       </button>
+      {error && (
+        <p className="font-sans text-xs tracking-[0.15em] text-gray-500">{error}</p>
+      )}
     </motion.form>
   );
 }
