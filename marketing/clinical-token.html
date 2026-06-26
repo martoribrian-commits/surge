@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surge — Clinical Token</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo">Surge</a>
+    <nav class="site-nav">
+      <a href="/how-it-works">Mechanism</a>
+      <a href="/for-providers">Providers</a>
+      <a href="/clinical-token">Token</a>
+    </nav>
+  </header>
+
+  <main class="token-page">
+    <div id="token-keypad" tabindex="0" role="group" aria-label="Clinical token entry">
+      <div class="token-display" aria-hidden="true">
+        <span class="token-slot" data-index="0"></span>
+        <span class="token-slot" data-index="1"></span>
+        <span class="token-slot" data-index="2"></span>
+        <span class="token-slot" data-index="3"></span>
+        <span class="token-slot" data-index="4"></span>
+        <span class="token-slot" data-index="5"></span>
+      </div>
+      <input
+        type="text"
+        id="token-input"
+        class="token-input-hidden"
+        maxlength="6"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        inputmode="text"
+        aria-label="Enter six-character clinical token"
+      >
+      <p id="token-status" class="token-status" aria-live="polite"></p>
+    </div>
+  </main>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/clinical-token.js"></script>
+</body>
+</html>

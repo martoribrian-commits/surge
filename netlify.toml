@@ -10,8 +10,39 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Surge is a single-page app; route all paths to the SPA entry.
-# Netlify Functions are served at /.netlify/functions/* automatically.
+# Marketing site (static HTML) — clean URLs
+[[redirects]]
+  from = "/"
+  to = "/home.html"
+  status = 200
+
+[[redirects]]
+  from = "/for-providers"
+  to = "/for-providers.html"
+  status = 200
+
+[[redirects]]
+  from = "/how-it-works"
+  to = "/how-it-works.html"
+  status = 200
+
+[[redirects]]
+  from = "/clinical-token"
+  to = "/clinical-token.html"
+  status = 200
+
+# React SPA — somatic engine and Heron chat
+[[redirects]]
+  from = "/surge"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/heron"
+  to = "/index.html"
+  status = 200
+
+# SPA fallback for client-side routes
 [[redirects]]
   from = "/*"
   to = "/index.html"

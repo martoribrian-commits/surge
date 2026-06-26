@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surge — How It Works</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo">Surge</a>
+    <nav class="site-nav">
+      <a href="/how-it-works">Mechanism</a>
+      <a href="/for-providers">Providers</a>
+      <a href="/clinical-token">Token</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>Mechanism</h2>
+      <h1>Somatic regulation through deterministic decay.</h1>
+      <p class="lead">
+        Surge applies a single 90-second intensity curve — from peak activation to
+        baseline rest. Visual alpha, audio mix, and device haptics are derived from
+        one mathematical function. The user maintains a dead-man's switch (press and hold)
+        throughout the cycle. Release triggers an immediate spin-down. No scoring,
+        no streaks, no emotional prompts.
+      </p>
+    </section>
+
+    <section>
+      <h2>The decay curve</h2>
+      <p>
+        Intensity begins at 1.0 and decays to 0.0 over 90 seconds. The first 15% of
+        the session holds at peak — a stabilization window — then eases out with a
+        quadratic falloff. All sensory channels track this single value: fog opacity,
+        low-frequency audio weight, heartbeat stem volume, and vibration interval.
+      </p>
+      <p>
+        Cycle completion writes a session record locally (sessionStorage). No network
+        required during the intervention. Telemetry syncs on reconnect if Supabase is
+        configured.
+      </p>
+    </section>
+
+    <section>
+      <h2>Privacy architecture</h2>
+      <p>
+        The somatic engine runs entirely client-side. Session data is cached in
+        sessionStorage with a UUID, duration, completion state, and timestamp.
+        No patient accounts. No login during crisis use.
+      </p>
+      <p>
+        Clinical tokens are six-character codes provisioned by the provider.
+        Validation occurs via Supabase Edge Function — the token is checked against
+        an active pool. No name, email, or identifier is transmitted with validation.
+        Heron handoff receives only de-identified session telemetry.
+      </p>
+    </section>
+
+    <section>
+      <h2>Token provisioning</h2>
+      <div class="diagram">Provider admin
+    │
+    ├─► Provision token pool (6-char codes)
+    │
+    ▼
+Patient receives token (verbal, print, secure message)
+    │
+    ▼
+/clinical-token  ──►  Edge Function validate
+    │                      │
+    │                      ├─ valid  ──► unlock /surge + Heron path
+    │                      └─ invalid ──► silent reject
+    │
+    ▼
+Surge session (offline-capable)
+    │
+    ▼
+Optional Heron handoff (post-regulation guide)</div>
+    </section>
+
+    <p class="disclaimer">
+      Surge is intended as an adjunct to clinical care. Mechanism description is
+      for provider vetting purposes and does not constitute a clinical claim.
+    </p>
+  </main>
+</body>
+</html>

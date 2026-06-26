@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surge for Providers — Clinical Licensing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo">Surge</a>
+    <nav class="site-nav">
+      <a href="/how-it-works">Mechanism</a>
+      <a href="/for-providers">Providers</a>
+      <a href="/clinical-token">Token</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>Clinical utility</h2>
+      <h1>Somatic regulation at the point of crisis.</h1>
+      <p class="lead">
+        Surge is a 90-second somatic circuit breaker designed for acute nervous system
+        dysregulation. It delivers a deterministic decay protocol — visual, auditory, and
+        haptic — without gamification, sentiment analysis, or persistent patient accounts.
+        Providers deploy it as a discrete intervention between sessions or at escalation points.
+      </p>
+    </section>
+
+    <section>
+      <h2>Licensing model</h2>
+      <p>
+        Surge operates on an annual clinical license. Your organization receives a
+        provisioned token pool for anonymous patient access. Tokens validate at runtime
+        without storing patient identity — no accounts, no PHI in the Surge layer.
+        Usage telemetry is session-scoped and de-identified. Heron, the post-regulation
+        guide, activates only after a completed or partial cycle when clinically indicated.
+      </p>
+    </section>
+
+    <section>
+      <h2>Pricing</h2>
+      <div class="tier-grid">
+        <div class="tier">
+          <p class="tier-name">Clinical site</p>
+          <p class="tier-desc">Single practice or department. Token pool, admin dashboard, standard support.</p>
+          <p class="tier-desc" style="margin-top:1rem;color:var(--white);">Contact for pricing</p>
+        </div>
+        <div class="tier">
+          <p class="tier-name">Health system</p>
+          <p class="tier-desc">Multi-site deployment. Custom token provisioning, SLA, integration support.</p>
+          <p class="tier-desc" style="margin-top:1rem;color:var(--white);">Contact for pricing</p>
+        </div>
+        <div class="tier">
+          <p class="tier-name">Enterprise</p>
+          <p class="tier-desc">Volume licensing, dedicated infrastructure review, compliance documentation.</p>
+          <p class="tier-desc" style="margin-top:1rem;color:var(--white);">Contact for pricing</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>Request a clinical demo or licensing overview.</p>
+
+      <form name="provider-contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="margin-top:2rem;">
+        <input type="hidden" name="form-name" value="provider-contact">
+        <p style="display:none;">
+          <label>Don’t fill this out: <input name="bot-field"></label>
+        </p>
+        <div class="form-field">
+          <label class="form-label" for="org">Organization</label>
+          <input type="text" id="org" name="organization" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="form-submit">Submit inquiry</button>
+      </form>
+    </section>
+
+    <div class="credibility">
+      <p>Clinical partnerships in progress</p>
+    </div>
+
+    <p class="disclaimer">
+      Surge is a somatic regulation utility. It does not diagnose, treat, or replace
+      licensed clinical care. Not for emergency use.
+    </p>
+  </main>
+</body>
+</html>
