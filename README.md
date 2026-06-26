@@ -25,13 +25,13 @@ web/
 ```bash
 cd web
 npm install
-cp .env.example .env   # set VITE_SUPABASE_VALIDATE_URL
+cp .env.example .env   # set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
 
 ### Web Components
 
-**`useTokenManager`** — Caches 6-character Clinical Token in `localStorage`, exposes `isHeronUnlocked`, validates via `fetch` to Supabase Edge Function. Network failures never block the UI.
+**`useTokenManager`** — Caches 6-character Clinical Token in `localStorage`. Exposes `token`, `isHeronUnlocked`, `isLoading`, and `error`. Validates via `@supabase/supabase-js` against `clinical_tokens` (Edge Function fallback). Network failures preserve cached unlock state — never blocks the somatic UI.
 
 **`useSurgeEngine`** — 90-second decay curve (1.0 → 0.0) driven by `requestAnimationFrame`. Procedurally synthesizes pink noise chaos + 55 Hz sub-bass heartbeat — no audio assets required. `BiquadFilterNode` lowpass sweep and Iso Principle crossfade. `navigator.vibrate` for Android (silent on iOS).
 
