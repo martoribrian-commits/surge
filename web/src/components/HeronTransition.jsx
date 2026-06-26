@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   buildSessionPayload,
   cacheSessionPayload,
-  routeToMarrow,
   submitSessionTelemetry,
 } from '../lib/sessionPayload';
+import { fetchHeronContext } from '../lib/heronClient';
 
 /** Duration of each of the three final beacon pulses (seconds). */
 const PULSE_DURATION_S = 1.2;
@@ -25,8 +26,10 @@ const FINAL_PULSE_COUNT = 3;
  * Voice: commanding, grounded. No gamification or toxic positivity.
  */
 export default function HeronTransition({ durationInSeconds, completedFullCycle }) {
+  const navigate = useNavigate();
   const [pulseIndex, setPulseIndex] = useState(0);
   const [phase, setPhase] = useState('pulsing'); // pulsing | fading | ready
+  const [isHandoffActive, setIsHandoffActive] = useState(false);
 
   const sessionPayload = useMemo(
     () => buildSessionPayload(durationInSeconds, completedFullCycle),
@@ -61,6 +64,20 @@ export default function HeronTransition({ durationInSeconds, completedFullCycle 
 
   const backgroundColor =
     phase === 'pulsing' ? '#000000' : CALMING_GRAY;
+
+  const handleTransitionToHeron = async () => {
+    if (isHandoffActive) return;
+    setIsHandoffActive(true);
+
+    try {
+      const supabaseContext = await fetchHeronContext(sessionPayload.sessionId);
+      navigate('/heron', { state: { supabaseContext } });
+    } catch {
+      navigate('/heron');
+    } finally {
+      setIsHandoffActive(false);
+    }
+  };
 
   return (
     <motion.div
@@ -97,8 +114,9 @@ export default function HeronTransition({ durationInSeconds, completedFullCycle 
           >
             <motion.button
               type="button"
-              onClick={routeToMarrow}
-              className="group relative overflow-hidden rounded-full px-12 py-4 font-sans text-xs uppercase tracking-[0.35em] text-gray-300"
+              onClick={handleTransitionToHeron}
+              disabled={isHandoffActive}
+              className="group relative overflow-hidden rounded-full px-12 py-4 font-sans text-xs uppercase tracking-[0.35em] text-gray-300 disabled:opacity-50"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >

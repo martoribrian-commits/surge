@@ -6,7 +6,12 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # Surge is a single-page app; route all paths to the SPA entry.
+# Netlify Functions are served at /.netlify/functions/* automatically.
 [[redirects]]
   from = "/*"
   to = "/index.html"

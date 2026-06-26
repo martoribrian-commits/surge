@@ -7,6 +7,11 @@ interface SurgeTelemetryPayload {
   completedFullCycle: boolean;
 }
 
+interface FetchContextBody {
+  action: "fetchContext";
+  sessionId: string;
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -48,11 +53,65 @@ function validatePayload(body: unknown): SurgeTelemetryPayload | null {
   };
 }
 
+function isFetchContextBody(body: unknown): body is FetchContextBody {
+  if (!body || typeof body !== "object") return false;
+  const { action, sessionId } = body as Record<string, unknown>;
+  return action === "fetchContext" && typeof sessionId === "string" &&
+    UUID_RE.test(sessionId);
+}
+
+async function assembleSupabaseContext(
+  sessionId: string,
+  ctx: { supabaseAdmin: { from: (table: string) => unknown } },
+) {
+  const admin = ctx.supabaseAdmin as {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
+          order: (
+            col: string,
+            opts: { ascending: boolean },
+          ) => { limit: (n: number) => Promise<{ data: unknown[]; error: unknown }> };
+        };
+      };
+    };
+  };
+
+  const { data: telemetry, error: telemetryError } = await admin
+    .from("surge_telemetry")
+    .select(
+      "session_id, duration_in_seconds, completed_full_cycle, created_at",
+    )
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  if (telemetryError) {
+    throw telemetryError;
+  }
+
+  const { data: vectorHistory, error: vectorError } = await admin
+    .from("heron_vector_snapshots")
+    .select("id, session_id, summary, metadata, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (vectorError) {
+    // Table may not exist yet on older deployments — degrade gracefully
+    console.warn("[process-surge-telemetry] vector fetch:", vectorError);
+  }
+
+  return {
+    sessionId,
+    telemetry: telemetry ?? null,
+    vectorHistory: vectorHistory ?? [],
+    compiledAt: new Date().toISOString(),
+  };
+}
+
 /**
- * Ingests anonymous Surge session telemetry from the web client.
- *
- * POST { sessionId, durationInSeconds, completedFullCycle }
- * 200 → { ok: true, sessionId }
+ * Ingests Surge telemetry (POST) or assembles Heron context (POST fetchContext).
  */
 export default {
   fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
@@ -71,6 +130,21 @@ export default {
       return jsonResponse({ error: "Invalid JSON" }, 400);
     }
 
+    // ── Fetch compiled context for Heron inference ──
+    if (isFetchContextBody(body)) {
+      try {
+        const supabaseContext = await assembleSupabaseContext(
+          body.sessionId,
+          ctx,
+        );
+        return jsonResponse({ supabaseContext });
+      } catch (err) {
+        console.error("[process-surge-telemetry] context assembly failed:", err);
+        return jsonResponse({ error: "Failed to assemble context" }, 500);
+      }
+    }
+
+    // ── Ingest telemetry ──
     const payload = validatePayload(body);
     if (!payload) {
       return jsonResponse({ error: "Invalid telemetry payload" }, 400);
