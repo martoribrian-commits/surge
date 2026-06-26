@@ -1,20 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FilmGrainOverlay from './FilmGrainOverlay';
 import HeronTransition from './HeronTransition';
 import { useSurgeEngine } from '../hooks/useSurgeEngine';
 
-/** Hard ceiling: 1 Hz — one full beacon cycle per second at peak intensity. */
 const MAX_PULSE_HZ = 1.0;
-
-/** Resting cadence at baseline: 0.5 Hz (60 BPM half-cycle / one breath every 2 s). */
 const MIN_PULSE_HZ = 0.5;
-
 const SESSION_DURATION_S = 90;
 
 /**
- * Primary somatic interface — wires useSurgeEngine + HeronTransition handoff.
- *
- * Dead-man's switch: press and hold to run; release aborts instantly.
+ * Primary somatic interface — analog visuals, cinematic stems, heavy interaction.
  */
 export default function SurgeInterface() {
   const { intensity, isActive, isComplete, startSurge, stopSurge } =
@@ -41,14 +36,14 @@ export default function SurgeInterface() {
   const handlePointerRelease = useCallback(() => {
     if (!pointerActiveRef.current) return;
 
-    const wasActive = isActive;
+    const wasEngaged = isActive || intensity > 0;
     pointerActiveRef.current = false;
     stopSurge();
 
-    if (wasActive && !isComplete) {
+    if (wasEngaged && !isComplete) {
       setAborted(true);
     }
-  }, [isActive, isComplete, stopSurge]);
+  }, [isActive, isComplete, intensity, stopSurge]);
 
   useEffect(() => {
     if (!isComplete || sessionStartRef.current === null) return;
@@ -59,6 +54,8 @@ export default function SurgeInterface() {
   const activeCopyOpacity = isActive ? Math.min(1, intensity / 0.5) : 0;
   const pulseHz = MIN_PULSE_HZ + intensity * (MAX_PULSE_HZ - MIN_PULSE_HZ);
   const pulseDuration = 1 / pulseHz;
+
+  const showFog = isActive && !isComplete && intensity > 0;
 
   return (
     <motion.div
@@ -72,23 +69,26 @@ export default function SurgeInterface() {
       onPointerCancel={isComplete ? undefined : handlePointerRelease}
       style={{ touchAction: 'none' }}
     >
-      {/* ── Safe emergency beacon overlay (active session only) ── */}
+      {/* ── Cinematic fog / light bleed (below grain, above black) ── */}
       <AnimatePresence>
-        {isActive && !isComplete && (
+        {showFog && (
           <motion.div
-            key="somatic-overlay"
-            className="pointer-events-none absolute inset-0"
+            key="fog-overlay"
+            className="pointer-events-none absolute inset-0 z-[2]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
           >
-            <EmergencyBeaconOverlay intensity={intensity} pulseDuration={pulseDuration} />
+            <FogBeaconOverlay intensity={intensity} pulseDuration={pulseDuration} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── In-session typography ── */}
+      {/* ── Analog film grain (above visuals, below text) ── */}
+      <FilmGrainOverlay />
+
+      {/* ── Copy layer ── */}
       {!isComplete && (
         <div className="relative z-10 flex flex-col items-center px-8">
           <AnimatePresence mode="wait">
@@ -131,7 +131,6 @@ export default function SurgeInterface() {
         </div>
       )}
 
-      {/* ── Completion handoff: three pulses → gray → single action ── */}
       {isComplete && (
         <HeronTransition
           durationInSeconds={completedDuration}
@@ -142,27 +141,27 @@ export default function SurgeInterface() {
   );
 }
 
-// ─── Visual sub-components ───────────────────────────────────────────────────
-
-function EmergencyBeaconOverlay({ intensity, pulseDuration }) {
-  const peakGlow = 0.08 + intensity * 0.22;
-  const radialOpacity = (1 - intensity) * 0.14;
+/**
+ * Heavy light bleeding through dense fog — layered blurs + radial gradients.
+ * Never exceeds 1 Hz; decays with somatic intensity.
+ */
+function FogBeaconOverlay({ intensity, pulseDuration }) {
+  const fogBlur = 8 + intensity * 28;
+  const innerGlow = 0.06 + intensity * 0.28;
+  const outerAmber = 0.04 + intensity * 0.18;
+  const deepCore = 0.02 + intensity * 0.12;
 
   return (
-    <>
+    <div className="absolute inset-0">
+      {/* Base fog plate */}
       <motion.div
         className="absolute inset-0"
+        style={{
+          backdropFilter: `blur(${fogBlur}px)`,
+          WebkitBackdropFilter: `blur(${fogBlur}px)`,
+        }}
         animate={{
-          backgroundColor: [
-            '#000000',
-            '#1a1208',
-            '#2d1f0a',
-            '#fbbf24',
-            '#e8e0d4',
-            '#2d1f0a',
-            '#000000',
-          ],
-          opacity: [0, peakGlow * 0.5, peakGlow * 0.85, peakGlow, peakGlow * 0.7, peakGlow * 0.3, 0],
+          opacity: [deepCore, innerGlow, deepCore * 1.2],
         }}
         transition={{
           duration: pulseDuration,
@@ -171,19 +170,36 @@ function EmergencyBeaconOverlay({ intensity, pulseDuration }) {
         }}
       />
 
+      {/* Inner hot core — light through smoke */}
       <motion.div
         className="absolute inset-0 flex items-center justify-center"
-        animate={{ opacity: 1 - intensity * 0.35 }}
-        transition={{ duration: 0.8, ease: 'easeInOut' }}
+        animate={{ opacity: [0.5, 1, 0.55] }}
+        transition={{
+          duration: pulseDuration,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
       >
         <motion.div
           className="rounded-full"
           style={{
-            width: '130vmax',
-            height: '130vmax',
-            background: `radial-gradient(circle, rgba(255,255,255,${radialOpacity}) 0%, rgba(251,191,36,${radialOpacity * 0.2}) 40%, transparent 72%)`,
+            width: '140vmax',
+            height: '140vmax',
+            background: `
+              radial-gradient(circle at 50% 48%,
+                rgba(255,248,230,${innerGlow}) 0%,
+                rgba(251,191,36,${outerAmber}) 18%,
+                rgba(120,80,30,${deepCore}) 42%,
+                transparent 68%
+              ),
+              radial-gradient(circle at 50% 52%,
+                rgba(255,255,255,${deepCore * 0.6}) 0%,
+                transparent 55%
+              )
+            `,
+            filter: `blur(${4 + intensity * 12}px)`,
           }}
-          animate={{ scale: [0.5, 1, 0.5] }}
+          animate={{ scale: [0.88, 1.06, 0.92] }}
           transition={{
             duration: pulseDuration * 2,
             repeat: Infinity,
@@ -191,6 +207,26 @@ function EmergencyBeaconOverlay({ intensity, pulseDuration }) {
           }}
         />
       </motion.div>
-    </>
+
+      {/* Outer atmospheric bleed */}
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at center,
+            rgba(251,191,36,${outerAmber * 0.5}) 0%,
+            rgba(0,0,0,0) 70%
+          )`,
+          backdropFilter: `blur(${fogBlur * 0.5}px)`,
+          WebkitBackdropFilter: `blur(${fogBlur * 0.5}px)`,
+        }}
+        animate={{ opacity: [0.3, 0.7, 0.35] }}
+        transition={{
+          duration: pulseDuration,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: pulseDuration * 0.25,
+        }}
+      />
+    </div>
   );
 }

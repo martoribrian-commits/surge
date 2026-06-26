@@ -1,243 +1,329 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+const SPIN_UP_MS = 500;
+const SPIN_DOWN_MS = 1800;
+const CHAOS_FILE = '/chaosNoise.wav';
+const HEARTBEAT_FILE = '/heartbeat.wav';
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function decayIntensity(progress) {
+  if (progress <= 0.15) return 1.0;
+  return Math.pow((1.0 - progress) / 0.85, 2);
+}
+
+async function fetchDecode(ctx, url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load ${url}`);
+  const arrayBuffer = await response.arrayBuffer();
+  return ctx.decodeAudioData(arrayBuffer);
+}
 
 /**
- * Core somatic state machine with procedurally synthesized Web Audio.
- *
- * Implements a "Bottom-Up" neurobiological intervention:
- * - Pink noise chaos bed (no asset loading)
- * - 55 Hz sub-bass heartbeat oscillator (Iso Principle crossfade)
- * - 90-second intensity curve with 15 s sustained overload plateau
- *
- * AudioContext initialization requires a user gesture — call `startSurge()`
- * from a pointer-down handler.
+ * Cinematic somatic engine — pre-loaded WAV stems, spin-up/down weight,
+ * crossfade + low-pass sweep linked to intensity.
  */
 export const useSurgeEngine = (duration = 90) => {
-  const [intensity, setIntensity] = useState(1.0);
+  const [intensity, setIntensity] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [heartbeatPhase, setHeartbeatPhase] = useState(0);
+  const [isPreloaded, setIsPreloaded] = useState(false);
 
   const audioCtxRef = useRef(null);
-  const timerRef = useRef(null);
-  const startTimeRef = useRef(null);
+  const chaosBufferRef = useRef(null);
+  const heartbeatBufferRef = useRef(null);
+
+  const chaosSourceRef = useRef(null);
+  const heartbeatSourceRef = useRef(null);
+  const chaosFilterRef = useRef(null);
+  const chaosGainRef = useRef(null);
+  const heartbeatGainRef = useRef(null);
+  const masterGainRef = useRef(null);
+
+  const rafRef = useRef(null);
+  const phaseRef = useRef('idle');
+  const spinUpStartRef = useRef(null);
+  const decayStartRef = useRef(null);
+  const spinDownStartRef = useRef(null);
+  const spinDownFromRef = useRef(0);
+  const intensityRef = useRef(0);
   const lastVibrateRef = useRef(0);
 
-  // Audio Nodes
-  const noiseNodeRef = useRef(null);
-  const noiseFilterRef = useRef(null);
-  const noiseGainRef = useRef(null);
-  const heartbeatOscRef = useRef(null);
-  const heartbeatGainRef = useRef(null);
+  useEffect(() => {
+    intensityRef.current = intensity;
+  }, [intensity]);
 
-  // 1. Procedural Pink Noise Generation (Bypasses asset loading)
-  const createPinkNoiseNode = (ctx) => {
-    const bufferSize = 2 * ctx.sampleRate;
-    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
+  // Pre-load stems on mount — zero touch latency
+  useEffect(() => {
+    let cancelled = false;
 
-    // Pink noise coefficient math
-    let b0 = 0;
-    let b1 = 0;
-    let b2 = 0;
-    let b3 = 0;
-    let b4 = 0;
-    let b5 = 0;
-    let b6 = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.969 * b2 + white * 0.153852;
-      b3 = 0.8665 * b3 + white * 0.3104856;
-      b4 = 0.55 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.016898;
-      const pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-      b6 = white * 0.115926;
-      output[i] = pink * 0.11; // Normalize volume rough estimate
-    }
+    (async () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
 
-    const bufferSource = ctx.createBufferSource();
-    bufferSource.buffer = noiseBuffer;
-    bufferSource.loop = true;
-    return bufferSource;
-  };
+        const ctx = new AudioCtx();
+        audioCtxRef.current = ctx;
 
-  const pulseVibration = (currentIntensity) => {
-    if (!navigator.vibrate) return;
+        const [chaos, heartbeat] = await Promise.all([
+          fetchDecode(ctx, CHAOS_FILE),
+          fetchDecode(ctx, HEARTBEAT_FILE),
+        ]);
 
+        if (cancelled) return;
+        chaosBufferRef.current = chaos;
+        heartbeatBufferRef.current = heartbeat;
+        setIsPreloaded(true);
+      } catch {
+        // Stems unavailable — visuals-only fallback
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pulseVibration = useCallback((t) => {
+    if (!navigator.vibrate || t <= 0) return;
     const now = performance.now();
-
     try {
-      if (currentIntensity > 0.15) {
-        const interval = 80 + (1 - currentIntensity) * 120;
+      if (t > 0.15) {
+        const interval = 80 + (1 - t) * 120;
         if (now - lastVibrateRef.current < interval) return;
         lastVibrateRef.current = now;
-        navigator.vibrate(Math.round(currentIntensity * 180 + 30));
-      } else if (currentIntensity > 0) {
-        const beatInterval = 1000; // 60 BPM
-        if (now - lastVibrateRef.current < beatInterval) return;
+        navigator.vibrate(Math.round(t * 180 + 30));
+      } else {
+        if (now - lastVibrateRef.current < 1000) return;
         lastVibrateRef.current = now;
         navigator.vibrate([120, 80]);
       }
     } catch {
-      // iOS Safari — vibrate unavailable
+      // iOS Safari
     }
-  };
+  }, []);
 
-  const cleanupAudioNodes = () => {
+  const applyAudio = useCallback((t, masterMul = 1) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx || !chaosGainRef.current) return;
+
+    const now = ctx.currentTime;
+
+    const chaosVol = Math.max(0, Math.min(1, (t - 0.15) / 0.85)) * 0.85;
+    chaosGainRef.current.gain.setTargetAtTime(chaosVol * masterMul, now, 0.04);
+
+    const heartbeatVol = Math.max(0, Math.min(0.9, (0.75 - t) / 0.75));
+    heartbeatGainRef.current.gain.setTargetAtTime(heartbeatVol * masterMul, now, 0.06);
+
+    const filterFreq = 120 + t * 9000;
+    chaosFilterRef.current.frequency.setTargetAtTime(filterFreq, now, 0.08);
+
+    masterGainRef.current.gain.setTargetAtTime(masterMul, now, 0.05);
+  }, []);
+
+  const stopSources = useCallback(() => {
     try {
-      if (noiseNodeRef.current) {
-        noiseNodeRef.current.stop();
-        noiseNodeRef.current.disconnect();
-      }
-      if (noiseFilterRef.current) {
-        noiseFilterRef.current.disconnect();
-      }
-      if (noiseGainRef.current) {
-        noiseGainRef.current.disconnect();
-      }
-      if (heartbeatOscRef.current) {
-        heartbeatOscRef.current.stop();
-        heartbeatOscRef.current.disconnect();
-      }
-      if (heartbeatGainRef.current) {
-        heartbeatGainRef.current.disconnect();
-      }
+      chaosSourceRef.current?.stop();
+      heartbeatSourceRef.current?.stop();
     } catch {
-      // Handle edge cases where audio nodes weren't initialized or already stopped
+      // Already stopped
+    }
+    chaosSourceRef.current = null;
+    heartbeatSourceRef.current = null;
+  }, []);
+
+  const wireAudioGraph = useCallback((ctx) => {
+    const chaosGain = ctx.createGain();
+    const heartbeatGain = ctx.createGain();
+    const chaosFilter = ctx.createBiquadFilter();
+    const masterGain = ctx.createGain();
+    const delay = ctx.createDelay(2.5);
+    const feedback = ctx.createGain();
+
+    chaosFilter.type = 'lowpass';
+    chaosFilter.Q.value = 0.85;
+    chaosFilter.frequency.value = 9000;
+
+    delay.delayTime.value = 0.38;
+    feedback.gain.value = 0.42;
+
+    chaosGain.gain.value = 0;
+    heartbeatGain.gain.value = 0;
+    masterGain.gain.value = 0;
+
+    chaosGain.connect(chaosFilter);
+    chaosFilter.connect(masterGain);
+    heartbeatGain.connect(masterGain);
+
+    masterGain.connect(ctx.destination);
+    masterGain.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(ctx.destination);
+
+    chaosGainRef.current = chaosGain;
+    heartbeatGainRef.current = heartbeatGain;
+    chaosFilterRef.current = chaosFilter;
+    masterGainRef.current = masterGain;
+  }, []);
+
+  const startSources = useCallback((ctx) => {
+    if (!chaosBufferRef.current || !heartbeatBufferRef.current) return;
+
+    const chaos = ctx.createBufferSource();
+    chaos.buffer = chaosBufferRef.current;
+    chaos.loop = true;
+    chaos.connect(chaosGainRef.current);
+
+    const heartbeat = ctx.createBufferSource();
+    heartbeat.buffer = heartbeatBufferRef.current;
+    heartbeat.loop = true;
+    heartbeat.connect(heartbeatGainRef.current);
+
+    chaos.start(0);
+    heartbeat.start(0);
+
+    chaosSourceRef.current = chaos;
+    heartbeatSourceRef.current = heartbeat;
+  }, []);
+
+  const completeSurge = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    phaseRef.current = 'complete';
+
+    const ctx = audioCtxRef.current;
+    if (ctx && masterGainRef.current) {
+      masterGainRef.current.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
     }
 
-    noiseNodeRef.current = null;
-    noiseFilterRef.current = null;
-    noiseGainRef.current = null;
-    heartbeatOscRef.current = null;
-    heartbeatGainRef.current = null;
-  };
+    setTimeout(stopSources, 400);
 
-  const completeSurge = () => {
-    cancelAnimationFrame(timerRef.current);
-    timerRef.current = null;
     setIsActive(false);
     setIsComplete(true);
     setIntensity(0);
-    cleanupAudioNodes();
-  };
+  }, [stopSources]);
 
-  // 2. Initialize and Start the Somatic Circuit Breaker
-  const startSurge = () => {
-    if (isActive) return;
+  const tick = useCallback(
+    function updateLoop(now) {
+      const phase = phaseRef.current;
 
-    cleanupAudioNodes();
-    cancelAnimationFrame(timerRef.current);
+      if (phase === 'spin_up' && spinUpStartRef.current !== null) {
+        const elapsed = now - spinUpStartRef.current;
+        const progress = Math.min(elapsed / SPIN_UP_MS, 1);
+        const t = easeOutCubic(progress);
+
+        setIntensity(t);
+        applyAudio(t, t);
+
+        if (progress >= 1) {
+          phaseRef.current = 'decay';
+          decayStartRef.current = now;
+        }
+      } else if (phase === 'decay' && decayStartRef.current !== null) {
+        const elapsed = now - decayStartRef.current;
+        const progress = Math.min(elapsed / (duration * 1000), 1);
+        const t = decayIntensity(progress);
+
+        setIntensity(t);
+        applyAudio(t, 1);
+        pulseVibration(t);
+
+        if (progress >= 1) {
+          completeSurge();
+          return;
+        }
+      } else if (phase === 'spin_down' && spinDownStartRef.current !== null) {
+        const elapsed = now - spinDownStartRef.current;
+        const progress = Math.min(elapsed / SPIN_DOWN_MS, 1);
+        const fade = 1 - easeOutCubic(progress);
+        const t = spinDownFromRef.current * fade;
+
+        setIntensity(t);
+        applyAudio(t, fade * 0.85);
+
+        if (progress >= 1) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+          phaseRef.current = 'idle';
+          stopSources();
+          setIsActive(false);
+          setIntensity(0);
+          return;
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(updateLoop);
+    },
+    [duration, applyAudio, pulseVibration, completeSurge, stopSources],
+  );
+
+  const startSurge = useCallback(() => {
+    if (phaseRef.current === 'spin_up' || phaseRef.current === 'decay') return;
+
+    cancelAnimationFrame(rafRef.current);
 
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      audioCtxRef.current = new AudioCtx();
     }
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+
+    const audioCtx = audioCtxRef.current;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
     }
+
+    stopSources();
+    wireAudioGraph(audioCtx);
+    startSources(audioCtx);
 
     setIsActive(true);
     setIsComplete(false);
-    setIntensity(1.0);
-    startTimeRef.current = performance.now();
-
-    // Setup Pink Noise (Chaos)
-    noiseNodeRef.current = createPinkNoiseNode(ctx);
-    noiseFilterRef.current = ctx.createBiquadFilter();
-    noiseFilterRef.current.type = 'lowpass';
-    // Crisp, overwhelming high frequencies initially
-    noiseFilterRef.current.frequency.setValueAtTime(8000, ctx.currentTime);
-
-    noiseGainRef.current = ctx.createGain();
-    noiseGainRef.current.gain.setValueAtTime(0.8, ctx.currentTime);
-
-    // Connect Chaos Chain
-    noiseNodeRef.current.connect(noiseFilterRef.current);
-    noiseFilterRef.current.connect(noiseGainRef.current);
-    noiseGainRef.current.connect(ctx.destination);
-    noiseNodeRef.current.start(0);
-
-    // Setup Sub-Bass Heartbeat (Anchor)
-    // 55 Hz sine wave oscillator to simulate physical resonance
-    heartbeatOscRef.current = ctx.createOscillator();
-    heartbeatOscRef.current.type = 'sine';
-    heartbeatOscRef.current.frequency.setValueAtTime(55, ctx.currentTime);
-
-    heartbeatGainRef.current = ctx.createGain();
-    // Start silent, crossfades in later
-    heartbeatGainRef.current.gain.setValueAtTime(0.0, ctx.currentTime);
-
-    // Connect Heartbeat Chain
-    heartbeatOscRef.current.connect(heartbeatGainRef.current);
-    heartbeatGainRef.current.connect(ctx.destination);
-    heartbeatOscRef.current.start(0);
-
-    // Dynamic 90-Second Decay Loop
-    const updateLoop = (now) => {
-      const elapsed = (now - startTimeRef.current) / 1000;
-      const progress = Math.min(elapsed / duration, 1.0);
-
-      // Somatic Intensity Curve — sustains max chaos for 15 s, then drops exponentially
-      let currentIntensity = 1.0;
-      if (progress > 0.15) {
-        currentIntensity = Math.pow((1.0 - progress) / 0.85, 2);
-      }
-
-      setIntensity(currentIntensity);
-
-      // Map curve to live audio synthesis parameters
-      const audioTime = ctx.currentTime;
-
-      // 1. Chaos Modulation: sweep low-pass filter down and cut volume
-      const filterFreq = Math.max(120, currentIntensity * 8000);
-      noiseFilterRef.current.frequency.setValueAtTime(filterFreq, audioTime);
-      noiseGainRef.current.gain.setValueAtTime(currentIntensity * 0.8, audioTime);
-
-      // 2. Heartbeat Modulation (Iso Principle):
-      // As chaos drops, introduce a deep rhythmic sub pulse stabilizing at 60 BPM
-      const heartbeatVolume = (1.0 - currentIntensity) * 0.9;
-
-      // Procedural pulsing gain envelope — fast at peak, decays to 1.0 Hz (60 BPM)
-      const pulseRate = 1.0 + currentIntensity * 1.5;
-      const pulseWave = Math.max(0, Math.sin(audioTime * Math.PI * 2 * pulseRate));
-      heartbeatGainRef.current.gain.setValueAtTime(pulseWave * heartbeatVolume, audioTime);
-
-      // Visual sync phase for breathing gradient
-      setHeartbeatPhase((audioTime * pulseRate) % 1);
-
-      pulseVibration(currentIntensity);
-
-      if (progress < 1.0) {
-        timerRef.current = requestAnimationFrame(updateLoop);
-      } else {
-        completeSurge();
-      }
-    };
-
-    timerRef.current = requestAnimationFrame(updateLoop);
-  };
-
-  // 3. Clean Stop Logic (The Dead-Man's Switch Release)
-  const stopSurge = () => {
-    cancelAnimationFrame(timerRef.current);
-    timerRef.current = null;
-    setIsActive(false);
     setIntensity(0);
-    cleanupAudioNodes();
-  };
+    phaseRef.current = 'spin_up';
+    spinUpStartRef.current = performance.now();
+    decayStartRef.current = null;
+    spinDownStartRef.current = null;
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, [stopSources, wireAudioGraph, startSources, tick]);
+
+  const stopSurge = useCallback(() => {
+    if (
+      phaseRef.current === 'idle' ||
+      phaseRef.current === 'spin_down' ||
+      phaseRef.current === 'complete'
+    ) {
+      return;
+    }
+
+    cancelAnimationFrame(rafRef.current);
+    spinDownFromRef.current = intensityRef.current;
+    phaseRef.current = 'spin_down';
+    spinDownStartRef.current = performance.now();
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, [tick]);
 
   useEffect(() => {
     return () => {
-      cancelAnimationFrame(timerRef.current);
-      cleanupAudioNodes();
+      cancelAnimationFrame(rafRef.current);
+      stopSources();
       if (audioCtxRef.current?.state !== 'closed') {
         audioCtxRef.current?.close();
       }
-      audioCtxRef.current = null;
     };
-  }, []);
+  }, [stopSources]);
 
-  return { intensity, isActive, isComplete, heartbeatPhase, startSurge, stopSurge };
+  return {
+    intensity,
+    isActive,
+    isComplete,
+    isPreloaded,
+    startSurge,
+    stopSurge,
+  };
 };
