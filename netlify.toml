@@ -6,6 +6,7 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Surge is a single-page app; route all paths to the SPA entry.
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -1,21 +1,56 @@
 # Surge
 
-A somatic de-escalation utility — available as a native iOS app and a web MVP. Built following **Slow Tech** design principles: hyper-minimal, cinematic, pitch-black, and focused on user sovereignty.
+**A Somatic Circuit Breaker.**
 
-## Web MVP (React)
+Surge provides immediate, non-destructive nervous system regulation at the
+peak of a crisis — bridging the gap between chaos and baseline. It is the
+emergency brake of the Purpose Driven Collection: where _Drift_ and _Marrow_
+are for maintenance, Surge is for the acute strike.
 
-Hosted on Netlify with Supabase backend authentication.
+It is a piece of high-end, slow-tech utility disguised as software:
+
+- **Zero-friction entry.** No splash screen, no loading screen, no login. The
+  "Press and hold" trigger is active within milliseconds.
+- **The dead-man's switch.** The intervention requires the user to hold their
+  thumb on the screen. Releasing pauses the system and it gently pulses,
+  waiting for them to return — forcing physical anchoring.
+- **The 90-second curve.** A single normalized curve drives every sensory
+  channel from the chaotic peak down to baseline (`0.0`).
+- **Seamless handoff.** When the curve hits `0.0`, the screen fades and routes
+  to **Heron** recovery (if unlocked via Clinical Token) or a minimalist
+  token entry prompt.
+
+The reward is the physical relief. There are no streaks, badges, or
+congratulations.
+
+## The Somatic Signature
+
+| Channel    | Peak (chaos)                                  | Baseline (calm)                                    |
+| ---------- | --------------------------------------------- | -------------------------------------------------- |
+| **Visual** | Stark white/amber core, restrained strobe     | Slow radial blur expanding/contracting at 60 BPM   |
+| **Audio**  | Dense, overwhelming white noise (the roar)     | A deep, warm sub-bass pulse at 60 BPM              |
+| **Haptic** | Sharp, chaotic static                          | Heavy, resonant 60 BPM heartbeat thuds             |
+
+The visual strobe is intentionally capped at ≤ 2.5 Hz with low amplitude and is
+disabled under `prefers-reduced-motion`, to avoid triggering photosensitivity.
+
+---
+
+## Web MVP — React (`web/`)
+
+Production deploy target (Netlify). Supabase-backed Clinical Token auth,
+Tailwind CSS, Framer Motion, procedural Web Audio synthesis.
 
 ```
 web/
 ├── src/
 │   ├── hooks/
-│   │   ├── useTokenManager.js      # B2B clinical token auth (localStorage)
-│   │   └── useSurgeEngine.js       # Web Audio API somatic state machine
+│   │   ├── useTokenManager.js      # B2B clinical token auth (localStorage + Supabase)
+│   │   └── useSurgeEngine.js       # Procedural Web Audio somatic state machine
 │   ├── components/
-│   │   └── SurgeInterface.jsx      # Dead-man's switch UI + Framer Motion
-│   ├── App.jsx
-│   └── main.jsx
+│   │   └── SurgeInterface.jsx      # Dead-man's switch UI
+│   └── lib/
+│       └── supabaseClient.js
 ├── netlify.toml
 └── package.json
 ```
@@ -25,132 +60,91 @@ web/
 ```bash
 cd web
 npm install
-cp .env.example .env   # set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
+cp .env.example .env.local   # VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
 
-### Web Components
+### Components
 
-**`useTokenManager`** — Caches 6-character Clinical Token in `localStorage`. Exposes `token`, `isHeronUnlocked`, `isLoading`, and `error`. Validates via `@supabase/supabase-js` against `clinical_tokens` (Edge Function fallback). Network failures preserve cached unlock state — never blocks the somatic UI.
+**`useTokenManager`** — Exposes `token`, `isHeronUnlocked`, `isLoading`, `error`.
+Validates via `@supabase/supabase-js` against `clinical_tokens` (Edge Function
+fallback). Network failures preserve cached unlock state.
 
-**`useSurgeEngine`** — 90-second decay curve (1.0 → 0.0) driven by `requestAnimationFrame`. Procedurally synthesizes pink noise chaos + 55 Hz sub-bass heartbeat — no audio assets required. `BiquadFilterNode` lowpass sweep and Iso Principle crossfade. `navigator.vibrate` for Android (silent on iOS).
+**`useSurgeEngine`** — 90-second decay curve with pink noise + 55 Hz sub-bass
+heartbeat. `navigator.vibrate` on Android (silent on iOS).
 
-**`SurgeInterface`** — Full-screen `bg-black` canvas with pointer dead-man's switch. Framer Motion strobe (1 Hz, photosensitive-safe) transitions to 60 BPM breathing gradient. Routes to Heron or offline grounding + token entry.
+**`SurgeInterface`** — Full-screen dead-man's switch, intensity-bound visuals,
+Heron handoff or token entry on completion.
 
 ---
 
-## iOS (Swift/SwiftUI)
+## Web Reference — TypeScript (`src/`)
 
+Canvas 2D + class-based Web Audio engine. Offline-first, no backend.
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build
+npm run lint
+npm run typecheck
+```
+
+Append `?d=<seconds>` to shorten the 90 s curve during testing
+(e.g. `http://localhost:5173/?d=12`).
+
+---
+
+## iOS — Swift/SwiftUI (`Surge/`)
+
+Native app with `CHHapticEngine`, `AVFoundation`, and `TokenManager`.
 
 ```
 Surge/
-├── App/
-│   └── SurgeApp.swift                 # @main entry point
 ├── Core/
-│   ├── Authentication/
-│   │   └── TokenManager.swift         # B2B clinical token auth
-│   ├── Engine/
-│   │   └── SurgeEngine.swift          # Somatic state machine
-│   └── Models/
-│       └── SurgeState.swift           # idle | overload | decaying | cooldown
-├── Features/
-│   ├── Surge/
-│   │   └── Views/
-│   │       └── SurgeView.swift        # Primary UI + dead-man's switch
-│   ├── Recovery/
-│   │   └── Views/
-│   │       ├── GroundingTextView.swift
-│   │       └── HeronRecoveryView.swift
-│   └── Authentication/
-│       └── Views/
-│           └── ClinicalTokenEntryView.swift
-└── Resources/
-    ├── chaosNoise.mp3                 # Looping chaos bed (add to bundle)
-    └── heartbeat.mp3                  # Looping heartbeat (add to bundle)
+│   ├── Authentication/TokenManager.swift
+│   └── Engine/SurgeEngine.swift
+├── Features/Surge/Views/SurgeView.swift
+└── App/SurgeApp.swift
 ```
 
-## Core Components
+Requires iOS 17+, Xcode 15+. Add `chaosNoise.mp3` and `heartbeat.mp3` to the
+bundle before shipping.
 
-### TokenManager
+---
 
-- Stores a 6-character alphanumeric **Clinical Token** in `UserDefaults`
-- Exposes `@Published var isHeronUnlocked: Bool`
-- Validates asynchronously via `URLSession` against a Supabase Edge Function
-- Network failures are silently swallowed — the crisis flow never blocks on auth
+## Unity (`unity/`)
 
-**Configure before shipping:** Replace the placeholder URL in `TokenManager.swift`:
+`ClinicalTokenManager.cs` and `HeronBridge.cs` — B2B Clinical Token model with
+Supabase verification for the Unity runtime.
 
-```swift
-private let validationEndpoint = URL(string: "https://YOUR_PROJECT.supabase.co/functions/v1/validate-clinical-token")!
+---
+
+## Deployment
+
+Netlify (`netlify.toml` at repo root) builds from `web/`:
+
+```bash
+cd web && npm run build
 ```
 
-**Supabase Edge Function contract:**
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Netlify dashboard.
 
-```json
-// POST { "token": "ABC123" }
-// 200 → { "valid": true }
-// 401/403 → token revoked
+### Supabase Schema
+
+```sql
+create table clinical_tokens (
+  token text primary key,
+  active boolean default true
+);
 ```
-
-### SurgeEngine
-
-State machine with four phases:
-
-| State | Duration | Intensity | Sensory Output |
-|-------|----------|-----------|----------------|
-| `.idle` | — | 0.0 | None |
-| `.overload` | ~0.3 s | 1.0 | Max haptics + full chaos audio |
-| `.decaying` | 90 s | 1.0 → 0.0 | Eased cubic decay curve |
-| `.cooldown` | 3 s | 0.0 | Silence before idle |
-
-**Haptics:** `CHHapticEngine` continuous player with dynamic intensity/sharpness. At peak: sharp, chaotic modulation. At rest: dull 60 BPM heartbeat envelope.
-
-**Audio:** Two looping `AVAudioPlayer` tracks crossfaded by intensity:
-
-- `chaosNoise` — full volume at 1.0, silent below 0.2
-- `heartbeat` — ramps in below 0.7 intensity, rate locked to calm at rest
-
-### SurgeView
-
-- Full-screen pitch-black canvas
-- **Dead-man's switch:** `LongPressGesture` → `DragGesture(minimumDistance: 0)` sequence
-- Release instantly triggers 0.5 s fade-out via `engine.release()`
-- **Visual layers:**
-  - Intensity > 0.3: 1 Hz alpha strobe (photosensitive-safe)
-  - Intensity ≤ 0.3: radial breathing gradient synced to 60 BPM
-- **Post-cycle routing:**
-  - `isHeronUnlocked` → `HeronRecoveryView`
-  - Otherwise → `GroundingTextView` with token entry option
-
-## Setup
-
-1. Create a new **iOS App** project in Xcode (SwiftUI, iOS 17+)
-2. Copy the `Surge/` directory into the project
-3. Add audio assets to the bundle:
-   - `chaosNoise.mp3` — textured noise bed
-   - `heartbeat.mp3` — single heartbeat sample (looped)
-4. Enable **Haptic Capability** in Signing & Capabilities
-5. Add to `Info.plist`:
-
-```xml
-<key>UIBackgroundModes</key>
-<array>
-    <string>audio</string>
-</array>
-```
-
-## Requirements
-
-- iOS 17.0+
-- Device with Taptic Engine (haptics gracefully degrade on unsupported hardware)
-- Xcode 15+
 
 ## Privacy
 
 - No accounts, no PII
 - Clinical tokens are anonymous 6-character codes
 - Token validation is optional background I/O
-- All somatic output runs fully offline
+- Somatic output runs fully offline once loaded
 
 ## License
 
