@@ -1,8 +1,50 @@
 # Surge
 
-A somatic de-escalation utility for a premium, privacy-first iOS application. Built with native Swift/SwiftUI following a **Slow Tech** aesthetic — hyper-minimal, cinematic, pitch-black, and focused on user sovereignty.
+A somatic de-escalation utility — available as a native iOS app and a web MVP. Built following **Slow Tech** design principles: hyper-minimal, cinematic, pitch-black, and focused on user sovereignty.
 
-## Architecture
+## Web MVP (React)
+
+Hosted on Netlify with Supabase backend authentication.
+
+```
+web/
+├── src/
+│   ├── hooks/
+│   │   ├── useTokenManager.js      # B2B clinical token auth (localStorage)
+│   │   └── useSurgeEngine.js       # Web Audio API somatic state machine
+│   ├── components/
+│   │   └── SurgeInterface.jsx      # Dead-man's switch UI + Framer Motion
+│   ├── App.jsx
+│   └── main.jsx
+├── public/
+│   ├── chaosNoise.mp3              # Add before deploy
+│   └── heartbeat.mp3
+├── netlify.toml
+└── package.json
+```
+
+### Quick Start
+
+```bash
+cd web
+npm install
+cp .env.example .env   # set VITE_SUPABASE_VALIDATE_URL
+# Add chaosNoise.mp3 and heartbeat.mp3 to public/
+npm run dev
+```
+
+### Web Components
+
+**`useTokenManager`** — Caches 6-character Clinical Token in `localStorage`, exposes `isHeronUnlocked`, validates via `fetch` to Supabase Edge Function. Network failures never block the UI.
+
+**`useSurgeEngine`** — 90-second decay curve (1.0 → 0.0) driven by `requestAnimationFrame`. Web Audio graph with `GainNode` crossfade and `BiquadFilterNode` lowpass sweep. `navigator.vibrate` for Android (silent on iOS).
+
+**`SurgeInterface`** — Full-screen `bg-black` canvas with pointer dead-man's switch. Framer Motion strobe (1 Hz, photosensitive-safe) transitions to 60 BPM breathing gradient. Routes to Heron or offline grounding + token entry.
+
+---
+
+## iOS (Swift/SwiftUI)
+
 
 ```
 Surge/
