@@ -4,6 +4,7 @@ import {
   buildSessionPayload,
   cacheSessionPayload,
   routeToMarrow,
+  submitSessionTelemetry,
 } from '../lib/sessionPayload';
 
 /** Duration of each of the three final beacon pulses (seconds). */
@@ -35,6 +36,7 @@ export default function HeronTransition({ durationInSeconds, completedFullCycle 
   // Cache payload immediately — before the user clicks the button
   useEffect(() => {
     cacheSessionPayload(sessionPayload);
+    submitSessionTelemetry(sessionPayload);
   }, [sessionPayload]);
 
   // Execute three deliberate final pulses, then transition to gray
