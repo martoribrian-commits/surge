@@ -1,46 +1,99 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 
-console.log("Hello from Functions!");
+interface SurgeTelemetryPayload {
+  sessionId: string;
+  durationInSeconds: number;
+  completedFullCycle: boolean;
+}
 
-// This endpoint uses 'publishable' | 'secret' access, apiKey is required.
-// Use publishable for Client-facing, key-validated endpoints
-// Use secret for Server-to-server, internal calls
-export default {
-  fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
-    // Called by another service with a secret key
-    // ctx.supabaseAdmin bypasses RLS — use for privileged operations
-    /*
-    if (ctx.authMode === "secret") {
-      const { user_id } = await req.json();
-      const { data } = await ctx.supabaseAdmin.auth.admin.getUserById(user_id);
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-      return Response.json({
-        email: data?.user?.email,
-      });
-    }
-    */
-
-    const { name } = await req.json();
-
-    return Response.json({
-      message: `Hello ${name}!`,
-    });
-  }),
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-/* To invoke locally:
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
+function validatePayload(body: unknown): SurgeTelemetryPayload | null {
+  if (!body || typeof body !== "object") return null;
 
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/process-surge-telemetry' \
-    --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
-    --data '{"name":"Functions"}'
+  const { sessionId, durationInSeconds, completedFullCycle } = body as Record<
+    string,
+    unknown
+  >;
 
-*/
+  if (typeof sessionId !== "string" || !UUID_RE.test(sessionId)) return null;
+  if (
+    typeof durationInSeconds !== "number" ||
+    !Number.isFinite(durationInSeconds) ||
+    durationInSeconds < 0
+  ) {
+    return null;
+  }
+  if (typeof completedFullCycle !== "boolean") return null;
+
+  return {
+    sessionId,
+    durationInSeconds: Math.round(durationInSeconds),
+    completedFullCycle,
+  };
+}
+
+/**
+ * Ingests anonymous Surge session telemetry from the web client.
+ *
+ * POST { sessionId, durationInSeconds, completedFullCycle }
+ * 200 → { ok: true, sessionId }
+ */
+export default {
+  fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
+    if (req.method === "OPTIONS") {
+      return new Response("ok", { headers: corsHeaders });
+    }
+
+    if (req.method !== "POST") {
+      return jsonResponse({ error: "Method not allowed" }, 405);
+    }
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "Invalid JSON" }, 400);
+    }
+
+    const payload = validatePayload(body);
+    if (!payload) {
+      return jsonResponse({ error: "Invalid telemetry payload" }, 400);
+    }
+
+    const { data, error } = await ctx.supabaseAdmin
+      .from("surge_telemetry")
+      .upsert(
+        {
+          session_id: payload.sessionId,
+          duration_in_seconds: payload.durationInSeconds,
+          completed_full_cycle: payload.completedFullCycle,
+        },
+        { onConflict: "session_id" },
+      )
+      .select("session_id")
+      .single();
+
+    if (error) {
+      console.error("[process-surge-telemetry] insert failed:", error.message);
+      return jsonResponse({ error: "Failed to store telemetry" }, 500);
+    }
+
+    return jsonResponse({ ok: true, sessionId: data.session_id });
+  }),
+};
