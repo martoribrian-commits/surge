@@ -21,6 +21,10 @@
     this.lastBeat = 0;
   }
 
+  HapticEngine.prototype.ack = function ack() {
+    vibrate(12);
+  };
+
   HapticEngine.prototype.start = function start(getState) {
     this.getState = getState;
     this.lastBeat = 0;
