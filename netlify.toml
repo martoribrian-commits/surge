@@ -12,8 +12,13 @@
   status = 200
 
 [[redirects]]
+  from = "/about"
+  to = "/about.html"
+  status = 200
+
+[[redirects]]
   from = "/engine"
-  to = "/engine.html"
+  to = "/index.html"
   status = 200
 
 [[redirects]]
