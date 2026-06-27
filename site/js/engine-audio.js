@@ -65,6 +65,15 @@
     void ctx.resume();
   };
 
+  AudioEngine.prototype.ignite = function ignite() {
+    if (!this.ctx || !this.master) return;
+    var now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setValueAtTime(0.0001, now);
+    this.master.gain.exponentialRampToValueAtTime(1, now + 0.12);
+    this.master.gain.exponentialRampToValueAtTime(0.92, now + 0.55);
+  };
+
   AudioEngine.prototype.start = function start(durationMs) {
     if (this.master) return;
     var ctx = this.ctx;

@@ -46,8 +46,14 @@
     var clockStart = performance.now() / 1000;
     var rings = [];
     var ripples = [];
+    var shockwaves = [];
+    var phaseFlashes = [];
     var lastRingBeat = -1;
+    var lastShockBeat = -1;
+    var lastVisualPhase = null;
     var completeFade = 0;
+    var engageBurst = 0;
+    var armingStartMs = null;
     var copyPhase = null;
     var cachedAnchor = typeof EngineAnchor !== 'undefined' ? EngineAnchor.getCached() : null;
 
@@ -132,6 +138,44 @@
       ripples = ripples.filter(function (r) {
         return nowSec - r.born < 1.8;
       });
+    }
+
+    function pruneShockwaves(nowSec) {
+      shockwaves = shockwaves.filter(function (s) {
+        return nowSec - s.born < 2;
+      });
+    }
+
+    function pruneFlashes(nowSec) {
+      phaseFlashes = phaseFlashes.filter(function (f) {
+        return nowSec - f.born < 2;
+      });
+    }
+
+    function pushFlash(type, strength) {
+      phaseFlashes.push({
+        born: performance.now() / 1000,
+        strength: strength,
+        type: type,
+      });
+    }
+
+    function triggerIgniteVisual() {
+      var nowSec = performance.now() / 1000;
+      engageBurst = 1;
+      shockwaves.push({ born: nowSec, strength: 1, type: 'ignite' });
+      pushFlash('chaos', 0.75);
+      screen.classList.add('engine-ignited');
+      if (typeof navigator.vibrate === 'function') {
+        try {
+          navigator.vibrate([18, 50, 28]);
+        } catch {
+          /* unsupported */
+        }
+      }
+      window.setTimeout(function () {
+        screen.classList.remove('engine-ignited');
+      }, 700);
     }
 
     function updateFog(intensity, chaos) {
@@ -274,18 +318,63 @@
       }
     }
 
+    function maybeSpawnShockwave(nowSec, heartbeat) {
+      var beatIndex = Math.floor(nowSec * SurgeCurve.HEARTBEAT_HZ);
+      if (beatIndex !== lastShockBeat && heartbeat > 0.22) {
+        lastShockBeat = beatIndex;
+        shockwaves.push({
+          born: nowSec,
+          strength: 0.5 + heartbeat * 0.5,
+          type: 'beat',
+        });
+      }
+    }
+
     function renderFrame() {
       var nowSec = performance.now() / 1000;
       var elapsed = elapsedMs();
       var state = motorPhase === 'idle' ? SurgeCurve.curveAt(0) : SurgeCurve.curveAt(elapsed);
       var size = viewportSize();
 
+      var holdCharge = 0;
+      if (armingStartMs && pointerDown && (motorPhase === 'idle' || motorPhase === 'interrupted')) {
+        holdCharge = Math.min(1, (performance.now() - armingStartMs) / HOLD_THRESHOLD_MS);
+      }
+
+      if (engageBurst > 0.01) {
+        engageBurst *= 0.9;
+      } else {
+        engageBurst = 0;
+      }
+
       if (motorPhase === 'active') {
         maybeSpawnRing(nowSec, state.heartbeat);
+        maybeSpawnShockwave(nowSec, state.heartbeat);
         audio.sync(state, elapsed);
+
+        var visualPhaseId = SurgeCurve.phaseAt(state).id;
+        if (visualPhaseId !== lastVisualPhase) {
+          if (lastVisualPhase) {
+            pushFlash(visualPhaseId, 0.5);
+            screen.classList.add('engine-phase-shift');
+            window.setTimeout(function () {
+              screen.classList.remove('engine-phase-shift');
+            }, 500);
+          }
+          lastVisualPhase = visualPhaseId;
+        }
+
+        var beat = 0.5 + 0.5 * Math.sin(2 * Math.PI * SurgeCurve.HEARTBEAT_HZ * (nowSec - clockStart));
+        var pulseScale = 1 + beat * 0.014 * state.heartbeat;
+        screen.style.setProperty('--pulse-scale', String(pulseScale));
+      } else {
+        screen.style.setProperty('--pulse-scale', '1');
       }
+
       pruneRings(nowSec);
       pruneRipples(nowSec);
+      pruneShockwaves(nowSec);
+      pruneFlashes(nowSec);
 
       SurgeVisual.draw(ctx, {
         phase: visualPhase(),
@@ -296,6 +385,10 @@
         completeFade: completeFade,
         rings: rings,
         ripples: ripples,
+        shockwaves: shockwaves,
+        flashes: phaseFlashes,
+        holdCharge: holdCharge,
+        engageBurst: engageBurst,
         isHolding: isHolding,
         reducedMotion: reducedMotion,
         width: size.width,
@@ -335,6 +428,7 @@
         startMs = performance.now();
         audio.resume();
         haptics.resume();
+        triggerIgniteVisual();
         if (typeof EngineUtil !== 'undefined') EngineUtil.acquireWakeLock();
         cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(tick);
@@ -346,11 +440,16 @@
       startMs = performance.now();
       pausedElapsed = 0;
       lastRingBeat = -1;
+      lastShockBeat = -1;
+      lastVisualPhase = null;
       rings = [];
+      shockwaves = [];
       completeFade = 0;
       copyPhase = null;
 
       audio.start(SurgeCurve.DURATION_MS);
+      audio.ignite();
+      triggerIgniteVisual();
       haptics.start(curveState);
       if (typeof EngineUtil !== 'undefined') EngineUtil.acquireWakeLock();
 
@@ -387,6 +486,13 @@
       if (typeof EngineUtil !== 'undefined') EngineUtil.releaseWakeLock();
       if (fogEl) fogEl.hidden = true;
 
+      pushFlash('complete', 0.95);
+      engageBurst = 0.65;
+      screen.classList.add('engine-ignited');
+      window.setTimeout(function () {
+        screen.classList.remove('engine-ignited');
+      }, 900);
+
       completeFade = 0;
       var fadeStart = performance.now();
 
@@ -418,10 +524,17 @@
       isHolding = false;
       rings = [];
       ripples = [];
+      shockwaves = [];
+      phaseFlashes = [];
       completeFade = 0;
+      engageBurst = 0;
+      armingStartMs = null;
+      lastVisualPhase = null;
+      lastShockBeat = -1;
       copyPhase = null;
       cachedAnchor = typeof EngineAnchor !== 'undefined' ? EngineAnchor.getCached() : cachedAnchor;
-      screen.classList.remove('engine-arming', 'engine-holding');
+      screen.style.setProperty('--pulse-scale', '1');
+      screen.classList.remove('engine-arming', 'engine-holding', 'engine-ignited', 'engine-phase-shift');
       haptics.stop();
       audio.stop();
       if (typeof EngineUtil !== 'undefined') EngineUtil.releaseWakeLock();
@@ -434,6 +547,7 @@
 
     function confirmHold() {
       isHolding = true;
+      armingStartMs = null;
       screen.classList.remove('engine-arming');
       screen.classList.add('engine-holding');
       haptics.ack();
@@ -448,6 +562,7 @@
       audio.prime();
 
       pointerDown = true;
+      armingStartMs = performance.now();
       clearReleaseTimer();
 
       var coords =
@@ -476,6 +591,7 @@
     function onPointerUp() {
       if (!pointerDown) return false;
       pointerDown = false;
+      armingStartMs = null;
       clearHoldTimer();
       screen.classList.remove('engine-arming');
 
