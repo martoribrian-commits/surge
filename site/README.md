@@ -14,7 +14,7 @@ Deploy via Netlify with `publish = "site"` in `netlify.toml`.
 
 | File | Route |
 |------|-------|
-| index.html | / |
+| index.html | / (cinematic landing) |
 | engine.html | /engine |
 | how-it-works.html | /how-it-works |
 | for-providers.html | /for-providers |
