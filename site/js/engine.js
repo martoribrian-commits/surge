@@ -13,7 +13,12 @@
     var canvas = options.canvas;
     var fogEl = options.fogEl;
     var copyEl = options.copyEl;
-    var anchorEl = options.anchorEl;
+    var phaseLabelEl = options.phaseLabelEl;
+    var scienceLineEl = options.scienceLineEl;
+    var progressFillEl = options.progressFillEl;
+    var anchorDisplayEl = options.anchorDisplayEl;
+    var breathCueEl = options.breathCueEl;
+    var entryPanelEl = options.entryPanelEl;
     var onMotorComplete = options.onMotorComplete || function () {};
 
     if (!screen || !canvas) return null;
@@ -33,20 +38,14 @@
     var rings = [];
     var lastRingBeat = -1;
     var completeFade = 0;
-    var sessionStartPerf = null;
     var copyPhase = null;
+    var cachedAnchor = typeof EngineAnchor !== 'undefined' ? EngineAnchor.getCached() : null;
 
     var COPY_BY_PHASE = {
       chaos: 'Hold through the peak.',
       mid: 'The field is settling.',
       heartbeat: 'One pulse at a time.',
     };
-
-    function curveCopyPhase(state) {
-      if (state.chaos > 0.55) return 'chaos';
-      if (state.heartbeat > 0.35 || state.progress > 0.52) return 'heartbeat';
-      return 'mid';
-    }
 
     function writeSession(completionState, duration) {
       try {
@@ -81,12 +80,21 @@
       return 'active';
     }
 
+    function viewportSize() {
+      var vv = window.visualViewport;
+      return {
+        width: vv ? vv.width : window.innerWidth,
+        height: vv ? vv.height : window.innerHeight,
+      };
+    }
+
     function resizeCanvas() {
+      var size = viewportSize();
       var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
+      canvas.width = Math.floor(size.width * dpr);
+      canvas.height = Math.floor(size.height * dpr);
+      canvas.style.width = size.width + 'px';
+      canvas.style.height = size.height + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
@@ -105,6 +113,58 @@
       fogEl.style.setProperty('--pulse-duration', pulseDuration + 's');
     }
 
+    function updateHud(state) {
+      if (progressFillEl) {
+        var pct = motorPhase === 'idle' ? 0 : Math.round(state.progress * 100);
+        progressFillEl.style.width = pct + '%';
+      }
+
+      if (motorPhase === 'idle') {
+        if (phaseLabelEl) phaseLabelEl.textContent = 'Ready';
+        if (scienceLineEl) scienceLineEl.textContent = '90-second vagal downshift';
+        if (entryPanelEl) entryPanelEl.hidden = false;
+        if (anchorDisplayEl) anchorDisplayEl.hidden = true;
+        if (breathCueEl) breathCueEl.hidden = true;
+        return;
+      }
+
+      if (entryPanelEl) entryPanelEl.hidden = true;
+
+      if (motorPhase === 'interrupted') {
+        if (phaseLabelEl) phaseLabelEl.textContent = 'Paused';
+        if (scienceLineEl) scienceLineEl.textContent = 'Release detected · hold to resume';
+        return;
+      }
+
+      if (motorPhase === 'holding') {
+        if (phaseLabelEl) phaseLabelEl.textContent = 'Complete';
+        if (scienceLineEl) scienceLineEl.textContent = 'System reset';
+        return;
+      }
+
+      var phase = SurgeCurve.phaseAt(state);
+      if (phaseLabelEl) phaseLabelEl.textContent = phase.label;
+      if (scienceLineEl) scienceLineEl.textContent = phase.science;
+
+      if (cachedAnchor && cachedAnchor.anchor && anchorDisplayEl) {
+        if (state.heartbeat > 0.25 || state.progress > 0.4) {
+          anchorDisplayEl.textContent = cachedAnchor.anchor;
+          anchorDisplayEl.hidden = false;
+        } else {
+          anchorDisplayEl.hidden = true;
+        }
+      }
+
+      if (cachedAnchor && cachedAnchor.breathCue && breathCueEl) {
+        if (state.heartbeat > 0.45) {
+          breathCueEl.textContent = cachedAnchor.breathCue;
+          breathCueEl.hidden = false;
+        } else {
+          breathCueEl.hidden = true;
+        }
+      }
+    }
+
     function updateCopy(state, overrideText) {
       if (!copyEl) return;
       var text = overrideText;
@@ -119,27 +179,20 @@
           copyPhase = null;
           text = 'The system has reset.';
         } else {
-          var phase = curveCopyPhase(state);
-          if (phase !== copyPhase) {
-            copyPhase = phase;
-          }
+          var phase = SurgeCurve.phaseAt(state).id;
+          if (phase !== copyPhase) copyPhase = phase;
           text = COPY_BY_PHASE[copyPhase] || 'The system is resetting.';
         }
       }
       copyEl.textContent = text;
       if (motorPhase === 'active') {
         var opacity = Math.min(1, state.value / 0.5);
-        copyEl.style.opacity = String(Math.max(0.15, opacity));
+        copyEl.style.opacity = String(Math.max(0.2, opacity));
         copyEl.style.color = opacity > 0.6 ? '#ffffff' : '';
       } else {
         copyEl.style.opacity = '1';
         copyEl.style.color = motorPhase === 'holding' ? '' : '';
       }
-    }
-
-    function updateAnchor(intensity) {
-      if (!anchorEl) return;
-      anchorEl.hidden = motorPhase === 'holding';
     }
 
     function pruneRings(nowSec) {
@@ -160,9 +213,11 @@
       var nowSec = performance.now() / 1000;
       var elapsed = elapsedMs();
       var state = SurgeCurve.curveAt(elapsed);
+      var size = viewportSize();
 
       if (motorPhase === 'active') {
         maybeSpawnRing(nowSec, state.heartbeat);
+        audio.sync(state, elapsed);
       }
       pruneRings(nowSec);
 
@@ -175,15 +230,17 @@
         completeFade: completeFade,
         rings: rings,
         reducedMotion: reducedMotion,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: size.width,
+        height: size.height,
       });
 
       if (motorPhase === 'active') {
         updateFog(state.value, state.chaos);
         updateCopy(state);
+      } else if (motorPhase === 'idle' || motorPhase === 'interrupted') {
+        updateCopy(state);
       }
-      updateAnchor(state.value);
+      updateHud(state);
     }
 
     function tick() {
@@ -207,10 +264,11 @@
     function engage(newSessionId) {
       if (motorPhase === 'active') return;
 
+      cachedAnchor = typeof EngineAnchor !== 'undefined' ? EngineAnchor.getCached() : cachedAnchor;
+
       if (motorPhase === 'interrupted') {
         motorPhase = 'active';
         startMs = performance.now();
-        copyEl.style.display = 'block';
         audio.resume();
         haptics.resume();
         cancelAnimationFrame(rafId);
@@ -220,14 +278,12 @@
 
       motorPhase = 'active';
       sessionId = newSessionId || crypto.randomUUID();
-      sessionStartPerf = performance.now();
-      startMs = sessionStartPerf;
+      startMs = performance.now();
       pausedElapsed = 0;
       lastRingBeat = -1;
       rings = [];
       completeFade = 0;
       copyPhase = null;
-      copyEl.style.display = 'block';
 
       audio.start(SurgeCurve.DURATION_MS);
       haptics.start(curveState);
@@ -244,7 +300,6 @@
       writeSession('interrupted', Math.round(pausedElapsed / 1000));
       audio.pause();
       haptics.pause();
-      updateCopy({});
       rafId = requestAnimationFrame(idleLoop);
     }
 
@@ -283,27 +338,32 @@
       startMs = null;
       pausedElapsed = 0;
       sessionId = null;
-      sessionStartPerf = null;
       rings = [];
       completeFade = 0;
       copyPhase = null;
-      copyEl.style.display = 'block';
-      updateCopy({});
+      cachedAnchor = typeof EngineAnchor !== 'undefined' ? EngineAnchor.getCached() : cachedAnchor;
       haptics.stop();
       audio.stop();
       rafId = requestAnimationFrame(idleLoop);
     }
 
+    function setAnchor(data) {
+      cachedAnchor = data;
+    }
+
     function onPointerDown(e) {
-      e.preventDefault();
       if (motorPhase === 'holding') return false;
+      if (e.target.closest && e.target.closest('.engine-anchor-form')) return false;
+      e.preventDefault();
       pointerDown = true;
+      screen.classList.add('engine-holding');
       return true;
     }
 
     function onPointerUp() {
       if (!pointerDown) return false;
       pointerDown = false;
+      screen.classList.remove('engine-holding');
       if (motorPhase === 'active') {
         release();
         return true;
@@ -311,23 +371,33 @@
       return false;
     }
 
-    window.addEventListener('resize', resizeCanvas);
+    function onResize() {
+      resizeCanvas();
+    }
+
+    window.addEventListener('resize', onResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onResize);
+    }
 
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden' && motorPhase === 'active') {
         pointerDown = false;
+        screen.classList.remove('engine-holding');
         release();
       }
     });
 
     resizeCanvas();
     updateCopy({});
+    updateHud({ progress: 0, value: 1, chaos: 1, heartbeat: 0 });
     rafId = requestAnimationFrame(idleLoop);
 
     return {
       engage: engage,
       release: release,
       reset: reset,
+      setAnchor: setAnchor,
       onPointerDown: onPointerDown,
       onPointerUp: onPointerUp,
       getMotorPhase: function () {
