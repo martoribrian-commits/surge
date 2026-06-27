@@ -40,6 +40,7 @@
           The cycle is complete. These are quiet next steps when you are ready.
           Nothing here requires an account.
         </p>
+        <p id="recovery-prompt" class="recovery-prompt" hidden></p>
       </header>
 
       <div class="landing-action-grid">
@@ -50,14 +51,14 @@
             Return to the physical world with intention. Small analog actions
             signal safety to a body that has been on high alert.
           </p>
-          <ul class="landing-action-list">
+          <ul id="recovery-environment-list" class="landing-action-list">
             <li>Splash cold water on your face and wrists</li>
             <li>Step outside, even for sixty seconds</li>
             <li>Name three objects you can see without moving</li>
           </ul>
         </article>
 
-        <article class="landing-action-card">
+        <article class="landing-action-card landing-action-card-wide">
           <p class="landing-kicker landing-kicker-forest">02</p>
           <h3 class="landing-card-title">Ephemeral brain dump</h3>
           <p class="landing-body">
@@ -88,28 +89,28 @@
             Slow, tactile tasks give your hands something honest to do while your
             mind catches up.
           </p>
-          <ul class="landing-action-list">
+          <ul id="recovery-rituals-list" class="landing-action-list">
             <li>Brew tea and wait for it to cool before the first sip</li>
             <li>Straighten one surface in a single room</li>
             <li>Fold laundry with attention to texture and weight</li>
           </ul>
         </article>
-
-        <article class="landing-action-card">
-          <p class="landing-kicker landing-kicker-forest">04</p>
-          <h3 class="landing-card-title">Crane</h3>
-          <p class="landing-body">
-            If you want to talk through what just happened, Crane is here. No feed.
-            No performance. A steady presence when you choose it.
-          </p>
-          <button type="button" id="crane-handoff-btn" class="landing-clinical-link" style="background: none; cursor: pointer; font-family: inherit;">
-            Talk with Crane <span aria-hidden="true">→</span>
-          </button>
-          <p class="landing-body landing-body-small" style="margin-top: 1rem;">
-            Optional. Requires a clinical token from your provider.
-          </p>
-        </article>
       </div>
+
+      <section class="flow-crane-handoff" aria-label="Crane">
+        <p class="landing-kicker landing-kicker-forest">Optional</p>
+        <h3 class="landing-card-title">Crane</h3>
+        <p class="landing-body">
+          If you want to talk through what just happened, Crane is here. No feed.
+          No performance. A steady presence when you choose it.
+        </p>
+        <button type="button" id="crane-handoff-btn" class="landing-clinical-link" style="background: none; cursor: pointer; font-family: inherit;">
+          Talk with Crane <span aria-hidden="true">→</span>
+        </button>
+        <p class="landing-body landing-body-small" style="margin-top: 1rem;">
+          Requires a clinical token from your provider.
+        </p>
+      </section>
 
       <div class="flow-aftermath-footer">
         <button type="button" id="aftermath-reset" class="flow-reset-btn">Begin another cycle</button>
@@ -127,6 +128,7 @@
   <script src="js/engine-haptics.js"></script>
   <script src="js/surge-session.js"></script>
   <script src="js/ephemeral-store.js"></script>
+  <script src="js/recovery-prompts.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/surge-flow.js"></script>
 </body>

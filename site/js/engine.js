@@ -34,6 +34,19 @@
     var lastRingBeat = -1;
     var completeFade = 0;
     var sessionStartPerf = null;
+    var copyPhase = null;
+
+    var COPY_BY_PHASE = {
+      chaos: 'Hold through the peak.',
+      mid: 'The field is settling.',
+      heartbeat: 'One pulse at a time.',
+    };
+
+    function curveCopyPhase(state) {
+      if (state.chaos > 0.55) return 'chaos';
+      if (state.heartbeat > 0.35 || state.progress > 0.52) return 'heartbeat';
+      return 'mid';
+    }
 
     function writeSession(completionState, duration) {
       try {
@@ -96,10 +109,22 @@
       if (!copyEl) return;
       var text = overrideText;
       if (!text) {
-        if (motorPhase === 'idle') text = 'Press and hold.';
-        else if (motorPhase === 'interrupted') text = 'Hold to resume.';
-        else if (motorPhase === 'holding') text = 'The system has reset.';
-        else text = 'The system is resetting.';
+        if (motorPhase === 'idle') {
+          copyPhase = null;
+          text = 'Press and hold.';
+        } else if (motorPhase === 'interrupted') {
+          copyPhase = null;
+          text = 'Hold to resume.';
+        } else if (motorPhase === 'holding') {
+          copyPhase = null;
+          text = 'The system has reset.';
+        } else {
+          var phase = curveCopyPhase(state);
+          if (phase !== copyPhase) {
+            copyPhase = phase;
+          }
+          text = COPY_BY_PHASE[copyPhase] || 'The system is resetting.';
+        }
       }
       copyEl.textContent = text;
       if (motorPhase === 'active') {
@@ -201,6 +226,7 @@
       lastRingBeat = -1;
       rings = [];
       completeFade = 0;
+      copyPhase = null;
       copyEl.style.display = 'block';
 
       audio.start(SurgeCurve.DURATION_MS);
@@ -260,6 +286,7 @@
       sessionStartPerf = null;
       rings = [];
       completeFade = 0;
+      copyPhase = null;
       copyEl.style.display = 'block';
       updateCopy({});
       haptics.stop();
