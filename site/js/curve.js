@@ -1,49 +1,53 @@
 /**
- * Single somatic decay curve — intensity 1.0 → 0.0 over 90 seconds.
- * ease-in-out. All engine outputs derive from this value.
+ * Single somatic decay curve — 90 seconds from peak chaos to grounded heartbeat.
+ * All engine channels (visual, audio, haptic) derive from this state.
  */
 (function (global) {
   const DURATION_MS = 90 * 1000;
+  const HEARTBEAT_HZ = 1;
+  const STROBE_HZ = 2.5;
+  const SUB_BASS_HZ = 55;
 
-  function easeInOut(t) {
-    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  function clamp01(value) {
+    return value < 0 ? 0 : value > 1 ? 1 : value;
+  }
+
+  function smoothstep(edge0, edge1, x) {
+    const t = clamp01((x - edge0) / (edge1 - edge0));
+    return t * t * (3 - 2 * t);
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function curveAtProgress(progress) {
+    const p = clamp01(progress);
+    const chaos = 1 - smoothstep(0, 0.32, p);
+    const heartbeat = smoothstep(0.12, 0.7, p);
+    return { progress: p, value: 1 - p, chaos, heartbeat };
   }
 
   /** @param {number} elapsedMs */
+  function curveAt(elapsedMs) {
+    return curveAtProgress(elapsedMs / DURATION_MS);
+  }
+
+  /** Legacy scalar intensity (1 → 0). */
   function intensityAt(elapsedMs) {
-    const progress = Math.min(Math.max(elapsedMs / DURATION_MS, 0), 1);
-    return 1 - easeInOut(progress);
-  }
-
-  /** Interpolate white (#FFFFFF) to soften (#1C1C1E) by intensity t (1→0) */
-  function colorAt(t) {
-    const start = { r: 255, g: 255, b: 255 };
-    const end = { r: 28, g: 28, b: 30 };
-    const p = 1 - t;
-    const r = Math.round(start.r + (end.r - start.r) * p);
-    const g = Math.round(start.g + (end.g - start.g) * p);
-    const b = Math.round(start.b + (end.b - start.b) * p);
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-
-  /** Haptic pulse interval and duration from intensity */
-  function hapticAt(t, lastPulseMs, nowMs) {
-    if (t <= 0 || !global.navigator?.vibrate) return false;
-    const interval = 80 + (1 - t) * 120;
-    if (nowMs - lastPulseMs < interval) return false;
-    const duration = Math.round(t * 180 + 30);
-    try {
-      global.navigator.vibrate(duration);
-    } catch {
-      /* iOS */
-    }
-    return true;
+    return curveAt(elapsedMs).value;
   }
 
   global.SurgeCurve = {
     DURATION_MS,
+    HEARTBEAT_HZ,
+    STROBE_HZ,
+    SUB_BASS_HZ,
+    clamp01,
+    lerp,
+    smoothstep,
+    curveAt,
+    curveAtProgress,
     intensityAt,
-    colorAt,
-    hapticAt,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
