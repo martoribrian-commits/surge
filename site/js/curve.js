@@ -19,7 +19,7 @@
     mid: {
       id: 'mid',
       label: 'Coherence window',
-      science: 'Noise carve-down · 60 BPM emerging',
+      science: 'Noise carve-down, 60 BPM emerging',
     },
     heartbeat: {
       id: 'heartbeat',

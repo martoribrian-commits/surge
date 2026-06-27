@@ -59,7 +59,7 @@
 
     var COPY_BY_PHASE = {
       chaos: 'Hold through the peak.',
-      mid: 'The field is settling.',
+      mid: 'Intensity is dropping.',
       heartbeat: 'One pulse at a time.',
     };
 

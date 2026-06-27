@@ -40,13 +40,13 @@
 
   function drawAurora(ctx, w, h, t) {
     var g1 = ctx.createRadialGradient(w * 0.3, h * 0.35, 0, w * 0.3, h * 0.35, w * 0.55);
-    g1.addColorStop(0, 'rgba(245, 166, 35, ' + (0.04 + 0.02 * Math.sin(t * 0.4)) + ')');
+    g1.addColorStop(0, 'rgba(182, 80, 46, ' + (0.04 + 0.02 * Math.sin(t * 0.4)) + ')');
     g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = g1;
     ctx.fillRect(0, 0, w, h);
 
     var g2 = ctx.createRadialGradient(w * 0.72, h * 0.62, 0, w * 0.72, h * 0.62, w * 0.48);
-    g2.addColorStop(0, 'rgba(127, 168, 146, ' + (0.035 + 0.015 * Math.sin(t * 0.3 + 1)) + ')');
+    g2.addColorStop(0, 'rgba(196, 90, 50, ' + (0.035 + 0.015 * Math.sin(t * 0.3 + 1)) + ')');
     g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = g2;
     ctx.fillRect(0, 0, w, h);
@@ -65,8 +65,8 @@
         f.type === 'heartbeat'
           ? '127, 168, 146'
           : f.type === 'mid'
-            ? '245, 200, 140'
-            : '255, 240, 220';
+            ? '196, 90, 50'
+            : '244, 240, 235';
       var g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.75);
       g.addColorStop(0, 'rgba(' + color + ', ' + alpha * 0.35 + ')');
       g.addColorStop(0.55, 'rgba(' + color + ', ' + alpha * 0.08 + ')');
@@ -82,8 +82,8 @@
     var r = minDim * (0.12 + (1 - strength) * 0.65);
     var g = ctx.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
     g.addColorStop(0, 'rgba(255, 248, 235, ' + strength * 0.55 + ')');
-    g.addColorStop(0.4, 'rgba(245, 166, 35, ' + strength * 0.28 + ')');
-    g.addColorStop(1, 'rgba(245, 166, 35, 0)');
+    g.addColorStop(0.4, 'rgba(182, 80, 46, ' + strength * 0.28 + ')');
+    g.addColorStop(1, 'rgba(182, 80, 46, 0)');
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -106,7 +106,7 @@
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(245, 166, 35, ' + (0.35 + charge * 0.55) + ')';
+    ctx.strokeStyle = 'rgba(182, 80, 46, ' + (0.35 + charge * 0.55) + ')';
     ctx.lineWidth = Math.max(2.5, minDim * 0.005);
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -130,7 +130,7 @@
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(245, 166, 35, ' + alpha * 0.35 + ')';
+      ctx.strokeStyle = 'rgba(182, 80, 46, ' + alpha * 0.35 + ')';
       ctx.lineWidth = Math.max(1, minDim * 0.002);
       ctx.beginPath();
       ctx.arc(cx, cy, radius * 0.97, 0, Math.PI * 2);
@@ -242,13 +242,13 @@
     var innerR = baseR * (0.7 + amount * 0.24);
     var alpha = 0.12 + 0.28 * input.heartbeat;
 
-    ctx.strokeStyle = 'rgba(127, 168, 146, ' + alpha * 0.5 + ')';
+    ctx.strokeStyle = 'rgba(196, 90, 50, ' + alpha * 0.5 + ')';
     ctx.lineWidth = Math.max(1, minDim * 0.003);
     ctx.beginPath();
     ctx.arc(cx, cy, baseR * 1.05, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(127, 168, 146, ' + alpha * 0.14 + ')';
+    ctx.fillStyle = 'rgba(196, 90, 50, ' + alpha * 0.14 + ')';
     ctx.beginPath();
     ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
     ctx.fill();
@@ -271,7 +271,7 @@
     ctx.beginPath();
     ctx.arc(cx, cy, arcR, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(245, 166, 35, ' + (0.22 + 0.32 * input.heartbeat) + ')';
+    ctx.strokeStyle = 'rgba(182, 80, 46, ' + (0.22 + 0.32 * input.heartbeat) + ')';
     ctx.lineWidth = Math.max(2, minDim * 0.004);
     ctx.beginPath();
     ctx.arc(cx, cy, arcR, start, end);
@@ -301,8 +301,8 @@
     var bloomR = coreRadius * lerp(1.8, 2.6, input.chaos);
     var bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomR);
     bloom.addColorStop(0, 'rgba(255, 200, 120, ' + coreAlpha * 0.22 + ')');
-    bloom.addColorStop(0.45, 'rgba(245, 166, 35, ' + coreAlpha * 0.08 + ')');
-    bloom.addColorStop(1, 'rgba(245, 166, 35, 0)');
+    bloom.addColorStop(0.45, 'rgba(182, 80, 46, ' + coreAlpha * 0.08 + ')');
+    bloom.addColorStop(1, 'rgba(182, 80, 46, 0)');
     ctx.fillStyle = bloom;
     ctx.beginPath();
     ctx.arc(cx, cy, bloomR, 0, Math.PI * 2);
@@ -358,7 +358,7 @@
     var alphas = input.isHolding ? [0.28, 0.16, 0.09] : [0.16, 0.1, 0.05];
     var scales = [1, 1.2, 1.38];
     for (var i = 0; i < scales.length; i++) {
-      ctx.strokeStyle = 'rgba(245, 166, 35, ' + alphas[i] + ')';
+      ctx.strokeStyle = 'rgba(182, 80, 46, ' + alphas[i] + ')';
       ctx.lineWidth = input.isHolding ? 2 : 1;
       ctx.beginPath();
       ctx.arc(cx, cy, base * scales[i] * (1 + 0.025 * breath), 0, Math.PI * 2);
@@ -381,7 +381,7 @@
       ctx.beginPath();
       ctx.arc(rip.x, rip.y, radius, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.strokeStyle = 'rgba(245, 166, 35, ' + alpha + ')';
+      ctx.strokeStyle = 'rgba(182, 80, 46, ' + alpha + ')';
       ctx.beginPath();
       ctx.arc(rip.x, rip.y, radius * 0.92, 0, Math.PI * 2);
       ctx.stroke();
