@@ -257,6 +257,69 @@ body.engine-active {
   z-index: 0;
   display: block;
   touch-action: none;
+  transform: scale(var(--pulse-scale, 1));
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.engine-flash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 235, 210, 0.5) 0%, transparent 65%);
+}
+
+.engine-screen.engine-ignited .engine-flash-overlay {
+  animation: engine-flash-bloom 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.engine-screen.engine-phase-shift .engine-flash-overlay {
+  animation: engine-phase-pulse 0.55s ease-out forwards;
+}
+
+@keyframes engine-flash-bloom {
+  0% { opacity: 0; transform: scale(0.92); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.04); }
+}
+
+@keyframes engine-phase-pulse {
+  0% { opacity: 0; }
+  25% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+.engine-screen.engine-arming .engine-copy {
+  color: rgba(245, 166, 35, 0.95);
+  letter-spacing: 0.22em;
+}
+
+.engine-screen.engine-holding .engine-copy {
+  color: #eef4f0;
+  text-shadow: 0 0 24px rgba(245, 166, 35, 0.25);
+}
+
+.engine-breath-phase {
+  margin: 0;
+  font-size: clamp(2.5rem, 10vw, 4rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(200, 230, 210, 0.95);
+  line-height: 1;
+  transition: opacity 0.35s, transform 0.35s;
+  text-shadow: 0 0 40px rgba(127, 168, 146, 0.45);
+}
+
+.engine-hud.engine-hud-live .engine-breath-phase:not([hidden]) {
+  animation: engine-breath-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes engine-breath-pop {
+  0% { transform: scale(0.88); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .engine-hud {
@@ -359,25 +422,6 @@ body.engine-active {
   width: 100%;
   margin: 0 auto;
   transition: opacity 0.55s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.55s cubic-bezier(0.25, 0.1, 0.25, 1);
-}
-
-.engine-screen.engine-arming .engine-copy {
-  color: rgba(245, 166, 35, 0.9);
-}
-
-.engine-screen.engine-holding .engine-copy {
-  color: #eef4f0;
-}
-
-.engine-breath-phase {
-  margin: 0;
-  font-size: clamp(2rem, 8vw, 3rem);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(127, 168, 146, 0.95);
-  line-height: 1;
-  transition: opacity 0.4s;
 }
 
 .engine-entry-sub {
