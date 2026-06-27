@@ -22,9 +22,12 @@
 
     <div class="engine-grain" aria-hidden="true"></div>
 
-    <div class="engine-hud" aria-live="polite">
+    <div id="engine-hud" class="engine-hud" aria-live="polite">
       <header class="engine-hud-top">
-        <span class="engine-brand">Surge</span>
+        <div class="engine-hud-meta">
+          <span class="engine-brand">Surge</span>
+          <span id="engine-time" class="engine-time" hidden>1:30</span>
+        </div>
         <div class="engine-science-stack">
           <p id="engine-phase-label" class="engine-phase-label">Ready</p>
           <p id="engine-science-line" class="engine-science-line">90-second vagal downshift</p>
@@ -38,26 +41,31 @@
 
       <footer class="engine-hud-bottom">
         <div id="engine-entry-panel" class="engine-entry-panel">
-          <p class="engine-entry-hint">Press and hold anywhere on screen.</p>
-          <form id="engine-anchor-form" class="engine-anchor-form" autocomplete="off">
-            <label for="engine-anchor-word" class="engine-anchor-label">Need an anchor? One word.</label>
-            <div class="engine-anchor-row">
-              <input
-                id="engine-anchor-word"
-                class="engine-anchor-input"
-                type="text"
-                maxlength="32"
-                placeholder="tight, racing, numb..."
-                spellcheck="false"
-                autocapitalize="off"
-                enterkeyhint="done"
-              />
-              <button type="submit" class="engine-anchor-btn">Set</button>
-            </div>
-            <p id="engine-anchor-status" class="engine-anchor-status" hidden></p>
-          </form>
+          <p class="engine-entry-hint">Press and hold anywhere.</p>
+          <p class="engine-entry-sub">Release to pause · progress is saved</p>
+          <details class="engine-anchor-details engine-interactive">
+            <summary class="engine-anchor-summary">Personalize anchor (optional)</summary>
+            <form id="engine-anchor-form" class="engine-anchor-form" autocomplete="off">
+              <label for="engine-anchor-word" class="engine-anchor-label">One word for how you feel</label>
+              <div class="engine-anchor-row">
+                <input
+                  id="engine-anchor-word"
+                  class="engine-anchor-input"
+                  type="text"
+                  maxlength="32"
+                  placeholder="tight, racing, numb..."
+                  spellcheck="false"
+                  autocapitalize="off"
+                  enterkeyhint="done"
+                />
+                <button type="submit" class="engine-anchor-btn">Set</button>
+              </div>
+              <p id="engine-anchor-status" class="engine-anchor-status" hidden></p>
+            </form>
+          </details>
         </div>
 
+        <p id="engine-breath-phase" class="engine-breath-phase" hidden>In</p>
         <p id="engine-copy" class="engine-copy">Press and hold.</p>
         <p id="engine-anchor-display" class="engine-anchor-display" hidden></p>
         <p id="engine-breath-cue" class="engine-breath-cue" hidden></p>
@@ -161,6 +169,7 @@
   <script src="js/engine-visual.js"></script>
   <script src="js/engine-audio.js"></script>
   <script src="js/engine-haptics.js"></script>
+  <script src="js/engine-util.js"></script>
   <script src="js/engine-anchor.js"></script>
   <script src="js/surge-session.js"></script>
   <script src="js/ephemeral-store.js"></script>

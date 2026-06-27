@@ -54,11 +54,25 @@
     this.lastPan = 0;
   }
 
-  AudioEngine.prototype.start = function start(durationMs) {
-    if (this.ctx) return;
+  AudioEngine.prototype.prime = function prime() {
+    if (this.ctx) {
+      void this.ctx.resume();
+      return;
+    }
     var ctx = createContext();
     if (!ctx) return;
     this.ctx = ctx;
+    void ctx.resume();
+  };
+
+  AudioEngine.prototype.start = function start(durationMs) {
+    if (this.master) return;
+    var ctx = this.ctx;
+    if (!ctx) {
+      ctx = createContext();
+      if (!ctx) return;
+      this.ctx = ctx;
+    }
     void ctx.resume();
 
     var now = ctx.currentTime;

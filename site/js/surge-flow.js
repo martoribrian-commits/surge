@@ -31,13 +31,29 @@
     screen: surgeView,
     canvas: document.getElementById('engine-canvas'),
     fogEl: document.getElementById('engine-fog'),
+    hudEl: document.getElementById('engine-hud'),
     copyEl: document.getElementById('engine-copy'),
     phaseLabelEl: document.getElementById('engine-phase-label'),
     scienceLineEl: document.getElementById('engine-science-line'),
+    timeEl: document.getElementById('engine-time'),
+    breathPhaseEl: document.getElementById('engine-breath-phase'),
     progressFillEl: document.getElementById('engine-progress-fill'),
     anchorDisplayEl: document.getElementById('engine-anchor-display'),
     breathCueEl: document.getElementById('engine-breath-cue'),
     entryPanelEl: document.getElementById('engine-entry-panel'),
+    onHoldReady: function () {
+      engage();
+    },
+    onHoldLost: function () {
+      var state = session.getState();
+      if (state.phase === Phase.REGULATION) {
+        session.dispatch({ type: Event.RELEASE });
+        var record = readSessionRecord();
+        if (record) {
+          persistHandoff(record.sessionId, record.duration || 0, record.completionState || 'interrupted');
+        }
+      }
+    },
     onMotorComplete: function (result) {
       session.dispatch({
         type: Event.CYCLE_COMPLETE,
@@ -176,18 +192,6 @@
     }
   }
 
-  function release() {
-    var state = session.getState();
-    if (state.phase === Phase.REGULATION) {
-      session.dispatch({ type: Event.RELEASE });
-      engine.release();
-      var record = readSessionRecord();
-      if (record) {
-        persistHandoff(record.sessionId, record.duration || 0, record.completionState || 'interrupted');
-      }
-    }
-  }
-
   function bindPointer(el, type, handler) {
     el.addEventListener(type, handler, { passive: false });
   }
@@ -195,18 +199,20 @@
   bindPointer(surgeView, 'pointerdown', function (e) {
     var state = session.getState();
     if (state.phase === Phase.COMPLETING || state.phase === Phase.AFTERMATH) return;
-    if (!engine.onPointerDown(e)) return;
-    engage();
+    engine.onPointerDown(e);
   });
 
   bindPointer(surgeView, 'pointerup', function () {
     engine.onPointerUp();
-    release();
   });
 
   bindPointer(surgeView, 'pointercancel', function () {
     engine.onPointerUp();
-    release();
+  });
+
+  bindPointer(surgeView, 'pointermove', function (e) {
+    if (e.pressure === 0) return;
+    engine.onPointerReengage();
   });
 
   bindPointer(surgeView, 'contextmenu', function (e) {
@@ -225,14 +231,10 @@
       EngineAnchor.fetchAnchor(word).then(function (data) {
         engine.setAnchor(data);
         if (anchorStatusEl) {
-          anchorStatusEl.textContent = data.anchor + (data.source === 'ai' ? '' : '');
+          anchorStatusEl.textContent = data.anchor;
         }
         if (anchorWordInput) anchorWordInput.blur();
       });
-    });
-
-    anchorWordInput.addEventListener('pointerdown', function (e) {
-      e.stopPropagation();
     });
   }
 

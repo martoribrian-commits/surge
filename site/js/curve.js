@@ -64,6 +64,29 @@
     return PHASES.mid;
   }
 
+  function timeRemainingMs(elapsedMs) {
+    return Math.max(0, DURATION_MS - elapsedMs);
+  }
+
+  function formatClock(ms) {
+    var total = Math.ceil(ms / 1000);
+    var m = Math.floor(total / 60);
+    var s = total % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /** In / Hold / Out from 5 BPM sine. */
+  function breathLabel(t) {
+    var s = Math.sin(2 * Math.PI * BREATH_HZ * t);
+    if (s > 0.2) return 'In';
+    if (s < -0.2) return 'Out';
+    return 'Hold';
+  }
+
+  function breathAmount(t) {
+    return 0.5 + 0.5 * Math.sin(2 * Math.PI * BREATH_HZ * t);
+  }
+
   /** Visual/audio focal point — shifts up on narrow viewports for thumb reach. */
   function focalPoint(width, height) {
     var isMobile = width < 768 || height > width;
@@ -86,5 +109,9 @@
     intensityAt,
     phaseAt,
     focalPoint,
+    timeRemainingMs,
+    formatClock,
+    breathLabel,
+    breathAmount,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
