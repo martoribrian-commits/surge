@@ -3,23 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#0A0A0A">
   <title>Surge — Clinical Token</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body class="immersive-page">
   <div class="home-grain" aria-hidden="true"></div>
 
   <div class="token-page">
-    <a href="index.html" class="home-logo token-logo">Surge</a>
-    <p class="landing-kicker landing-kicker-forest">Clinical access</p>
+    <div class="token-logo" data-surge-lockup="sm" data-surge-theme="dark" data-surge-href="index.html"></div>
+    <p class="landing-kicker landing-kicker-clay">Clinical access</p>
     <p class="token-prompt">Enter your six-character token.</p>
 
-    <div class="token-anchor-preview" aria-hidden="true">
-      <div class="landing-anchor-ring landing-anchor-ring-1"></div>
-      <div class="landing-anchor-ring landing-anchor-ring-2"></div>
-      <div class="landing-anchor-core"><span class="landing-anchor-dot"></span></div>
-    </div>
+    <div id="token-decay-hero" class="decay-hero token-decay-hero" aria-hidden="true"></div>
 
     <input
       type="text"
@@ -39,6 +36,24 @@
     </p>
   </div>
 
+  <script src="js/surge-brand.js"></script>
+  <script>
+    (function () {
+      var el = document.getElementById('token-decay-hero');
+      if (!el || typeof SurgeBrand === 'undefined') return;
+      el.innerHTML =
+        '<svg class="decay-hero-svg" viewBox="' +
+        SurgeBrand.VIEWBOX +
+        '" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<path d="M6 58 L134 58" stroke="rgba(244,240,235,0.08)" stroke-width="1"/>' +
+        '<path d="' +
+        SurgeBrand.MARK_PATH +
+        '" stroke="#B6502E" stroke-width="2.5" stroke-linecap="round" fill="none"/>' +
+        '<circle cx="134" cy="58" r="3.5" fill="#F4F0EB"/>' +
+        '<circle cx="134" cy="58" r="1.5" fill="#B6502E"/>' +
+        '</svg>';
+    })();
+  </script>
   <script src="js/clinical-token.js"></script>
 </body>
 </html>

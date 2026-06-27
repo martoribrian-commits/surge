@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#0A0A0A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Surge — Engine</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body class="engine-page">
@@ -26,7 +27,7 @@
     <div id="engine-hud" class="engine-hud" aria-live="polite">
       <header class="engine-hud-top">
         <div class="engine-hud-meta">
-          <span class="engine-brand">Surge</span>
+          <div class="engine-brand-lockup" data-surge-lockup="sm" data-surge-theme="dark" data-surge-href="index.html"></div>
           <span id="engine-time" class="engine-time" hidden>1:30</span>
         </div>
         <div class="engine-science-stack">
@@ -43,7 +44,7 @@
       <footer class="engine-hud-bottom">
         <div id="engine-entry-panel" class="engine-entry-panel">
           <p class="engine-entry-hint">Press and hold anywhere.</p>
-          <p class="engine-entry-sub">Release to pause · progress is saved</p>
+          <p class="engine-entry-sub">Release to pause. Progress is saved.</p>
           <details class="engine-anchor-details engine-interactive">
             <summary class="engine-anchor-summary">Personalize anchor (optional)</summary>
             <form id="engine-anchor-form" class="engine-anchor-form" autocomplete="off">
@@ -78,7 +79,7 @@
   <div id="aftermath-view" class="flow-aftermath" hidden>
     <div class="landing-aftermath-inner">
       <header class="landing-aftermath-intro">
-        <p class="landing-kicker landing-kicker-forest">The aftermath</p>
+        <p class="landing-kicker landing-kicker-clay">The aftermath</p>
         <h1 class="landing-section-title">You held for <span id="aftermath-duration">90</span> seconds.</h1>
         <p class="landing-body">
           The cycle is complete. These are quiet next steps when you are ready.
@@ -89,7 +90,7 @@
 
       <div class="landing-action-grid">
         <article class="landing-action-card">
-          <p class="landing-kicker landing-kicker-forest">01</p>
+          <p class="landing-kicker landing-kicker-clay">01</p>
           <h3 class="landing-card-title">Environmental re-engagement</h3>
           <p class="landing-body">
             Return to the physical world with intention. Small analog actions
@@ -103,7 +104,7 @@
         </article>
 
         <article class="landing-action-card landing-action-card-wide">
-          <p class="landing-kicker landing-kicker-forest">02</p>
+          <p class="landing-kicker landing-kicker-clay">02</p>
           <h3 class="landing-card-title">Ephemeral brain dump</h3>
           <p class="landing-body">
             Write what surfaced during the cycle. Nothing is saved to a profile.
@@ -127,7 +128,7 @@
         </article>
 
         <article class="landing-action-card">
-          <p class="landing-kicker landing-kicker-forest">03</p>
+          <p class="landing-kicker landing-kicker-clay">03</p>
           <h3 class="landing-card-title">Manual rituals</h3>
           <p class="landing-body">
             Slow, tactile tasks give your hands something honest to do while your
@@ -142,7 +143,7 @@
       </div>
 
       <section class="flow-crane-handoff" aria-label="Crane">
-        <p class="landing-kicker landing-kicker-forest">Optional</p>
+        <p class="landing-kicker landing-kicker-clay">Optional</p>
         <h3 class="landing-card-title">Crane</h3>
         <p class="landing-body">
           If you want to talk through what just happened, Crane is here. No feed.
@@ -166,6 +167,7 @@
     </div>
   </div>
 
+  <script src="js/surge-brand.js"></script>
   <script src="js/curve.js"></script>
   <script src="js/engine-visual.js"></script>
   <script src="js/engine-audio.js"></script>
