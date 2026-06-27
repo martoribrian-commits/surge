@@ -232,16 +232,130 @@ section + section {
   overflow: hidden;
 }
 
+.engine-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}
+
+.engine-fog {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  --fog-blur: 12px;
+  --inner-glow: 0.12;
+  --outer-amber: 0.08;
+  --deep-core: 0.04;
+  --pulse-duration: 1.5s;
+}
+
+.engine-fog-plate {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(var(--fog-blur));
+  -webkit-backdrop-filter: blur(var(--fog-blur));
+  animation: fog-plate-pulse var(--pulse-duration) ease-in-out infinite;
+}
+
+.engine-fog-core {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fog-core-opacity var(--pulse-duration) ease-in-out infinite;
+}
+
+.engine-fog-core::before {
+  content: '';
+  width: 140vmax;
+  height: 140vmax;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 50% 48%,
+      rgba(255, 248, 230, var(--inner-glow)) 0%,
+      rgba(245, 166, 35, var(--outer-amber)) 18%,
+      rgba(120, 80, 30, var(--deep-core)) 42%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 50% 52%,
+      rgba(255, 255, 255, calc(var(--deep-core) * 0.6)) 0%,
+      transparent 55%
+    );
+  filter: blur(calc(4px + var(--inner-glow) * 40px));
+  animation: fog-core-scale calc(var(--pulse-duration) * 2) ease-in-out infinite;
+}
+
+.engine-fog-bleed {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(245, 166, 35, calc(var(--outer-amber) * 0.5)) 0%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  backdrop-filter: blur(calc(var(--fog-blur) * 0.5));
+  -webkit-backdrop-filter: blur(calc(var(--fog-blur) * 0.5));
+  animation: fog-bleed-pulse var(--pulse-duration) ease-in-out infinite;
+  animation-delay: calc(var(--pulse-duration) * 0.25);
+}
+
+@keyframes fog-plate-pulse {
+  0%, 100% { opacity: var(--deep-core); }
+  50% { opacity: var(--inner-glow); }
+}
+
+@keyframes fog-core-opacity {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes fog-core-scale {
+  0%, 100% { transform: scale(0.88); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes fog-bleed-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+.engine-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.11;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .engine-fog-plate,
+  .engine-fog-core,
+  .engine-fog-core::before,
+  .engine-fog-bleed {
+    animation: none;
+  }
+}
+
 .engine-copy {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   font-size: var(--label-size);
   font-weight: 600;
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
   text-align: center;
   padding: 0 2rem;
-  transition: color 0.3s;
+  transition: color 0.3s, opacity 0.4s;
+  pointer-events: none;
 }
 
 .engine-complete {
@@ -251,7 +365,8 @@ section + section {
   gap: 1.5rem;
   text-align: center;
   padding: 2rem;
-  z-index: 2;
+  z-index: 10;
+  position: relative;
 }
 
 .engine-complete.visible {
