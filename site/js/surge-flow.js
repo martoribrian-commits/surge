@@ -13,6 +13,9 @@
   var brainDumpEl = document.getElementById('brain-dump-input');
   var resetBtn = document.getElementById('aftermath-reset');
   var craneBtn = document.getElementById('crane-handoff-btn');
+  var recoveryPromptEl = document.getElementById('recovery-prompt');
+  var environmentListEl = document.getElementById('recovery-environment-list');
+  var ritualsListEl = document.getElementById('recovery-rituals-list');
 
   if (!surgeView || !aftermathView) return;
 
@@ -110,11 +113,25 @@
     };
   }
 
+  function applyRecoveryPrompts(state) {
+    if (typeof RecoveryPrompts === 'undefined') return;
+    var record = readSessionRecord();
+    RecoveryPrompts.applyRecoveryPrompts({
+      introEl: recoveryPromptEl,
+      environmentListEl: environmentListEl,
+      ritualsListEl: ritualsListEl,
+      durationSeconds: state.durationSeconds,
+      completionState: record ? record.completionState : 'complete',
+      completedAt: state.completedAt || Date.now(),
+    });
+  }
+
   session.subscribe(function (state) {
     if (state.phase === Phase.AFTERMATH) {
       if (durationEl) {
         durationEl.textContent = String(state.durationSeconds);
       }
+      applyRecoveryPrompts(state);
       bindEphemeral(state.sessionId);
       if (!surgeView.hidden && !document.body.classList.contains('flow-bridge-active')) {
         transitionToAftermath();
