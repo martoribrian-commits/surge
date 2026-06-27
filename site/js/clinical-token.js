@@ -28,7 +28,13 @@
 
       if (data.valid) {
         localStorage.setItem('surge_token', token);
-        window.location.href = 'engine.html';
+        var returnToCrane = false;
+        try {
+          returnToCrane = !!sessionStorage.getItem('surge.craneHandoff');
+        } catch {
+          returnToCrane = false;
+        }
+        window.location.href = returnToCrane ? 'crane.html' : 'engine.html';
         return;
       }
     } catch {

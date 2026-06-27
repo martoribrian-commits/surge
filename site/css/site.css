@@ -490,7 +490,10 @@ section + section {
 
 /* Clinical token */
 .token-page {
+  position: relative;
+  z-index: 2;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -499,13 +502,36 @@ section + section {
   text-align: center;
 }
 
+.token-logo {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  text-decoration: none;
+}
+
+.token-anchor-preview {
+  position: relative;
+  width: 6rem;
+  height: 6rem;
+  margin: 0 auto 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.token-note {
+  margin-top: 2rem;
+  max-width: 18rem;
+}
+
 .token-prompt {
-  font-size: var(--label-size);
-  font-weight: 600;
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 2rem;
+  font-size: var(--body-size);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 1.5rem;
+  max-width: 20rem;
 }
 
 .token-input {
@@ -542,18 +568,65 @@ section + section {
 }
 
 /* Crane chat */
+.immersive-page {
+  background: var(--black);
+  min-height: 100vh;
+}
+
+.immersive-header {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem 0;
+  max-width: 40rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.immersive-kicker {
+  margin: 0;
+}
+
 .crane-screen {
   position: fixed;
   inset: 0;
-  background: var(--black);
+  background: transparent;
   display: flex;
   flex-direction: column;
+  z-index: 2;
+}
+
+.crane-gate {
+  position: relative;
+  z-index: 3;
+  max-width: 40rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+}
+
+.crane-gate-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #9eb5a8;
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  background: rgba(245, 166, 35, 0.06);
+  padding: 1rem 1.25rem;
+}
+
+.crane-gate-text a {
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .crane-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 3rem 2rem;
+  padding: 1.5rem 2rem 2rem;
   max-width: 40rem;
   width: 100%;
   margin: 0 auto;
@@ -563,6 +636,18 @@ section + section {
   margin-bottom: 1.5rem;
   font-size: var(--body-size);
   line-height: var(--body-leading);
+}
+
+.crane-msg-enter {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.55s cubic-bezier(0.25, 0.1, 0.25, 1),
+    transform 0.55s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.crane-msg-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .crane-msg.user {
@@ -1572,6 +1657,29 @@ section + section {
   padding: 4rem 1.5rem 6rem;
 }
 
+body.flow-bridge-active .engine-screen,
+body.flow-bridge-active .flow-aftermath {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  transition: opacity 1.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+body.flow-bridge-active .flow-aftermath {
+  z-index: 11;
+  opacity: 0;
+  overflow-y: auto;
+}
+
+body.flow-bridge-active.flow-bridge-complete .engine-screen {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.flow-bridge-active.flow-bridge-complete .flow-aftermath {
+  opacity: 1;
+}
+
 body.aftermath-active {
   overflow-y: auto;
 }
@@ -1636,8 +1744,12 @@ body.aftermath-active {
   .home-hero-bg-ocean,
   .landing-scroll-line,
   .landing-anchor-ring,
-  .landing-anchor-core {
+  .landing-anchor-core,
+  .crane-msg-enter {
     animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
   }
 
   .landing-decel-distress,

@@ -34,6 +34,25 @@ export default async (request) => {
     return json({ error: 'messages required' }, 400);
   }
 
+  const context = body?.context;
+  let systemPrompt = SYSTEM_PROMPT;
+  if (context && typeof context === 'object') {
+    const parts = [];
+    if (context.durationSeconds != null) {
+      parts.push(`The user held for ${context.durationSeconds} seconds.`);
+    }
+    if (context.completionState) {
+      parts.push(`Completion state: ${context.completionState}.`);
+    }
+    if (context.brainDump && String(context.brainDump).trim()) {
+      const note = String(context.brainDump).trim().slice(0, 500);
+      parts.push(`Before opening chat they wrote (ephemeral, reference subtly): "${note}"`);
+    }
+    if (parts.length) {
+      systemPrompt += '\n\nSession context:\n' + parts.join(' ');
+    }
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return json({ error: 'API not configured' }, 500);
@@ -60,7 +79,7 @@ export default async (request) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: anthropicMessages,
       }),
     });
