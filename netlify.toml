@@ -54,6 +54,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/engine-anchor"
+  to = "/.netlify/functions/engine-anchor"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/portal-tokens"
   to = "/.netlify/functions/portal-tokens"
   status = 200

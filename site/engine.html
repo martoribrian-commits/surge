@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Surge — Engine</title>
   <link rel="stylesheet" href="css/site.css">
 </head>
-<body>
+<body class="engine-page">
   <!-- Stage 1 + 2: Entry & Regulation -->
   <div id="surge-view" class="engine-screen">
     <canvas id="engine-canvas" class="engine-canvas" aria-hidden="true"></canvas>
@@ -20,14 +22,47 @@
 
     <div class="engine-grain" aria-hidden="true"></div>
 
-    <div id="tactile-anchor" class="flow-anchor" aria-hidden="true">
-      <div class="landing-anchor-ring landing-anchor-ring-1"></div>
-      <div class="landing-anchor-ring landing-anchor-ring-2"></div>
-      <div class="landing-anchor-ring landing-anchor-ring-3"></div>
-      <div class="landing-anchor-core"><span class="landing-anchor-dot"></span></div>
-    </div>
+    <div class="engine-hud" aria-live="polite">
+      <header class="engine-hud-top">
+        <span class="engine-brand">Surge</span>
+        <div class="engine-science-stack">
+          <p id="engine-phase-label" class="engine-phase-label">Ready</p>
+          <p id="engine-science-line" class="engine-science-line">90-second vagal downshift</p>
+        </div>
+        <div class="engine-progress-track" aria-hidden="true">
+          <div id="engine-progress-fill" class="engine-progress-fill"></div>
+        </div>
+      </header>
 
-    <p id="engine-copy" class="engine-copy">Press and hold.</p>
+      <div class="engine-hud-spacer" aria-hidden="true"></div>
+
+      <footer class="engine-hud-bottom">
+        <div id="engine-entry-panel" class="engine-entry-panel">
+          <p class="engine-entry-hint">Press and hold anywhere on screen.</p>
+          <form id="engine-anchor-form" class="engine-anchor-form" autocomplete="off">
+            <label for="engine-anchor-word" class="engine-anchor-label">Need an anchor? One word.</label>
+            <div class="engine-anchor-row">
+              <input
+                id="engine-anchor-word"
+                class="engine-anchor-input"
+                type="text"
+                maxlength="32"
+                placeholder="tight, racing, numb..."
+                spellcheck="false"
+                autocapitalize="off"
+                enterkeyhint="done"
+              />
+              <button type="submit" class="engine-anchor-btn">Set</button>
+            </div>
+            <p id="engine-anchor-status" class="engine-anchor-status" hidden></p>
+          </form>
+        </div>
+
+        <p id="engine-copy" class="engine-copy">Press and hold.</p>
+        <p id="engine-anchor-display" class="engine-anchor-display" hidden></p>
+        <p id="engine-breath-cue" class="engine-breath-cue" hidden></p>
+      </footer>
+    </div>
   </div>
 
   <!-- Stage 3: Aftermath -->
@@ -126,6 +161,7 @@
   <script src="js/engine-visual.js"></script>
   <script src="js/engine-audio.js"></script>
   <script src="js/engine-haptics.js"></script>
+  <script src="js/engine-anchor.js"></script>
   <script src="js/surge-session.js"></script>
   <script src="js/ephemeral-store.js"></script>
   <script src="js/recovery-prompts.js"></script>

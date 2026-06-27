@@ -7,6 +7,26 @@
   const HEARTBEAT_HZ = 1;
   const STROBE_HZ = 2.5;
   const SUB_BASS_HZ = 55;
+  /** ~5 breaths/min — parasympathetic respiration target in tail phase. */
+  const BREATH_HZ = 5 / 60;
+
+  var PHASES = {
+    chaos: {
+      id: 'chaos',
+      label: 'Sympathetic peak',
+      science: 'Multi-channel entrainment',
+    },
+    mid: {
+      id: 'mid',
+      label: 'Coherence window',
+      science: 'Noise carve-down · 60 BPM emerging',
+    },
+    heartbeat: {
+      id: 'heartbeat',
+      label: 'Vagal restitution',
+      science: '5 breaths/min · sub-bass lock',
+    },
+  };
 
   function clamp01(value) {
     return value < 0 ? 0 : value > 1 ? 1 : value;
@@ -38,16 +58,33 @@
     return curveAt(elapsedMs).value;
   }
 
+  function phaseAt(state) {
+    if (state.chaos > 0.55) return PHASES.chaos;
+    if (state.heartbeat > 0.35 || state.progress > 0.52) return PHASES.heartbeat;
+    return PHASES.mid;
+  }
+
+  /** Visual/audio focal point — shifts up on narrow viewports for thumb reach. */
+  function focalPoint(width, height) {
+    var isMobile = width < 768 || height > width;
+    var offsetY = isMobile ? height * -0.07 : height * -0.03;
+    return { x: width / 2, y: height / 2 + offsetY };
+  }
+
   global.SurgeCurve = {
     DURATION_MS,
     HEARTBEAT_HZ,
     STROBE_HZ,
     SUB_BASS_HZ,
+    BREATH_HZ,
+    PHASES,
     clamp01,
     lerp,
     smoothstep,
     curveAt,
     curveAtProgress,
     intensityAt,
+    phaseAt,
+    focalPoint,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

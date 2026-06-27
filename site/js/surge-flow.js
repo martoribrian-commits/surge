@@ -16,8 +16,13 @@
   var recoveryPromptEl = document.getElementById('recovery-prompt');
   var environmentListEl = document.getElementById('recovery-environment-list');
   var ritualsListEl = document.getElementById('recovery-rituals-list');
+  var anchorForm = document.getElementById('engine-anchor-form');
+  var anchorWordInput = document.getElementById('engine-anchor-word');
+  var anchorStatusEl = document.getElementById('engine-anchor-status');
 
   if (!surgeView || !aftermathView) return;
+
+  document.body.classList.add('engine-active');
 
   var session = SurgeSession.create();
   var bridgeTimer = null;
@@ -27,7 +32,12 @@
     canvas: document.getElementById('engine-canvas'),
     fogEl: document.getElementById('engine-fog'),
     copyEl: document.getElementById('engine-copy'),
-    anchorEl: document.getElementById('tactile-anchor'),
+    phaseLabelEl: document.getElementById('engine-phase-label'),
+    scienceLineEl: document.getElementById('engine-science-line'),
+    progressFillEl: document.getElementById('engine-progress-fill'),
+    anchorDisplayEl: document.getElementById('engine-anchor-display'),
+    breathCueEl: document.getElementById('engine-breath-cue'),
+    entryPanelEl: document.getElementById('engine-entry-panel'),
     onMotorComplete: function (result) {
       session.dispatch({
         type: Event.CYCLE_COMPLETE,
@@ -71,9 +81,7 @@
   }
 
   function transitionToAftermath() {
-    if (bridgeTimer) {
-      clearTimeout(bridgeTimer);
-    }
+    if (bridgeTimer) clearTimeout(bridgeTimer);
 
     aftermathView.hidden = false;
     document.body.classList.add('flow-bridge-active');
@@ -87,7 +95,7 @@
 
     bridgeTimer = window.setTimeout(function () {
       surgeView.hidden = true;
-      document.body.classList.remove('flow-bridge-active', 'flow-bridge-complete');
+      document.body.classList.remove('flow-bridge-active', 'flow-bridge-complete', 'engine-active');
       document.body.classList.add('aftermath-active');
       window.scrollTo(0, 0);
     }, BRIDGE_MS);
@@ -98,6 +106,7 @@
       clearTimeout(bridgeTimer);
       bridgeTimer = null;
     }
+    document.body.classList.add('engine-active');
     document.body.classList.remove('flow-bridge-active', 'flow-bridge-complete', 'aftermath-active');
     surgeView.hidden = false;
     aftermathView.hidden = true;
@@ -128,9 +137,7 @@
 
   session.subscribe(function (state) {
     if (state.phase === Phase.AFTERMATH) {
-      if (durationEl) {
-        durationEl.textContent = String(state.durationSeconds);
-      }
+      if (durationEl) durationEl.textContent = String(state.durationSeconds);
       applyRecoveryPrompts(state);
       bindEphemeral(state.sessionId);
       if (!surgeView.hidden && !document.body.classList.contains('flow-bridge-active')) {
@@ -148,6 +155,7 @@
 
     if (state.phase === Phase.COMPLETING) {
       document.body.classList.remove('aftermath-active');
+      document.body.classList.add('engine-active');
       surgeView.hidden = false;
       aftermathView.hidden = true;
     }
@@ -180,27 +188,53 @@
     }
   }
 
-  surgeView.addEventListener('pointerdown', function (e) {
+  function bindPointer(el, type, handler) {
+    el.addEventListener(type, handler, { passive: false });
+  }
+
+  bindPointer(surgeView, 'pointerdown', function (e) {
     var state = session.getState();
     if (state.phase === Phase.COMPLETING || state.phase === Phase.AFTERMATH) return;
     if (!engine.onPointerDown(e)) return;
     engage();
   });
 
-  surgeView.addEventListener('pointerup', function () {
+  bindPointer(surgeView, 'pointerup', function () {
     engine.onPointerUp();
     release();
   });
 
-  surgeView.addEventListener('pointerleave', function () {
+  bindPointer(surgeView, 'pointercancel', function () {
     engine.onPointerUp();
     release();
   });
 
-  surgeView.addEventListener('pointercancel', function () {
-    engine.onPointerUp();
-    release();
+  bindPointer(surgeView, 'contextmenu', function (e) {
+    e.preventDefault();
   });
+
+  if (anchorForm && typeof EngineAnchor !== 'undefined') {
+    anchorForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var word = anchorWordInput ? anchorWordInput.value : '';
+      if (anchorStatusEl) {
+        anchorStatusEl.hidden = false;
+        anchorStatusEl.textContent = 'Calibrating anchor...';
+      }
+      EngineAnchor.fetchAnchor(word).then(function (data) {
+        engine.setAnchor(data);
+        if (anchorStatusEl) {
+          anchorStatusEl.textContent = data.anchor + (data.source === 'ai' ? '' : '');
+        }
+        if (anchorWordInput) anchorWordInput.blur();
+      });
+    });
+
+    anchorWordInput.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+    });
+  }
 
   if (resetBtn) {
     resetBtn.addEventListener('click', function () {
