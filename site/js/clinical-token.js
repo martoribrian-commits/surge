@@ -28,7 +28,7 @@
 
       if (data.valid) {
         localStorage.setItem('surge_token', token);
-        window.location.href = 'index.html';
+        window.location.href = 'engine.html';
         return;
       }
     } catch {
