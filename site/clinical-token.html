@@ -3,12 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
   <title>Surge — Clinical Token</title>
   <link rel="stylesheet" href="css/site.css">
 </head>
-<body>
+<body class="immersive-page">
+  <div class="home-grain" aria-hidden="true"></div>
+
   <div class="token-page">
-    <p class="token-prompt">Enter your Clinical Token.</p>
+    <a href="index.html" class="home-logo token-logo">Surge</a>
+    <p class="landing-kicker landing-kicker-forest">Clinical access</p>
+    <p class="token-prompt">Enter your six-character token.</p>
+
+    <div class="token-anchor-preview" aria-hidden="true">
+      <div class="landing-anchor-ring landing-anchor-ring-1"></div>
+      <div class="landing-anchor-ring landing-anchor-ring-2"></div>
+      <div class="landing-anchor-core"><span class="landing-anchor-dot"></span></div>
+    </div>
+
     <input
       type="text"
       id="token-input"
@@ -19,9 +31,14 @@
       autocapitalize="characters"
       spellcheck="false"
       inputmode="text"
+      aria-label="Clinical token"
     >
     <p id="token-error" class="token-error">Token not recognized.</p>
+    <p class="landing-body landing-body-small token-note">
+      Provided by your clinician. No account required.
+    </p>
   </div>
+
   <script src="js/clinical-token.js"></script>
 </body>
 </html>
