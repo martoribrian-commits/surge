@@ -37,7 +37,19 @@ export default function SequenceEngine() {
     reset,
   } = useSequenceSession();
 
-  const audio = useSequenceAudio();
+  const isActivePhase =
+    phase === SurgePhase.REGULATION ||
+    phase === SurgePhase.PAUSED ||
+    phase === SurgePhase.COMPLETING;
+
+  const audio = useSequenceAudio({
+    variantId: variant.id,
+    interactionMode: variant.interactionMode,
+    clock,
+    isEngaged,
+    breathCycle: variant.breathCycle,
+    enabled: isActivePhase,
+  });
 
   const handleStarted = useCallback(() => {
     if (phase === SurgePhase.ENTRY) beginRegulation();
@@ -49,27 +61,25 @@ export default function SequenceEngine() {
     reset();
   }, [haptics, audio, reset]);
 
-  const handleRelease = useCallback(() => {
+  const handleExit = useCallback(() => {
     haptics.killAll();
     audio.killAll();
-    releaseHold();
-  }, [haptics, audio, releaseHold]);
+    reset();
+  }, [haptics, audio, reset]);
 
-  const isActivePhase =
-    phase === SurgePhase.REGULATION ||
-    phase === SurgePhase.PAUSED ||
-    phase === SurgePhase.COMPLETING;
+  const handleRelease = useCallback(() => {
+    haptics.killAll();
+    if (variant.interactionMode !== InteractionMode.HOLD) {
+      audio.killAll();
+    }
+    releaseHold();
+  }, [haptics, audio, releaseHold, variant.interactionMode]);
 
   useEffect(() => {
     if (!isActivePhase) return undefined;
 
-    audio.prime();
-
     if (variant.interactionMode !== InteractionMode.HOLD) {
       haptics.startProfile(variant.id);
-      if (variant.id === 'instant-reset') {
-        audio.playPhysiologicalSigh();
-      }
     }
 
     markTactileAnchorReady(variant.interactionMode);
@@ -103,6 +113,7 @@ export default function SequenceEngine() {
       onEngage={engageHold}
       onRelease={handleRelease}
       onStarted={handleStarted}
+      onExit={handleExit}
       onChangeSequence={phase === SurgePhase.PAUSED ? handleChangeSequence : undefined}
     />
   );

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import SurgeSequence from './SurgeSequence';
 import OrientingAnchorVisual from './OrientingAnchorVisual';
+import { unlockAudioContext } from '../../lib/proceduralAudio/shared';
 import { InteractionMode } from '../../sequences';
 
 export default function OrientingAnchorSequence({
@@ -9,6 +10,7 @@ export default function OrientingAnchorSequence({
   haptics,
   audio,
   onStarted,
+  onExit,
   onChangeSequence,
 }) {
   const [activeSide, setActiveSide] = useState(null);
@@ -16,6 +18,7 @@ export default function OrientingAnchorSequence({
 
   const handleSideTap = useCallback(
     (side) => {
+      unlockAudioContext();
       const accepted = clock.registerBilateralTap(side);
       if (!accepted) return;
       onStarted?.();
@@ -48,6 +51,7 @@ export default function OrientingAnchorSequence({
       phaseLabel={phaseLabel}
       hint={hint}
       interactionMode={InteractionMode.BILATERAL}
+      onExit={onExit}
       onChangeSequence={onChangeSequence}
     >
       <OrientingAnchorVisual
