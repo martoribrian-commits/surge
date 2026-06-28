@@ -27,19 +27,27 @@
 
     <div class="home-hero-content">
       <p class="landing-kicker landing-kicker-clay">Somatic circuit breaker</p>
-      <h1 class="home-headline">
+      <h1 id="sequence-headline" class="home-headline">
         Ninety seconds<br>to reset your nervous system.
       </h1>
-      <p class="home-subhead">
+      <p id="sequence-subhead" class="home-subhead">
         When your body will not wait for an appointment. Secular. Private. No account.
         Press and hold through one guided cycle.
       </p>
 
+      <div id="sequence-tabs" class="sequence-tabs" role="tablist" aria-label="Sequence duration"></div>
+
+      <div class="sequence-preview-card landing-reveal" aria-hidden="true">
+        <p class="landing-kicker landing-kicker-clay" style="margin-bottom: 0.35rem;">Preview</p>
+        <p id="sequence-preview-name" class="sequence-preview-name">Coherence Ripple</p>
+        <p id="sequence-preview-tag" class="sequence-preview-tag">Deep diaphragmatic regulation</p>
+      </div>
+
       <div id="decay-hero" class="decay-hero" aria-hidden="true"></div>
 
       <div class="home-cta-row">
-        <a href="engine.html" class="landing-enter-btn">Begin the cycle</a>
-        <a href="clinical-token.html" class="home-cta-secondary">I have a token</a>
+        <a id="sequence-cta" href="/engine/coherence-ripple" class="landing-enter-btn">Begin 90s cycle</a>
+        <a href="/clinical-token" class="home-cta-secondary">I have a token</a>
       </div>
     </div>
   </section>
@@ -79,7 +87,7 @@
         re-enter the world, write what surfaced, or talk with Crane through your
         provider if you choose.
       </p>
-      <a href="engine.html" class="btn btn-primary">Enter the engine</a>
+      <a href="/" class="btn btn-primary">Choose your sequence</a>
     </div>
   </section>
 
@@ -99,6 +107,7 @@
 
   <script src="js/surge-brand.js"></script>
   <script src="js/decay-hero.js"></script>
+  <script src="js/sequence-picker.js"></script>
   <script src="js/landing.js"></script>
 </body>
 </html>

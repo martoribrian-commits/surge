@@ -1,46 +1,12 @@
 [build]
-  publish = "site"
+  command = "cd web && npm ci && npm run build"
+  publish = "web/dist"
 
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Clean URL redirects
-[[redirects]]
-  from = "/"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/engine"
-  to = "/engine.html"
-  status = 200
-
-[[redirects]]
-  from = "/how-it-works"
-  to = "/how-it-works.html"
-  status = 200
-
-[[redirects]]
-  from = "/for-providers"
-  to = "/for-providers.html"
-  status = 200
-
-[[redirects]]
-  from = "/clinical-token"
-  to = "/clinical-token.html"
-  status = 200
-
-[[redirects]]
-  from = "/crane"
-  to = "/crane.html"
-  status = 200
-
-[[redirects]]
-  from = "/portal"
-  to = "/portal.html"
-  status = 200
-
+# API → Netlify Functions
 [[redirects]]
   from = "/api/validate-token"
   to = "/.netlify/functions/validate-token"
@@ -76,3 +42,45 @@
   to = "/.netlify/functions/portal-stats"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/.netlify/functions/crane-inference"
+  to = "/.netlify/functions/crane-inference"
+  status = 200
+
+# Legacy static HTML → React routes
+[[redirects]]
+  from = "/engine"
+  to = "/"
+  status = 301
+
+[[redirects]]
+  from = "/engine.html"
+  to = "/"
+  status = 301
+
+[[redirects]]
+  from = "/how-it-works.html"
+  to = "/how-it-works"
+  status = 301
+
+[[redirects]]
+  from = "/for-providers.html"
+  to = "/for-providers"
+  status = 301
+
+[[redirects]]
+  from = "/clinical-token.html"
+  to = "/clinical-token"
+  status = 301
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+
+# SPA fallback — React app handles all client routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
