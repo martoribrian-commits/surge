@@ -7,7 +7,14 @@ import CraneChat from './components/CraneChat';
 import ProviderPortal from './components/ProviderPortal';
 import TelemetryFlush from './components/TelemetryFlush';
 import DevPerformanceOverlay from './components/dev/DevPerformanceOverlay';
-import { PrivacyPage, TermsPage, SupportPage } from './pages';
+import {
+  PrivacyPage,
+  TermsPage,
+  SupportPage,
+  SciencePage,
+  ProvidersPage,
+  ClinicalTokenPage,
+} from './pages';
 import { resolveVariantId } from './sequences';
 
 function EngineRoute() {
@@ -17,13 +24,13 @@ function EngineRoute() {
 
 /**
  * Release 1.33 routing:
- *   /              → SequenceFlow (picker → engine → aftermath)
- *   /engine/:id    → deep-link a variant (instant-reset | orienting-anchor | coherence-ripple)
- *   /crane         → AI guide (Crane; /heron redirects here)
- *   /portal        → provider dashboard
- *   /privacy       → privacy policy
- *   /terms         → terms and medical disclaimer
- *   /support       → support portal
+ *   /                    → SequenceFlow (30/60/90 picker → engine → aftermath)
+ *   /engine/:variantId   → deep-link a variant
+ *   /how-it-works        → Science page
+ *   /for-providers       → Provider marketing
+ *   /clinical-token      → Patient token entry
+ *   /crane               → AI guide
+ *   /portal              → Provider dashboard
  */
 export default function App() {
   return (
@@ -34,6 +41,9 @@ export default function App() {
         <Route path="/" element={<SequenceFlow />} />
         <Route path="/engine" element={<Navigate to="/" replace />} />
         <Route path="/engine/:variantId" element={<EngineRoute />} />
+        <Route path="/how-it-works" element={<SciencePage />} />
+        <Route path="/for-providers" element={<ProvidersPage />} />
+        <Route path="/clinical-token" element={<ClinicalTokenPage />} />
         <Route path="/about" element={<LandingPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -45,6 +55,12 @@ export default function App() {
         <Route path="/portal" element={<ProviderPortal />} />
         <Route path="/dev/surge-classic" element={<SurgeInterface />} />
         <Route path="/dev/surge-flow-legacy" element={<SurgeFlow />} />
+        {/* Legacy static HTML paths */}
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
+        <Route path="/engine.html" element={<Navigate to="/" replace />} />
+        <Route path="/how-it-works.html" element={<Navigate to="/how-it-works" replace />} />
+        <Route path="/for-providers.html" element={<Navigate to="/for-providers" replace />} />
+        <Route path="/clinical-token.html" element={<Navigate to="/clinical-token" replace />} />
       </Routes>
     </>
   );
