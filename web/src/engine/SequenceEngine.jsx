@@ -8,12 +8,14 @@ import {
   InstantResetSequence,
   OrientingAnchorSequence,
   CoherenceRippleSequence,
+  VagalDownshiftSequence,
 } from '../components/sequence';
 
 const SEQUENCE_BY_ID = {
   'instant-reset': InstantResetSequence,
   'orienting-anchor': OrientingAnchorSequence,
   'coherence-ripple': CoherenceRippleSequence,
+  'vagal-downshift': VagalDownshiftSequence,
 };
 
 /**

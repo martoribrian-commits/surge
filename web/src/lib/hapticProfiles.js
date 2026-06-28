@@ -109,6 +109,32 @@ export const HapticProfiles = {
       },
     ],
   },
+
+  /**
+   * 90s Vagal Downshift — original decay curve: engage pulse + 90s linear haptic decay.
+   */
+  'vagal-downshift': {
+    id: 'vagal-downshift',
+    label: 'Vagal Downshift — classic decay curve',
+    audioCueId: 'vagal-decay-bed',
+    phases: [
+      {
+        type: 'transient',
+        intensity: 0.55,
+        sharpness: 0.65,
+        pattern: [40, 80, 35],
+        delayMs: 0,
+      },
+      {
+        type: 'continuous',
+        id: 'vagal-decay',
+        intensity: 0.88,
+        durationMs: 90_000,
+        decay: 'linear',
+        delayMs: 220,
+      },
+    ],
+  },
 };
 
 /** @param {string} variantId */
