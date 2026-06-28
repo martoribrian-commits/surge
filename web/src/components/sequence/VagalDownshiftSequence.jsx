@@ -12,6 +12,7 @@ export default function VagalDownshiftSequence({
   onEngage,
   onRelease,
   onStarted,
+  onExit,
   onChangeSequence,
 }) {
   const pointerDownRef = useRef(false);
@@ -55,6 +56,7 @@ export default function VagalDownshiftSequence({
       hint={hint}
       isPaused={clock.isPaused}
       interactionMode={InteractionMode.HOLD}
+      onExit={onExit}
       onChangeSequence={onChangeSequence}
       containerProps={{
         onPointerDown: handlePointerDown,

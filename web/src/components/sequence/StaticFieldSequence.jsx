@@ -14,6 +14,7 @@ export default function StaticFieldSequence({
   onEngage,
   onRelease,
   onStarted,
+  onExit,
   onChangeSequence,
   isEngaged,
 }) {
@@ -63,6 +64,7 @@ export default function StaticFieldSequence({
       hint={hint}
       isPaused={clock.isPaused}
       interactionMode={InteractionMode.HOLD}
+      onExit={onExit}
       onChangeSequence={onChangeSequence}
       containerProps={{
         onPointerDown: handlePointerDown,

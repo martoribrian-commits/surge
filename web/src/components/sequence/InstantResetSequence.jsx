@@ -8,6 +8,7 @@ export default function InstantResetSequence({
   clock,
   haptics,
   onStarted,
+  onExit,
   onChangeSequence,
 }) {
   const startedRef = useRef(false);
@@ -47,6 +48,7 @@ export default function InstantResetSequence({
       phaseLabel={phaseLabel}
       hint={hint}
       interactionMode={InteractionMode.AUTO}
+      onExit={onExit}
       onChangeSequence={onChangeSequence}
     >
       <InstantResetVisual

@@ -61,6 +61,12 @@ export default function SequenceEngine() {
     reset();
   }, [haptics, audio, reset]);
 
+  const handleExit = useCallback(() => {
+    haptics.killAll();
+    audio.killAll();
+    reset();
+  }, [haptics, audio, reset]);
+
   const handleRelease = useCallback(() => {
     haptics.killAll();
     if (variant.interactionMode !== InteractionMode.HOLD) {
@@ -71,8 +77,6 @@ export default function SequenceEngine() {
 
   useEffect(() => {
     if (!isActivePhase) return undefined;
-
-    audio.prime();
 
     if (variant.interactionMode !== InteractionMode.HOLD) {
       haptics.startProfile(variant.id);
@@ -109,6 +113,7 @@ export default function SequenceEngine() {
       onEngage={engageHold}
       onRelease={handleRelease}
       onStarted={handleStarted}
+      onExit={handleExit}
       onChangeSequence={phase === SurgePhase.PAUSED ? handleChangeSequence : undefined}
     />
   );

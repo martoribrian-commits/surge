@@ -13,6 +13,7 @@ import {
   getAudioContext,
   makePinkNoiseBuffer,
   rampGain,
+  unlockAudioContext,
 } from './shared';
 
 function stopSource(source) {
@@ -36,6 +37,7 @@ export class InstantResetAudioEngine {
 
   start() {
     if (this.running) return;
+    unlockAudioContext();
     const ctx = getAudioContext();
     if (!ctx) return;
 
@@ -151,6 +153,7 @@ export class OrientingAnchorAudioEngine {
 
   start() {
     if (this.running) return;
+    unlockAudioContext();
     const ctx = getAudioContext();
     if (!ctx) return;
 
@@ -278,6 +281,7 @@ export class CoherenceRippleAudioEngine {
 
   start() {
     if (this.running) return;
+    unlockAudioContext();
     const ctx = getAudioContext();
     if (!ctx) return;
 
@@ -393,6 +397,7 @@ export class VagalDownshiftAudioEngine {
 
   start() {
     if (this.running) return;
+    unlockAudioContext();
     const ctx = getAudioContext();
     if (!ctx) return;
 
@@ -487,6 +492,7 @@ export class StaticFieldAudioAdapter {
 
   start() {
     if (!this.engine.master) {
+      unlockAudioContext();
       this.engine.start(90_000);
       this.engine.ignite();
     } else {

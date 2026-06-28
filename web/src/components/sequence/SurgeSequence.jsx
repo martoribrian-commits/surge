@@ -23,6 +23,7 @@ export default function SurgeSequence({
   hint,
   isPaused = false,
   interactionMode,
+  onExit,
   onChangeSequence,
   children,
   containerProps = {},
@@ -56,6 +57,7 @@ export default function SurgeSequence({
         progress={progress}
         phaseLabel={phaseLabel}
         isPaused={isPaused}
+        onExit={onExit}
         onChangeSequence={onChangeSequence}
       />
 

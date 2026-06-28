@@ -13,8 +13,22 @@ export function getAudioContext() {
     sharedContext = new Ctor();
   }
 
-  void sharedContext.resume();
   return sharedContext;
+}
+
+/**
+ * Call synchronously inside click / pointerdown handlers so browsers allow playback.
+ */
+export function unlockAudioContext() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    void ctx.resume();
+  }
+}
+
+export function isAudioUnlocked() {
+  return sharedContext?.state === 'running';
 }
 
 export function releaseAudioContext() {

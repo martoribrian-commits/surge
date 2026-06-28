@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { createSequenceAudioEngine } from '../lib/proceduralAudio/engines';
+import { unlockAudioContext } from '../lib/proceduralAudio/shared';
 import { InteractionMode } from '../sequences';
 
 /**
@@ -39,9 +40,14 @@ export function useSequenceAudio({
     };
   }, [variantId]);
 
-  const prime = useCallback(() => {
+  const unlockAudio = useCallback(() => {
+    unlockAudioContext();
     engineRef.current?.prime?.();
   }, []);
+
+  const prime = useCallback(() => {
+    unlockAudio();
+  }, [unlockAudio]);
 
   const killAll = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -54,9 +60,9 @@ export function useSequenceAudio({
 
   /** 60s — panned tick on valid bilateral tap. */
   const playBilateralTick = useCallback((pan = 0) => {
-    engineRef.current?.prime?.();
+    unlockAudio();
     engineRef.current?.triggerTick?.(pan);
-  }, []);
+  }, [unlockAudio]);
 
   /** @deprecated driven by sync loop */
   const playPhysiologicalSigh = useCallback(() => {
@@ -131,6 +137,7 @@ export function useSequenceAudio({
 
   return {
     prime,
+    unlockAudio,
     killAll,
     playBilateralTick,
     playPhysiologicalSigh,
