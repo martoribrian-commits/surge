@@ -11,7 +11,6 @@ export default function CoherenceRippleSequence({
   onEngage,
   onRelease,
   onStarted,
-  onExit,
   onChangeSequence,
 }) {
   const pointerDownRef = useRef(false);
@@ -62,7 +61,6 @@ export default function CoherenceRippleSequence({
       hint={hint}
       isPaused={clock.isPaused}
       interactionMode={InteractionMode.HOLD}
-      onExit={onExit}
       onChangeSequence={onChangeSequence}
       containerProps={{
         onPointerDown: handlePointerDown,

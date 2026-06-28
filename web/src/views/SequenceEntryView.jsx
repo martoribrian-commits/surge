@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
-import { unlockAudioContext } from '../lib/proceduralAudio/shared';
 import { SequencePicker, SequencePreview } from '../components/sequence';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
 import SiteHeader from '../components/layout/SiteHeader';
@@ -17,11 +16,11 @@ const HEADLINE_BY_SECONDS = {
 const SUBHEAD_BY_VARIANT = {
   'instant-reset': 'Double inhale, long exhale — runs automatically once you begin.',
   'orienting-anchor': 'Alternate left and right taps to integrate hemispheres.',
-  'coherence-ripple': 'Resonant 4/6 breath — press and hold to start sound. Release to pause.',
+  'coherence-ripple': 'Resonant 4/6 breath — press and hold. Release to pause.',
   'vagal-downshift':
-    'Visual decay curve — press and hold for sound and haptics. Release to pause.',
+    'Visual decay curve — press and hold as chaos fades to heartbeat. Release to pause.',
   'static-field':
-    'Original Surge sonic engine — press and hold for static and sub-bass. Release to pause.',
+    'The original Surge sonic engine — pink noise static, sub-bass lock. Press and hold. Release to pause.',
 };
 
 /**
@@ -91,10 +90,7 @@ export default function SequenceEntryView() {
             }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.985 }}
-            onClick={() => {
-              unlockAudioContext();
-              beginRegulation();
-            }}
+            onClick={beginRegulation}
           >
             <span className="relative">Begin {variant.durationSeconds}s cycle</span>
           </motion.button>

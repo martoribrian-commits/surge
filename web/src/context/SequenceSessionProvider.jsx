@@ -23,7 +23,6 @@ import {
   submitSessionTelemetry,
 } from '../lib/sessionPayload';
 import { getVariant, resolveVariantId, InteractionMode } from '../sequences';
-import { unlockAudioContext } from '../lib/proceduralAudio/shared';
 
 const COMPLETION_HOLD_MS = 3200;
 
@@ -75,8 +74,6 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
   const beginRegulation = useCallback(() => {
     if (state.phase !== SurgePhase.ENTRY && state.phase !== SurgePhase.PAUSED) return;
 
-    unlockAudioContext();
-
     sessionStartRef.current = performance.now();
     dispatch({
       type: SurgeEvent.ENGAGE,
@@ -90,7 +87,6 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
   }, [state.phase, variant]);
 
   const engageHold = useCallback(() => {
-    unlockAudioContext();
     if (state.phase === SurgePhase.ENTRY) beginRegulation();
     else if (state.phase === SurgePhase.PAUSED) {
       dispatch({ type: SurgeEvent.RESUME });
