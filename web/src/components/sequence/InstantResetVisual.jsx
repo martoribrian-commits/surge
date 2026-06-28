@@ -116,21 +116,15 @@ export default function InstantResetVisual({
               />
             </motion.div>
 
-            {/* Countdown tension ring */}
-            <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-              <motion.circle
-                cx="50%"
-                cy="50%"
-                r="38%"
-                fill="none"
-                stroke={palette.accent}
-                strokeWidth="1.5"
-                strokeDasharray="4 8"
-                animate={{ rotate: 360, opacity: [0.3, 0.7, 0.3] }}
-                transition={{ rotate: { duration: 4, repeat: Infinity, ease: 'linear' }, opacity: { duration: 1.2, repeat: Infinity } }}
-                style={{ transformOrigin: 'center' }}
-              />
-            </svg>
+            <motion.div
+              className="absolute left-1/2 top-1/2 h-[76%] w-[76%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed"
+              style={{ borderColor: palette.accent }}
+              animate={{ rotate: 360, opacity: [0.3, 0.7, 0.3] }}
+              transition={{
+                rotate: { duration: 4, repeat: Infinity, ease: 'linear' },
+                opacity: { duration: 1.2, repeat: Infinity },
+              }}
+            />
           </motion.div>
         ) : (
           <motion.div

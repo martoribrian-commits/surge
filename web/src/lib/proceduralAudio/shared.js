@@ -20,10 +20,14 @@ export function getAudioContext() {
  * Call synchronously inside click / pointerdown handlers so browsers allow playback.
  */
 export function unlockAudioContext() {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') {
-    void ctx.resume();
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+  } catch {
+    /* Audio unavailable — never block UI transitions */
   }
 }
 

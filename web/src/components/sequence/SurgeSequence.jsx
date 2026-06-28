@@ -5,13 +5,6 @@ import InteractionGuide from './InteractionGuide';
 import CinematicVignette from './shared/CinematicVignette';
 import { EASE_IN_OUT } from './shared/motionPresets';
 
-const SHELL_TRANSITION = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.9, ease: EASE_IN_OUT },
-};
-
 /**
  * Base shell — cinematic ground, vignette, HUD, bottom interaction guide.
  */
@@ -34,7 +27,8 @@ export default function SurgeSequence({
   return (
     <motion.div
       className={`relative h-screen w-screen select-none touch-none overflow-hidden ${containerClass ?? ''}`}
-      {...SHELL_TRANSITION}
+      initial={false}
+      animate={{ opacity: 1 }}
       {...restContainer}
       style={{ touchAction: 'none', ...containerStyle }}
     >

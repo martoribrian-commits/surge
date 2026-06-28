@@ -18,6 +18,7 @@ export default function SequenceHud({
   onSelectVariant,
 }) {
   const remaining = Math.max(0, Math.ceil(variant.durationSeconds - elapsedSeconds));
+  const safeProgress = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
 
   return (
     <>
@@ -45,7 +46,7 @@ export default function SequenceHud({
                 Change
               </button>
             )}
-            {onExit && progress < 1 && (
+            {onExit && safeProgress < 1 && (
               <button
                 type="button"
                 onClick={onExit}
@@ -70,7 +71,7 @@ export default function SequenceHud({
             style={{
               background: `linear-gradient(90deg, ${variant.palette.accent}, ${variant.palette.accentCalm ?? variant.palette.accent})`,
             }}
-            animate={{ scaleX: progress }}
+            animate={{ scaleX: safeProgress }}
             initial={false}
             transition={{ duration: 0.15, ease: 'linear' }}
           />

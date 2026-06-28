@@ -87,7 +87,7 @@ export default function CoherenceRippleVisual({
         aria-hidden="true"
       >
         <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(244,240,235,0.06)" strokeWidth="1" />
-        <motion.circle
+        <circle
           cx="100"
           cy="100"
           r="92"
@@ -96,12 +96,14 @@ export default function CoherenceRippleVisual({
           strokeWidth="2"
           strokeLinecap="round"
           strokeDasharray={578}
-          animate={{
-            strokeDashoffset: isEngaged ? 578 * (1 - holdCharge) : 578,
-            opacity: isEngaged ? 0.85 : 0.2,
-          }}
-          transition={{ duration: 0.35 }}
+          strokeDashoffset={
+            isEngaged
+              ? 578 * (1 - Math.min(1, Math.max(0, holdCharge ?? 0)))
+              : 578
+          }
+          opacity={isEngaged ? 0.85 : 0.2}
           transform="rotate(-90 100 100)"
+          style={{ transition: 'stroke-dashoffset 0.35s ease, opacity 0.35s ease' }}
         />
       </svg>
 
