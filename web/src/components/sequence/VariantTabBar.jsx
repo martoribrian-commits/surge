@@ -2,25 +2,27 @@ import { motion } from 'framer-motion';
 import { VARIANT_LIST } from '../../sequences';
 
 /**
- * Segmented 30 · 60 · 90 control — primary variant switch affordance.
+ * Segmented duration control — 30 · 60 · 90 breath · 90 decay.
  */
 export default function VariantTabBar({ activeId, onSelect }) {
   return (
     <div
-      className="relative mx-auto flex w-full max-w-md rounded-sm border border-white/[0.08] bg-white/[0.03] p-1"
+      className="relative mx-auto flex w-full max-w-lg rounded-sm border border-white/[0.08] bg-white/[0.03] p-1"
       role="tablist"
       aria-label="Sequence duration"
     >
       {VARIANT_LIST.map((variant) => {
         const active = variant.id === activeId;
+        const label = variant.tabLabel ?? `${variant.durationSeconds}s`;
         return (
           <button
             key={variant.id}
             type="button"
             role="tab"
             aria-selected={active}
+            aria-label={`${variant.name}, ${variant.durationSeconds} seconds`}
             onClick={() => onSelect(variant.id)}
-            className="relative z-10 flex-1 px-2 py-3 text-center transition-colors"
+            className="relative z-10 flex-1 px-1.5 py-2.5 text-center transition-colors sm:px-2 sm:py-3"
           >
             {active ? (
               <motion.div
@@ -35,10 +37,10 @@ export default function VariantTabBar({ activeId, onSelect }) {
               />
             ) : null}
             <span
-              className="relative font-sans text-[11px] font-bold tabular-nums tracking-[0.08em]"
+              className="relative block font-sans text-[9px] font-bold leading-tight tracking-[0.04em] sm:text-[10px] sm:tracking-[0.06em]"
               style={{ color: active ? '#F4F0EB' : 'rgba(244,240,235,0.4)' }}
             >
-              {variant.durationSeconds}s
+              {label}
             </span>
           </button>
         );

@@ -13,10 +13,12 @@ const HEADLINE_BY_SECONDS = {
   90: 'Ninety seconds\nto reset your nervous system.',
 };
 
-const SUBHEAD_BY_MODE = {
-  auto: 'Double inhale, long exhale — runs automatically once you begin.',
-  bilateral: 'Alternate left and right taps to integrate hemispheres.',
-  hold: 'Press and hold through one guided cycle. Release to pause.',
+const SUBHEAD_BY_VARIANT = {
+  'instant-reset': 'Double inhale, long exhale — runs automatically once you begin.',
+  'orienting-anchor': 'Alternate left and right taps to integrate hemispheres.',
+  'coherence-ripple': 'Resonant 4/6 breath — press and hold. Release to pause.',
+  'vagal-downshift':
+    'The original Surge engine — press and hold as chaos decays to heartbeat. Release to pause.',
 };
 
 /**
@@ -26,7 +28,7 @@ export default function SequenceEntryView() {
   const { variantId, selectVariant, beginRegulation } = useSequenceSession();
   const variant = getVariant(variantId);
   const headline = HEADLINE_BY_SECONDS[variant.durationSeconds] ?? HEADLINE_BY_SECONDS[90];
-  const subhead = SUBHEAD_BY_MODE[variant.interactionMode] ?? SUBHEAD_BY_MODE.hold;
+  const subhead = SUBHEAD_BY_VARIANT[variant.id] ?? SUBHEAD_BY_VARIANT['vagal-downshift'];
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#0A0A0A]">
@@ -99,7 +101,7 @@ export default function SequenceEntryView() {
               I have a token
             </Link>
             <p className="text-center font-sans text-[10px] tracking-[0.08em] text-white/25">
-              Tap 30, 60, or 90 above — preview updates instantly
+              Tap 30, 60, or either 90s option — preview updates instantly
             </p>
           </div>
 

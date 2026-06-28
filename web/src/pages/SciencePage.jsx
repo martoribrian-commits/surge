@@ -22,7 +22,7 @@ const SECTIONS = [
     summary: 'Regulation is measured in seconds, not minutes.',
     body: [
       'Somatic regulation research identifies a narrow window after peak activation when the nervous system can still be guided back to baseline without pharmacological intervention.',
-      'Surge is built for that window — three calibrated sequences at 30, 60, and 90 seconds. One interaction each. No identity required.',
+      'Surge is built for that window — four calibrated sequences at 30, 60, and two ninety-second protocols. One interaction each. No identity required.',
     ],
   },
   {

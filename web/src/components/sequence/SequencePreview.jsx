@@ -40,6 +40,9 @@ export default function SequencePreview({ variantId }) {
           {variantId === 'coherence-ripple' && (
             <CoherencePreview palette={variant.palette} />
           )}
+          {variantId === 'vagal-downshift' && (
+            <VagalDownshiftPreview palette={variant.palette} />
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -131,5 +134,39 @@ function CoherencePreview({ palette }) {
       animate={{ scale: [0.82, 1.12, 0.82] }}
       transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
     />
+  );
+}
+
+function VagalDownshiftPreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          opacity: [0.35, 0.75, 0.4],
+          background: [
+            `radial-gradient(circle at 50% 45%, ${palette.accent}55 0%, transparent 55%)`,
+            `radial-gradient(circle at 50% 50%, ${palette.accentCalm}44 0%, transparent 60%)`,
+            `radial-gradient(circle at 50% 45%, ${palette.accent}55 0%, transparent 55%)`,
+          ],
+        }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute left-1/2 top-1/2 rounded-full border"
+          style={{
+            borderColor: palette.accent,
+            width: `${28 + i * 14}%`,
+            height: `${28 + i * 14}%`,
+            marginLeft: `-${14 + i * 7}%`,
+            marginTop: `-${14 + i * 7}%`,
+          }}
+          animate={{ scale: [0.85, 1.35 + i * 0.1, 0.9], opacity: [0.45, 0, 0.45] }}
+          transition={{ duration: 2.8 + i * 0.3, repeat: Infinity, delay: i * 0.35 }}
+        />
+      ))}
+    </>
   );
 }

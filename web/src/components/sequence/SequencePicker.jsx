@@ -19,7 +19,7 @@ export default function SequencePicker({ activeId, onSelect }) {
     <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
       <div>
         <p className="mb-3 text-center font-sans text-[10px] font-semibold uppercase tracking-[0.24em] text-white/35">
-          Select duration
+          Select sequence
         </p>
         <VariantTabBar activeId={activeId} onSelect={onSelect} />
       </div>

@@ -226,11 +226,14 @@ export function useSequenceHaptics() {
     playAudioCue({ cueId: 'orienting-bilateral-tick', pan, volume: 0.5, loop: false });
   }, []);
 
-  /** 90s hold: subtle engagement lock. */
-  const holdEngage = useCallback(() => {
-    triggerTransientHaptic({ intensity: 0.45, sharpness: 0.5, pattern: [18] });
-    startProfile('coherence-ripple');
-  }, [startProfile]);
+  /** 90s hold: subtle engagement lock — profile keyed to variant. */
+  const holdEngage = useCallback(
+    (profileId = 'coherence-ripple') => {
+      triggerTransientHaptic({ intensity: 0.45, sharpness: 0.5, pattern: [18] });
+      startProfile(profileId);
+    },
+    [startProfile],
+  );
 
   const holdRelease = useCallback(() => {
     triggerTransientHaptic({ intensity: 0.25, sharpness: 0.3, pattern: [12] });

@@ -1,9 +1,10 @@
 import { useCallback, useRef } from 'react';
 import SurgeSequence from './SurgeSequence';
-import CoherenceRippleVisual from './CoherenceRippleVisual';
+import VagalDownshiftVisual from './VagalDownshiftVisual';
 import { InteractionMode } from '../../sequences';
+import { curveAtElapsed, phaseAt } from '../../lib/surgeCurve';
 
-export default function CoherenceRippleSequence({
+export default function VagalDownshiftSequence({
   variant,
   clock,
   haptics,
@@ -14,6 +15,8 @@ export default function CoherenceRippleSequence({
   onChangeSequence,
 }) {
   const pointerDownRef = useRef(false);
+  const state = curveAtElapsed(clock.elapsedSeconds);
+  const phase = phaseAt(state);
 
   const handlePointerDown = useCallback(
     (e) => {
@@ -23,7 +26,7 @@ export default function CoherenceRippleSequence({
       onEngage?.();
       onStarted?.();
     },
-    [haptics, onEngage, onStarted],
+    [haptics, variant.id, onEngage, onStarted],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -33,23 +36,14 @@ export default function CoherenceRippleSequence({
     onRelease?.();
   }, [haptics, onRelease]);
 
-  const breathCycle = variant.breathCycle ?? { inhale: 4, exhale: 6 };
-  const cycleT = clock.elapsedSeconds % (breathCycle.inhale + breathCycle.exhale);
-  const breathPhase =
-    cycleT < breathCycle.inhale ? 'In' : cycleT < breathCycle.inhale + 0.5 ? 'Hold' : 'Out';
-
-  const phaseLabel = clock.isPaused
-    ? 'Paused'
-    : clock.progress > 0.65
-      ? 'Vagal restitution'
-      : 'Coherence building';
+  const phaseLabel = clock.isPaused ? 'Paused' : phase.label;
 
   const hint = clock.isComplete
     ? undefined
     : clock.isPaused
       ? 'Hold to resume'
       : isEngaged
-        ? breathPhase
+        ? phase.hint
         : 'Press and hold';
 
   return (
@@ -70,16 +64,15 @@ export default function CoherenceRippleSequence({
         style: { touchAction: 'none' },
       }}
     >
-      <CoherenceRippleVisual
+      <VagalDownshiftVisual
         elapsedSeconds={clock.elapsedSeconds}
+        progress={clock.progress}
         palette={variant.palette}
-        breathCycle={breathCycle}
         isEngaged={isEngaged}
         isPaused={clock.isPaused}
-        holdCharge={isEngaged ? 1 : clock.progress}
       />
     </SurgeSequence>
   );
 }
 
-CoherenceRippleSequence.interactionMode = InteractionMode.HOLD;
+VagalDownshiftSequence.interactionMode = InteractionMode.HOLD;
