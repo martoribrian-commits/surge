@@ -13,6 +13,7 @@ export const SurgePhase = {
 };
 
 export const SurgeEvent = {
+  SELECT_VARIANT: 'SELECT_VARIANT',
   ENGAGE: 'ENGAGE',
   RELEASE: 'RELEASE',
   RESUME: 'RESUME',
@@ -27,7 +28,8 @@ export function createInitialSessionState() {
     sessionId: null,
     startedAt: null,
     completedAt: null,
-    durationSeconds: 0,
+    durationSeconds: 90,
+    variantId: null,
     /** Reserved for future Supabase opt-in sync */
     syncPreferences: {
       cloudEnabled: false,
@@ -41,14 +43,27 @@ export function createInitialSessionState() {
  */
 export function surgeSessionReducer(state, event) {
   switch (event.type) {
-    case SurgeEvent.ENGAGE:
+    case SurgeEvent.SELECT_VARIANT:
       if (state.phase !== SurgePhase.ENTRY) return state;
       return {
         ...state,
-        phase: SurgePhase.REGULATION,
-        sessionId: event.payload?.sessionId ?? crypto.randomUUID(),
-        startedAt: event.payload?.startedAt ?? Date.now(),
+        variantId: event.payload?.variantId ?? state.variantId,
+        durationSeconds: event.payload?.durationSeconds ?? state.durationSeconds,
       };
+
+    case SurgeEvent.ENGAGE:
+      if (state.phase !== SurgePhase.ENTRY && state.phase !== SurgePhase.PAUSED) return state;
+      if (state.phase === SurgePhase.ENTRY) {
+        return {
+          ...state,
+          phase: SurgePhase.REGULATION,
+          sessionId: event.payload?.sessionId ?? crypto.randomUUID(),
+          startedAt: event.payload?.startedAt ?? Date.now(),
+          variantId: event.payload?.variantId ?? state.variantId,
+          durationSeconds: event.payload?.durationSeconds ?? state.durationSeconds,
+        };
+      }
+      return { ...state, phase: SurgePhase.REGULATION };
 
     case SurgeEvent.RELEASE:
       if (state.phase !== SurgePhase.REGULATION) return state;
