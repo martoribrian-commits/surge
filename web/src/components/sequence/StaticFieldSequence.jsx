@@ -3,7 +3,7 @@ import SurgeSequence from './SurgeSequence';
 import StaticFieldVisual from './StaticFieldVisual';
 import { InteractionMode } from '../../sequences';
 import { curveAtElapsed, phaseAt } from '../../lib/surgeCurve';
-import { useStaticFieldSensory } from '../../hooks/useStaticFieldSensory';
+import { useStaticFieldHaptics } from '../../hooks/useStaticFieldHaptics';
 
 /**
  * Original 90s Surge — procedural pink noise, static haptics, decay curve hold.
@@ -21,7 +21,7 @@ export default function StaticFieldSequence({
   const state = curveAtElapsed(clock.elapsedSeconds);
   const phase = phaseAt(state);
 
-  useStaticFieldSensory({
+  useStaticFieldHaptics({
     elapsedMs: clock.elapsedMs,
     isEngaged,
     isComplete: clock.isComplete,
