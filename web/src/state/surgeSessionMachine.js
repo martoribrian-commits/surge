@@ -10,6 +10,7 @@ export const SurgePhase = {
   PAUSED: 'paused',
   COMPLETING: 'completing',
   AFTERMATH: 'aftermath',
+  DECOMPRESSION: 'decompression',
 };
 
 export const SurgeEvent = {
@@ -19,6 +20,8 @@ export const SurgeEvent = {
   RESUME: 'RESUME',
   CYCLE_COMPLETE: 'CYCLE_COMPLETE',
   ENTER_AFTERMATH: 'ENTER_AFTERMATH',
+  ENTER_DECOMPRESSION: 'ENTER_DECOMPRESSION',
+  EXIT_DECOMPRESSION: 'EXIT_DECOMPRESSION',
   RESET: 'RESET',
 };
 
@@ -86,6 +89,14 @@ export function surgeSessionReducer(state, event) {
 
     case SurgeEvent.ENTER_AFTERMATH:
       if (state.phase !== SurgePhase.COMPLETING) return state;
+      return { ...state, phase: SurgePhase.AFTERMATH };
+
+    case SurgeEvent.ENTER_DECOMPRESSION:
+      if (state.phase !== SurgePhase.AFTERMATH) return state;
+      return { ...state, phase: SurgePhase.DECOMPRESSION };
+
+    case SurgeEvent.EXIT_DECOMPRESSION:
+      if (state.phase !== SurgePhase.DECOMPRESSION) return state;
       return { ...state, phase: SurgePhase.AFTERMATH };
 
     case SurgeEvent.RESET:

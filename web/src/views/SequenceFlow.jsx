@@ -5,6 +5,7 @@ import { resolveVariantId } from '../sequences';
 import SequenceEngine from '../engine/SequenceEngine';
 import SequenceEntryView from './SequenceEntryView';
 import AftermathView from './AftermathView';
+import DecompressionView from './DecompressionView';
 
 const PAGE_TRANSITION = {
   initial: { opacity: 0 },
@@ -22,10 +23,15 @@ function SequenceFlowRouter() {
     phase === SurgePhase.PAUSED ||
     phase === SurgePhase.COMPLETING;
   const showAftermath = phase === SurgePhase.AFTERMATH;
+  const showDecompression = phase === SurgePhase.DECOMPRESSION;
 
   return (
     <AnimatePresence mode="wait">
-      {showAftermath ? (
+      {showDecompression ? (
+        <motion.div key="decompression" className="h-screen w-screen" {...PAGE_TRANSITION}>
+          <DecompressionView />
+        </motion.div>
+      ) : showAftermath ? (
         <motion.div key="aftermath" className="min-h-screen" {...PAGE_TRANSITION}>
           <AftermathView />
         </motion.div>
