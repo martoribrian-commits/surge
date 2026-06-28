@@ -6,6 +6,7 @@ import SurgeInterface from './components/SurgeInterface';
 import CraneChat from './components/CraneChat';
 import ProviderPortal from './components/ProviderPortal';
 import TelemetryFlush from './components/TelemetryFlush';
+import { PrivacyPage, TermsPage, SupportPage } from './pages';
 import { resolveVariantId } from './sequences';
 
 function EngineRoute() {
@@ -19,6 +20,9 @@ function EngineRoute() {
  *   /engine/:id    → deep-link a variant (instant-reset | orienting-anchor | coherence-ripple)
  *   /crane         → AI guide (Crane; /heron redirects here)
  *   /portal        → provider dashboard
+ *   /privacy       → privacy policy
+ *   /terms         → terms and medical disclaimer
+ *   /support       → support portal
  */
 export default function App() {
   return (
@@ -29,6 +33,9 @@ export default function App() {
         <Route path="/engine" element={<Navigate to="/" replace />} />
         <Route path="/engine/:variantId" element={<EngineRoute />} />
         <Route path="/about" element={<LandingPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/support" element={<SupportPage />} />
         <Route path="/surge" element={<Navigate to="/" replace />} />
         <Route path="/crane" element={<CraneChat />} />
         <Route path="/heron" element={<Navigate to="/crane" replace />} />
