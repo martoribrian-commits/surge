@@ -98,8 +98,9 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     if (variant.interactionMode !== InteractionMode.HOLD) return;
     if (state.phase !== SurgePhase.REGULATION) return;
     setIsEngaged(false);
+    haptics.killAll();
     dispatch({ type: SurgeEvent.RELEASE });
-  }, [state.phase, variant.interactionMode]);
+  }, [state.phase, variant.interactionMode, haptics]);
 
   const reset = useCallback(() => {
     if (completionTimerRef.current) {
@@ -108,9 +109,10 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     }
     sessionStartRef.current = null;
     setIsEngaged(false);
+    haptics.killAll();
     clock.reset();
     dispatch({ type: SurgeEvent.RESET });
-  }, [clock]);
+  }, [clock, haptics]);
 
   const enterDecompression = useCallback((brainDumpText) => {
     brainDumpSeedRef.current = brainDumpText?.trim() || null;

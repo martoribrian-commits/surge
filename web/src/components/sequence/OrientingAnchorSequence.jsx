@@ -7,6 +7,7 @@ export default function OrientingAnchorSequence({
   variant,
   clock,
   haptics,
+  audio,
   onStarted,
   onChangeSequence,
 }) {
@@ -18,12 +19,13 @@ export default function OrientingAnchorSequence({
       const accepted = clock.registerBilateralTap(side);
       if (!accepted) return;
       onStarted?.();
-      haptics.bilateralTap();
+      haptics.bilateralTap(side);
+      audio?.playBilateralTick?.(side === 'right' ? 0.85 : -0.85);
       setActiveSide(side);
       setTapFlash(side);
       window.setTimeout(() => setTapFlash(null), 650);
     },
-    [clock, haptics, onStarted],
+    [clock, haptics, audio, onStarted],
   );
 
   const phaseLabel = clock.progress < 0.5 ? 'Sensory orienting' : 'Hemisphere integration';

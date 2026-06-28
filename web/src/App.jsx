@@ -6,6 +6,7 @@ import SurgeInterface from './components/SurgeInterface';
 import CraneChat from './components/CraneChat';
 import ProviderPortal from './components/ProviderPortal';
 import TelemetryFlush from './components/TelemetryFlush';
+import DevPerformanceOverlay from './components/dev/DevPerformanceOverlay';
 import { PrivacyPage, TermsPage, SupportPage } from './pages';
 import { resolveVariantId } from './sequences';
 
@@ -28,6 +29,7 @@ export default function App() {
   return (
     <>
       <TelemetryFlush />
+      <DevPerformanceOverlay />
       <Routes>
         <Route path="/" element={<SequenceFlow />} />
         <Route path="/engine" element={<Navigate to="/" replace />} />

@@ -16,10 +16,9 @@ export default function InstantResetSequence({
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    haptics.physiologicalSighPulse();
     clock.start();
     onStarted?.();
-  }, [clock, haptics, onStarted]);
+  }, [clock, onStarted]);
 
   const handleTransition = useCallback(() => {
     if (transitionFiredRef.current) return;
