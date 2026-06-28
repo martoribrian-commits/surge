@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useSurgeSession } from '../context/SurgeSessionProvider';
+import { useSequenceSession } from '../context/SequenceSessionProvider';
 import RecoveryGrid from '../components/aftermath/RecoveryGrid';
 import EphemeralInput from '../components/aftermath/EphemeralInput';
 import CraneHandoff from '../components/aftermath/CraneHandoff';
@@ -9,7 +9,7 @@ import CraneHandoff from '../components/aftermath/CraneHandoff';
  * Post-surge aftermath — sparse recovery grid, ephemeral input, Crane handoff.
  */
 export default function AftermathView() {
-  const { sessionId, durationSeconds, reset } = useSurgeSession();
+  const { sessionId, durationSeconds, reset } = useSequenceSession();
   const [brainDumpText, setBrainDumpText] = useState('');
 
   return (

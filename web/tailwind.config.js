@@ -5,6 +5,7 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          'Hanken Grotesk',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
@@ -12,6 +13,15 @@ export default {
           'Roboto',
           'sans-serif',
         ],
+      },
+      colors: {
+        surge: {
+          black: '#0A0A0A',
+          bone: '#F4F0EB',
+          clay: '#B6502E',
+          pulse: '#C45A32',
+          static: '#6B6B6B',
+        },
       },
     },
   },
