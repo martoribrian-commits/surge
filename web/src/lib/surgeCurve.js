@@ -12,6 +12,9 @@ function smoothstep(edge0, edge1, x) {
 }
 
 export const VAGAL_DURATION_MS = 90 * 1000;
+export const SUB_BASS_HZ = 55;
+/** ~5 breaths/min */
+export const BREATH_HZ = 5 / 60;
 
 export const VAGAL_PHASES = {
   chaos: {

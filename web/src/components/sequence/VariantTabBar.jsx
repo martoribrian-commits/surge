@@ -7,7 +7,7 @@ import { VARIANT_LIST } from '../../sequences';
 export default function VariantTabBar({ activeId, onSelect }) {
   return (
     <div
-      className="relative mx-auto flex w-full max-w-lg rounded-sm border border-white/[0.08] bg-white/[0.03] p-1"
+      className="relative mx-auto flex w-full max-w-2xl flex-wrap rounded-sm border border-white/[0.08] bg-white/[0.03] p-1"
       role="tablist"
       aria-label="Sequence duration"
     >
@@ -22,7 +22,7 @@ export default function VariantTabBar({ activeId, onSelect }) {
             aria-selected={active}
             aria-label={`${variant.name}, ${variant.durationSeconds} seconds`}
             onClick={() => onSelect(variant.id)}
-            className="relative z-10 flex-1 px-1.5 py-2.5 text-center transition-colors sm:px-2 sm:py-3"
+            className="relative z-10 flex-[1_1_18%] min-w-[3.25rem] px-1 py-2.5 text-center transition-colors sm:px-1.5 sm:py-3"
           >
             {active ? (
               <motion.div

@@ -11,4 +11,6 @@ export { default as OrientingAnchorSequence } from './OrientingAnchorSequence';
 export { default as CoherenceRippleSequence } from './CoherenceRippleSequence';
 export { default as VagalDownshiftSequence } from './VagalDownshiftSequence';
 export { default as VagalDownshiftVisual } from './VagalDownshiftVisual';
+export { default as StaticFieldSequence } from './StaticFieldSequence';
+export { default as StaticFieldVisual } from './StaticFieldVisual';
 export { default as SequencePicker } from './SequencePicker';

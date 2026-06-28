@@ -9,7 +9,7 @@ export const InteractionMode = {
   HOLD: 'hold',
 };
 
-/** @typedef {'instant-reset' | 'orienting-anchor' | 'coherence-ripple' | 'vagal-downshift'} SequenceVariantId */
+/** @typedef {'instant-reset' | 'orienting-anchor' | 'coherence-ripple' | 'vagal-downshift' | 'static-field'} SequenceVariantId */
 
 /**
  * @typedef {Object} SequencePalette
@@ -95,10 +95,10 @@ export const SEQUENCE_VARIANTS = {
   'vagal-downshift': {
     id: 'vagal-downshift',
     name: 'Vagal Downshift',
-    tagline: 'Classic decay curve',
+    tagline: 'Visual decay curve',
     tabLabel: '90 · decay',
     science:
-      'Press-and-hold dead man\'s switch. Visual, haptic, and audio intensity decay on a fixed curve from peak chaos to grounded heartbeat over ninety seconds.',
+      'Press-and-hold with cinematic fog and expanding rings. Visual and haptic intensity decay on a fixed curve from peak chaos to grounded heartbeat.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
     palette: {
@@ -107,6 +107,24 @@ export const SEQUENCE_VARIANTS = {
       accent: '#B6502E',
       accentCalm: '#C45A32',
       muted: 'rgba(244,240,235,0.45)',
+      copy: '#f4f0eb',
+    },
+  },
+  'static-field': {
+    id: 'static-field',
+    name: 'Static Field',
+    tagline: 'Original sonic engine',
+    tabLabel: '90 · static',
+    science:
+      'Procedural pink noise carve-down with sub-bass heartbeat lock. Chaotic static at peak — the original acoustic field from the first Surge site.',
+    durationSeconds: 90,
+    interactionMode: InteractionMode.HOLD,
+    palette: {
+      background: '#0A0A0A',
+      backgroundEnd: '#121212',
+      accent: '#F4F0EB',
+      accentCalm: '#B6502E',
+      muted: 'rgba(244,240,235,0.4)',
       copy: '#f4f0eb',
     },
   },
