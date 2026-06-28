@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import AnimatedGround from './shared/AnimatedGround';
+import { vagalAuroraGradient } from './shared/groundStyles';
 import { curveAtElapsed } from '../../lib/surgeCurve';
 
 /**
@@ -21,17 +23,13 @@ export default function VagalDownshiftVisual({
 
   return (
     <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-      {/* Clay / ember aurora — original landing palette */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          background: [
-            `radial-gradient(ellipse 90% 70% at 30% 35%, ${palette.accent}44 0%, transparent 52%), radial-gradient(ellipse 80% 60% at 72% 62%, ${palette.accentCalm}30 0%, transparent 50%), ${palette.background}`,
-            `radial-gradient(ellipse 85% 65% at 68% 28%, ${palette.accentCalm}36 0%, transparent 48%), radial-gradient(ellipse 75% 55% at 32% 72%, ${palette.accent}38 0%, transparent 50%), ${palette.backgroundEnd ?? palette.background}`,
-            `radial-gradient(ellipse 90% 70% at 30% 35%, ${palette.accent}44 0%, transparent 52%), radial-gradient(ellipse 80% 60% at 72% 62%, ${palette.accentCalm}30 0%, transparent 50%), ${palette.background}`,
-          ],
-        }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+      <AnimatedGround
+        backgrounds={[
+          vagalAuroraGradient(palette, 0),
+          vagalAuroraGradient(palette, 1),
+          vagalAuroraGradient(palette, 0),
+        ]}
+        duration={18}
       />
 
       {/* Cinematic fog beacon — intensity linked to decay curve */}

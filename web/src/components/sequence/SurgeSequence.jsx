@@ -3,6 +3,7 @@ import FilmGrainOverlay from '../FilmGrainOverlay';
 import SequenceHud from './SequenceHud';
 import InteractionGuide from './InteractionGuide';
 import CinematicVignette from './shared/CinematicVignette';
+import { shellGradient } from './shared/groundStyles';
 import { EASE_IN_OUT } from './shared/motionPresets';
 
 /**
@@ -23,6 +24,7 @@ export default function SurgeSequence({
 }) {
   const { palette } = variant;
   const { className: containerClass, style: containerStyle, ...restContainer } = containerProps;
+  const ground = shellGradient(palette);
 
   return (
     <motion.div
@@ -30,14 +32,15 @@ export default function SurgeSequence({
       initial={false}
       animate={{ opacity: 1 }}
       {...restContainer}
-      style={{ touchAction: 'none', ...containerStyle }}
+      style={{ touchAction: 'none', background: palette.background, ...containerStyle }}
     >
+      <div className="absolute inset-0" style={{ background: ground }} aria-hidden />
+
       <motion.div
         className="absolute inset-0"
-        animate={{
-          background: `linear-gradient(165deg, ${palette.background} 0%, ${palette.backgroundEnd ?? palette.background} 55%, ${palette.background} 100%)`,
-        }}
-        transition={{ duration: 2, ease: EASE_IN_OUT }}
+        style={{ background: ground }}
+        animate={{ opacity: [0.92, 1, 0.92] }}
+        transition={{ duration: 8, repeat: Infinity, ease: EASE_IN_OUT }}
       />
 
       <div className="absolute inset-0">{children}</div>

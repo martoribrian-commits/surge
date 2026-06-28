@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { getVariant } from '../../sequences';
+import { previewGradient } from './shared/groundStyles';
 import { EASE_IN_OUT } from './shared/motionPresets';
 
 /**
@@ -18,7 +19,7 @@ export default function SequencePreview({ variantId }) {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.6, ease: EASE_IN_OUT }}
         style={{
-          background: `linear-gradient(155deg, ${variant.palette.background} 0%, ${variant.palette.backgroundEnd ?? variant.palette.background} 100%)`,
+          background: previewGradient(variant.palette),
         }}
       />
 

@@ -210,7 +210,24 @@ export default function CraneChat() {
               <p className="font-sans text-sm tracking-[0.2em] text-white/20">Establishing contact.</p>
             )}
             {status === 'error' && (
-              <p className="font-sans text-sm tracking-[0.2em] text-white/30">{error}</p>
+              <div className="rounded border border-white/10 bg-white/[0.04] px-6 py-8 text-center">
+                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-[#B6502E]">
+                  Crane unavailable
+                </p>
+                <p className="mt-4 font-sans text-sm leading-relaxed tracking-[0.06em] text-white/55">
+                  {error}
+                </p>
+                <p className="mt-3 font-sans text-xs leading-relaxed text-white/35">
+                  Complete a Surge cycle first, or return when the inference service is online.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="mt-6 border border-white/15 px-5 py-3 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
+                >
+                  Back to sequences
+                </button>
+              </div>
             )}
             {messages.map((message, index) => (
               <StreamMessage

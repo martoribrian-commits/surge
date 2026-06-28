@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import AnimatedGround from './shared/AnimatedGround';
+import { coherenceAuroraGradient } from './shared/groundStyles';
 
 /**
  * 90s Coherence Ripple — aurora depth, breath-linked ripples, hold charge ring.
@@ -23,17 +25,13 @@ export default function CoherenceRippleVisual({
 
   return (
     <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-      {/* Deep ocean / forest aurora */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          background: [
-            `radial-gradient(ellipse 100% 80% at 30% 20%, ${palette.accent}44 0%, transparent 50%), radial-gradient(ellipse 90% 70% at 70% 80%, ${palette.accentCalm}38 0%, transparent 55%), ${palette.background}`,
-            `radial-gradient(ellipse 90% 75% at 65% 25%, ${palette.accentCalm}40 0%, transparent 52%), radial-gradient(ellipse 85% 65% at 35% 75%, ${palette.accent}36 0%, transparent 50%), ${palette.backgroundEnd ?? palette.background}`,
-            `radial-gradient(ellipse 100% 80% at 30% 20%, ${palette.accent}44 0%, transparent 50%), radial-gradient(ellipse 90% 70% at 70% 80%, ${palette.accentCalm}38 0%, transparent 55%), ${palette.background}`,
-          ],
-        }}
-        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+      <AnimatedGround
+        backgrounds={[
+          coherenceAuroraGradient(palette, 0),
+          coherenceAuroraGradient(palette, 1),
+          coherenceAuroraGradient(palette, 0),
+        ]}
+        duration={22}
       />
 
       {/* Floating motes when engaged */}

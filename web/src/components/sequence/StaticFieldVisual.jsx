@@ -27,10 +27,12 @@ export default function StaticFieldVisual({
       />
       <motion.div
         className="absolute inset-0"
-        animate={{
+        style={{
           opacity: 0.35 + heartbeat * 0.45,
           background: `radial-gradient(ellipse 80% 70% at 50% 45%, ${palette.accentCalm ?? palette.accent}55 0%, transparent 58%)`,
         }}
+        animate={{ opacity: 0.35 + heartbeat * 0.45 }}
+        transition={{ duration: 0.2 }}
       />
 
       {/* Procedural static layer — opacity tied to chaos */}

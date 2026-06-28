@@ -14,14 +14,6 @@ const PAGE_TRANSITION = {
   transition: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] },
 };
 
-/** Engine must appear immediately — stacked fades read as a broken blank screen. */
-const ENGINE_TRANSITION = {
-  initial: { opacity: 1 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] },
-};
-
 function SequenceFlowRouter() {
   const { phase } = useSequenceSession();
 
@@ -34,9 +26,9 @@ function SequenceFlowRouter() {
   const showDecompression = phase === SurgePhase.DECOMPRESSION;
 
   return (
-    <AnimatePresence mode="sync">
+    <AnimatePresence mode="popLayout">
       {showDecompression ? (
-        <motion.div key="decompression" className="h-screen w-screen" {...PAGE_TRANSITION}>
+        <motion.div key="decompression" className="fixed inset-0 z-40 h-screen w-screen" {...PAGE_TRANSITION}>
           <DecompressionView />
         </motion.div>
       ) : showAftermath ? (
@@ -44,9 +36,9 @@ function SequenceFlowRouter() {
           <AftermathView />
         </motion.div>
       ) : showEngine ? (
-        <motion.div key="engine" className="h-screen w-screen" {...ENGINE_TRANSITION}>
+        <div key="engine" className="fixed inset-0 z-40 h-screen w-screen">
           <SequenceEngine />
-        </motion.div>
+        </div>
       ) : showEntry ? (
         <motion.div key="entry" className="min-h-screen" {...PAGE_TRANSITION}>
           <SequenceEntryView />

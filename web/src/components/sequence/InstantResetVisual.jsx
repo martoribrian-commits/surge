@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { shellGradient } from './shared/groundStyles';
 import { SNAP, EASE_OUT } from './shared/motionPresets';
 
 const SHARDS = [
@@ -45,7 +46,10 @@ export default function InstantResetVisual({
   );
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+    <div
+      className="absolute inset-0 flex items-center justify-center overflow-hidden"
+      style={{ background: shellGradient(palette) }}
+    >
       {/* Acute chromatic wash */}
       {!isCalm && (
         <motion.div
