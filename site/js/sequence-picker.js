@@ -1,5 +1,5 @@
 /**
- * Landing sequence picker — 30 / 60 / 90 breath / 90 decay selector.
+ * Landing sequence picker — 30 / 60 / 90 breath / decay / static.
  */
 (function () {
   var VARIANTS = {
@@ -34,14 +34,23 @@
       tabLabel: '90 · decay',
       seconds: 90,
       name: 'Vagal Downshift',
-      tagline: 'Classic decay curve',
+      tagline: 'Visual decay curve',
       href: '/engine/vagal-downshift',
       headline: 'Ninety seconds\nto reset your nervous system.',
-      sub: 'The original Surge engine — press and hold as chaos decays to heartbeat.',
+      sub: 'Visual decay curve — press and hold as chaos fades to heartbeat.',
+    },
+    'static-field': {
+      tabLabel: '90 · static',
+      seconds: 90,
+      name: 'Static Field',
+      tagline: 'Original sonic engine',
+      href: '/engine/static-field',
+      headline: 'Ninety seconds\nto reset your nervous system.',
+      sub: 'Pink noise static and sub-bass lock — the original Surge acoustic field.',
     },
   };
 
-  var DEFAULT_ID = 'vagal-downshift';
+  var DEFAULT_ID = 'static-field';
   var activeId = DEFAULT_ID;
 
   var tabsEl = document.getElementById('sequence-tabs');

@@ -2315,8 +2315,8 @@ body.aftermath-active {
 }
 
 .sequence-tab {
-  flex: 1 1 calc(25% - 0.2rem);
-  min-width: 3.5rem;
+  flex: 1 1 calc(20% - 0.2rem);
+  min-width: 3.25rem;
   border: 0;
   background: transparent;
   color: rgba(244, 240, 235, 0.4);

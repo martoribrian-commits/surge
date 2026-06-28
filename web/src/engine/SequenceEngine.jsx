@@ -9,6 +9,7 @@ import {
   OrientingAnchorSequence,
   CoherenceRippleSequence,
   VagalDownshiftSequence,
+  StaticFieldSequence,
 } from '../components/sequence';
 
 const SEQUENCE_BY_ID = {
@@ -16,6 +17,7 @@ const SEQUENCE_BY_ID = {
   'orienting-anchor': OrientingAnchorSequence,
   'coherence-ripple': CoherenceRippleSequence,
   'vagal-downshift': VagalDownshiftSequence,
+  'static-field': StaticFieldSequence,
 };
 
 /**

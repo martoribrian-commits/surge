@@ -18,7 +18,9 @@ const SUBHEAD_BY_VARIANT = {
   'orienting-anchor': 'Alternate left and right taps to integrate hemispheres.',
   'coherence-ripple': 'Resonant 4/6 breath — press and hold. Release to pause.',
   'vagal-downshift':
-    'The original Surge engine — press and hold as chaos decays to heartbeat. Release to pause.',
+    'Visual decay curve — press and hold as chaos fades to heartbeat. Release to pause.',
+  'static-field':
+    'The original Surge sonic engine — pink noise static, sub-bass lock. Press and hold. Release to pause.',
 };
 
 /**
@@ -101,7 +103,7 @@ export default function SequenceEntryView() {
               I have a token
             </Link>
             <p className="text-center font-sans text-[10px] tracking-[0.08em] text-white/25">
-              Tap 30, 60, or either 90s option — preview updates instantly
+              Tap 30, 60, or any 90s option — preview updates instantly
             </p>
           </div>
 

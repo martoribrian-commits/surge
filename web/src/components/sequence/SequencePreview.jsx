@@ -43,6 +43,9 @@ export default function SequencePreview({ variantId }) {
           {variantId === 'vagal-downshift' && (
             <VagalDownshiftPreview palette={variant.palette} />
           )}
+          {variantId === 'static-field' && (
+            <StaticFieldPreview palette={variant.palette} />
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -167,6 +170,39 @@ function VagalDownshiftPreview({ palette }) {
           transition={{ duration: 2.8 + i * 0.3, repeat: Infinity, delay: i * 0.35 }}
         />
       ))}
+    </>
+  );
+}
+
+function StaticFieldPreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-0 mix-blend-screen"
+        style={{
+          backgroundImage:
+            'repeating-radial-gradient(circle at 20% 30%, transparent 0, rgba(255,255,255,0.08) 1px, transparent 2px)',
+          backgroundSize: '3px 3px',
+        }}
+        animate={{ opacity: [0.25, 0.55, 0.3] }}
+        transition={{ duration: 0.25, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background: [
+            `radial-gradient(circle at 50% 50%, ${palette.accentCalm}66 0%, transparent 50%)`,
+            `radial-gradient(circle at 50% 50%, rgba(244,240,235,0.2) 0%, transparent 55%)`,
+            `radial-gradient(circle at 50% 50%, ${palette.accentCalm}66 0%, transparent 50%)`,
+          ],
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-[38%] w-[38%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30"
+        animate={{ scale: [0.9, 1.15, 0.92], opacity: [0.5, 0.9, 0.5] }}
+        transition={{ duration: 1.8, repeat: Infinity }}
+      />
     </>
   );
 }
