@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
 import { SequencePicker, SequencePreview } from '../components/sequence';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
@@ -70,6 +71,24 @@ export default function SequenceEntryView() {
           <p className="mt-4 text-center font-sans text-[10px] tracking-[0.08em] text-white/30">
             Swipe durations anytime before you start
           </p>
+          <nav
+            className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+            aria-label="Legal and support"
+          >
+            {[
+              { href: '/privacy', label: 'Privacy' },
+              { href: '/terms', label: 'Terms' },
+              { href: '/support', label: 'Support' },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="font-sans text-[10px] uppercase tracking-[0.18em] text-white/25 transition-colors hover:text-[#B6502E]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </motion.div>
     </div>

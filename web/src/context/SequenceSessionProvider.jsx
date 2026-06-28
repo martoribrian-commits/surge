@@ -53,6 +53,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
   const [isEngaged, setIsEngaged] = useState(false);
   const sessionStartRef = useRef(null);
   const completionTimerRef = useRef(null);
+  const brainDumpSeedRef = useRef(null);
   const haptics = useSequenceHaptics();
 
   const clock = useSequenceClock({
@@ -97,8 +98,9 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     if (variant.interactionMode !== InteractionMode.HOLD) return;
     if (state.phase !== SurgePhase.REGULATION) return;
     setIsEngaged(false);
+    haptics.killAll();
     dispatch({ type: SurgeEvent.RELEASE });
-  }, [state.phase, variant.interactionMode]);
+  }, [state.phase, variant.interactionMode, haptics]);
 
   const reset = useCallback(() => {
     if (completionTimerRef.current) {
@@ -107,9 +109,25 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     }
     sessionStartRef.current = null;
     setIsEngaged(false);
+    haptics.killAll();
     clock.reset();
     dispatch({ type: SurgeEvent.RESET });
-  }, [clock]);
+  }, [clock, haptics]);
+
+  const enterDecompression = useCallback((brainDumpText) => {
+    brainDumpSeedRef.current = brainDumpText?.trim() || null;
+    dispatch({ type: SurgeEvent.ENTER_DECOMPRESSION });
+  }, []);
+
+  const exitDecompression = useCallback(() => {
+    dispatch({ type: SurgeEvent.EXIT_DECOMPRESSION });
+  }, []);
+
+  const consumeBrainDumpSeed = useCallback(() => {
+    const seed = brainDumpSeedRef.current;
+    brainDumpSeedRef.current = null;
+    return seed;
+  }, []);
 
   // Sequence completion → telemetry → aftermath bridge
   useEffect(() => {
@@ -164,6 +182,9 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
       engageHold,
       releaseHold,
       reset,
+      enterDecompression,
+      exitDecompression,
+      consumeBrainDumpSeed,
     }),
     [
       state,
@@ -176,6 +197,9 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
       engageHold,
       releaseHold,
       reset,
+      enterDecompression,
+      exitDecompression,
+      consumeBrainDumpSeed,
     ],
   );
 
