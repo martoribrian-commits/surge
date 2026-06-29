@@ -384,7 +384,7 @@ export class CoherenceRippleAudioEngine {
   }
 }
 
-/** 90s Vagal Downshift — softer decay sonic bed (fog drone, no harsh static). */
+/** 90s Vagal Downshift — clinical warm drone + breath tone. No harsh static. */
 export class VagalDownshiftAudioEngine {
   constructor() {
     this.running = false;
@@ -403,39 +403,70 @@ export class VagalDownshiftAudioEngine {
 
     this.stop();
     const { master, panner } = createMasterChain(ctx);
-    fadeInMaster(master, ctx, 0.95, 0.55);
+    fadeInMaster(master, ctx, 0.88, 0.65);
 
-    const drone = ctx.createOscillator();
-    drone.type = 'sine';
-    drone.frequency.value = 55;
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = 55;
 
-    const droneGain = ctx.createGain();
-    droneGain.gain.value = 0.05;
+    const subGain = ctx.createGain();
+    subGain.gain.value = 0.06;
 
-    const noise = ctx.createBufferSource();
-    noise.buffer = makePinkNoiseBuffer(ctx);
-    noise.loop = true;
+    const harmonic = ctx.createOscillator();
+    harmonic.type = 'sine';
+    harmonic.frequency.value = 110;
 
-    const noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = 'lowpass';
-    noiseFilter.frequency.value = 6000;
+    const harmonicGain = ctx.createGain();
+    harmonicGain.gain.value = 0.02;
 
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.value = 0.12;
+    const breathOsc = ctx.createOscillator();
+    breathOsc.type = 'triangle';
+    breathOsc.frequency.value = 174;
 
-    drone.connect(droneGain).connect(panner);
-    noise.connect(noiseFilter).connect(noiseGain).connect(panner);
+    const breathGain = ctx.createGain();
+    breathGain.gain.value = 0;
 
-    drone.start();
-    noise.start();
+    // Very soft filtered bed — warmth without static harshness
+    const bed = ctx.createBufferSource();
+    bed.buffer = makePinkNoiseBuffer(ctx);
+    bed.loop = true;
+    const bedFilter = ctx.createBiquadFilter();
+    bedFilter.type = 'bandpass';
+    bedFilter.frequency.value = 280;
+    bedFilter.Q.value = 0.8;
+    const bedGain = ctx.createGain();
+    bedGain.gain.value = 0.04;
 
-    this.nodes = { ctx, master, panner, drone, droneGain, noise, noiseFilter, noiseGain };
+    sub.connect(subGain).connect(panner);
+    harmonic.connect(harmonicGain).connect(panner);
+    breathOsc.connect(breathGain).connect(panner);
+    bed.connect(bedFilter).connect(bedGain).connect(panner);
+
+    sub.start();
+    harmonic.start();
+    breathOsc.start();
+    bed.start();
+
+    this.nodes = {
+      ctx,
+      master,
+      panner,
+      sub,
+      subGain,
+      harmonic,
+      harmonicGain,
+      breathOsc,
+      breathGain,
+      bed,
+      bedFilter,
+      bedGain,
+    };
     this.running = true;
   }
 
   pause() {
     if (!this.nodes) return;
-    fadeOutMaster(this.nodes.master, this.nodes.ctx, 0.4);
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 0.45);
   }
 
   resume() {
@@ -443,27 +474,39 @@ export class VagalDownshiftAudioEngine {
       this.start();
       return;
     }
-    fadeInMaster(this.nodes.master, this.nodes.ctx, 0.78, 0.4);
+    fadeInMaster(this.nodes.master, this.nodes.ctx, 0.82, 0.45);
   }
 
   /** @param {number} elapsedMs */
   sync(elapsedMs) {
     if (!this.running || !this.nodes) return;
     const state = curveAtElapsed(elapsedMs / 1000);
-    const { ctx, droneGain, noiseFilter, noiseGain } = this.nodes;
+    const { ctx, subGain, harmonicGain, breathOsc, breathGain, bedFilter, bedGain } = this.nodes;
     const now = ctx.currentTime;
     const { chaos, heartbeat } = state;
+    const t = elapsedMs / 1000;
 
-    rampGain(noiseGain.gain, 0.12 + chaos * 0.38, now, 0.1);
-    noiseFilter.frequency.setTargetAtTime(900 + (1 - chaos) * 5200 + heartbeat * 400, now, 0.14);
-    const pulse = 0.5 + 0.5 * Math.sin((elapsedMs / 1000) * Math.PI * 2 * 0.5);
-    rampGain(droneGain.gain, 0.05 + heartbeat * 0.26 + pulse * 0.08, now, 0.1);
+    // Bed fades OUT as chaos drops — inverse of static field
+    rampGain(bedGain.gain, 0.02 + chaos * 0.12, now, 0.14);
+    bedFilter.frequency.setTargetAtTime(220 + (1 - chaos) * 180, now, 0.18);
+
+    const pulse = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 0.5);
+    rampGain(subGain.gain, 0.05 + heartbeat * 0.32 + pulse * 0.1, now, 0.12);
+    rampGain(harmonicGain.gain, heartbeat * 0.08, now, 0.15);
+
+    if (heartbeat > 0.3) {
+      const breathMod = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * (5 / 60));
+      rampGain(breathGain.gain, (heartbeat - 0.3) * 0.18, now, 0.12);
+      breathOsc.frequency.setTargetAtTime(160 + breathMod * 30, now, 0.1);
+    } else {
+      rampGain(breathGain.gain, 0, now, 0.1);
+    }
   }
 
   complete() {
     if (!this.nodes) return;
-    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1.8);
-    window.setTimeout(() => this.stop(), 1900);
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 2.2);
+    window.setTimeout(() => this.stop(), 2300);
   }
 
   stop() {
@@ -472,8 +515,10 @@ export class VagalDownshiftAudioEngine {
       return;
     }
     const n = this.nodes;
-    stopSource(n.drone);
-    stopSource(n.noise);
+    stopSource(n.sub);
+    stopSource(n.harmonic);
+    stopSource(n.breathOsc);
+    stopSource(n.bed);
     this.nodes = null;
     this.running = false;
   }

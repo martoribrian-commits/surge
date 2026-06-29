@@ -18,8 +18,8 @@ export function coherenceAuroraGradient(palette, index = 0) {
 
 export function vagalAuroraGradient(palette, index = 0) {
   const stops = [
-    `radial-gradient(ellipse 90% 70% at 30% 35%, ${palette.accent}44 0%, transparent 52%), radial-gradient(ellipse 80% 60% at 72% 62%, ${palette.accentCalm}30 0%, transparent 50%), ${palette.background}`,
-    `radial-gradient(ellipse 85% 65% at 68% 28%, ${palette.accentCalm}36 0%, transparent 48%), radial-gradient(ellipse 75% 55% at 32% 72%, ${palette.accent}38 0%, transparent 50%), ${palette.backgroundEnd ?? palette.background}`,
+    `radial-gradient(ellipse 90% 70% at 30% 35%, ${palette.accent}55 0%, transparent 52%), radial-gradient(ellipse 80% 60% at 72% 62%, ${palette.accentCalm}35 0%, transparent 50%), ${palette.background}`,
+    `radial-gradient(ellipse 85% 65% at 68% 28%, ${palette.accentCalm}40 0%, transparent 48%), radial-gradient(ellipse 75% 55% at 32% 72%, ${palette.accent}42 0%, transparent 50%), ${palette.backgroundEnd ?? palette.background}`,
   ];
   return stops[index % stops.length];
 }

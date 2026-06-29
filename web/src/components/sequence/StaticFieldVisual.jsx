@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import FieldCanvas from './shared/FieldCanvas';
+import TvStaticCanvas from './shared/TvStaticCanvas';
 import { curveAtElapsed } from '../../lib/surgeCurve';
 
 /**
- * Static Field — original full-screen canvas engine + pink-noise sonic field.
+ * Static Field — original chaotic canvas + live TV static overlay.
+ * Warm amber/white. Maximum sensory intensity. Sonic-first protocol.
  */
 export default function StaticFieldVisual({
   elapsedSeconds,
@@ -21,7 +23,7 @@ export default function StaticFieldVisual({
   useEffect(() => {
     if (isEngaged && !wasEngagedRef.current) {
       setEngageBurst(1);
-      const t = window.setTimeout(() => setEngageBurst(0), 700);
+      const t = window.setTimeout(() => setEngageBurst(0), 900);
       wasEngagedRef.current = true;
       return () => window.clearTimeout(t);
     }
@@ -39,6 +41,7 @@ export default function StaticFieldVisual({
   }, [onRipple]);
 
   const state = curveAtElapsed(elapsedSeconds);
+  const strobeActive = isEngaged && !isPaused && state.chaos > 0.4;
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-black">
@@ -52,16 +55,30 @@ export default function StaticFieldVisual({
         ripples={ripples}
       />
 
-      {/* Pink-noise era TV static overlay at peak chaos */}
-      {isEngaged && !isPaused && state.chaos > 0.15 ? (
-        <div
-          className="pointer-events-none absolute inset-0 z-[2] mix-blend-screen"
-          style={{
-            opacity: 0.06 + state.chaos * 0.55,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")`,
-            backgroundSize: '180px 180px',
-          }}
-        />
+      <TvStaticCanvas elapsedSeconds={elapsedSeconds} isEngaged={isEngaged} isPaused={isPaused} />
+
+      {/* Chromatic aberration at peak chaos */}
+      {strobeActive ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 z-[4] mix-blend-screen opacity-30"
+            style={{
+              background: `radial-gradient(ellipse 90% 80% at 48% 45%, rgba(255,100,50,0.15) 0%, transparent 55%)`,
+              transform: 'translateX(-3px)',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 z-[4] mix-blend-screen opacity-30"
+            style={{
+              background: `radial-gradient(ellipse 90% 80% at 52% 45%, rgba(100,180,255,0.12) 0%, transparent 55%)`,
+              transform: 'translateX(3px)',
+            }}
+          />
+        </>
+      ) : null}
+
+      {isPaused ? (
+        <div className="pointer-events-none absolute inset-0 z-[5] bg-black/40 backdrop-blur-[1px]" />
       ) : null}
     </div>
   );

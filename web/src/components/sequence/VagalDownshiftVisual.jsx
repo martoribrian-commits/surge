@@ -1,11 +1,10 @@
 import { motion } from 'framer-motion';
-import AnimatedGround from './shared/AnimatedGround';
-import { vagalAuroraGradient } from './shared/groundStyles';
-import { curveAtElapsed } from '../../lib/surgeCurve';
+import VagalFogCanvas from './shared/VagalFogCanvas';
+import { curveAtElapsed, breathLabel } from '../../lib/surgeCurve';
 
 /**
- * Classic 90s Vagal Downshift — chaos-to-heartbeat decay, fog beacon, expanding rings.
- * Visual parity with the original static engine.
+ * Vagal Downshift — clinical visual decay protocol.
+ * Cool teal fog descent + breath diaphragm. Zero static. Zero chaos strobe.
  */
 export default function VagalDownshiftVisual({
   elapsedSeconds,
@@ -13,117 +12,74 @@ export default function VagalDownshiftVisual({
   palette,
   isEngaged,
   isPaused,
+  isComplete = false,
 }) {
   const state = curveAtElapsed(elapsedSeconds);
-  const { chaos, heartbeat } = state;
-  const pulseHz = 0.5 + heartbeat * 0.5;
-  const pulseDuration = 1 / pulseHz;
-  const fogOpacity =
-    isPaused ? 0.02 : isEngaged ? 0.04 + chaos * 0.28 + heartbeat * 0.12 : 0.03 + chaos * 0.08;
-  const ringCount = 3;
+  const { heartbeat } = state;
+  const breathCue = heartbeat > 0.35 ? breathLabel(elapsedSeconds) : null;
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-      <AnimatedGround
-        backgrounds={[
-          vagalAuroraGradient(palette, 0),
-          vagalAuroraGradient(palette, 1),
-          vagalAuroraGradient(palette, 0),
-        ]}
-        duration={18}
+    <div className="absolute inset-0 overflow-hidden">
+      <VagalFogCanvas
+        elapsedSeconds={elapsedSeconds}
+        isEngaged={isEngaged}
+        isPaused={isPaused}
+        isComplete={isComplete}
+        palette={palette}
       />
 
-      {/* Cinematic fog beacon — visible before hold, stronger when engaged */}
-      {!isPaused ? (
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-[1]"
-          animate={{ opacity: [fogOpacity * 0.5, fogOpacity, fogOpacity * 0.55] }}
-          transition={{ duration: pulseDuration, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ filter: `blur(${8 + chaos * 24}px)` }}
+      {/* Clinical modality badge — always visible when engaged */}
+      {isEngaged && !isPaused ? (
+        <div className="pointer-events-none absolute inset-x-0 top-[28%] z-[2] flex justify-center">
+          <motion.div
+            className="rounded-sm border px-4 py-2 font-sans text-[9px] font-semibold uppercase tracking-[0.28em]"
+            style={{
+              color: palette.accentCalm ?? '#8FB596',
+              borderColor: `${palette.accent ?? '#6B9AAA'}44`,
+              background: 'rgba(4, 8, 16, 0.55)',
+            }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 0.7, y: 0 }}
+            transition={{ duration: 0.6 }}
           >
-            <motion.div
-              className="rounded-full"
-              style={{
-                width: '140vmax',
-                height: '140vmax',
-                background: `radial-gradient(circle at 50% 48%,
-                  rgba(255,248,230,${0.06 + heartbeat * 0.2}) 0%,
-                  rgba(182,80,46,${0.04 + chaos * 0.18}) 22%,
-                  transparent 68%)`,
-              }}
-              animate={{ scale: [0.88, 1.05 + chaos * 0.08, 0.9] }}
-              transition={{ duration: pulseDuration * 2, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </div>
-        </motion.div>
+            Visual decay protocol
+          </motion.div>
+        </div>
       ) : null}
 
-      {/* Heartbeat rings — stronger when engaged */}
-      {!isPaused &&
-        (isEngaged || heartbeat > 0.05) &&
-        Array.from({ length: ringCount }).map((_, i) => (
+      {/* Breath phase label in tail */}
+      {breathCue && isEngaged && !isPaused ? (
+        <motion.p
+          className="pointer-events-none absolute inset-x-0 bottom-[32%] z-[2] text-center font-sans text-[10px] font-semibold uppercase tracking-[0.32em]"
+          style={{ color: `${palette.accentCalm ?? '#8FB596'}99` }}
+          animate={{ opacity: [0.4, 0.85, 0.4] }}
+          transition={{ duration: 12, repeat: Infinity }}
+        >
+          Breath · {breathCue}
+        </motion.p>
+      ) : null}
+
+      {/* Progress rail — clinical readout */}
+      <div className="pointer-events-none absolute inset-x-8 bottom-[18%] z-[2]">
+        <div className="h-px w-full bg-white/[0.06]">
           <motion.div
-            key={`${Math.floor(elapsedSeconds * pulseHz)}-${i}`}
-            className="absolute rounded-full border"
-            style={{
-              width: 'min(48vmin, 16rem)',
-              height: 'min(48vmin, 16rem)',
-              borderColor: `${palette.accent}${heartbeat > 0.2 ? '88' : '44'}`,
-              boxShadow: `0 0 ${20 + heartbeat * 40}px ${palette.accent}33`,
-            }}
-            initial={{ scale: 0.75 + i * 0.05, opacity: 0.15 + heartbeat * 0.5 }}
-            animate={{ scale: 1.5 + i * 0.15 + heartbeat * 0.2, opacity: 0 }}
-            transition={{
-              duration: 2.2 - heartbeat * 0.4,
-              delay: i * (0.35 - heartbeat * 0.1),
-              ease: 'easeOut',
-              repeat: Infinity,
-              repeatDelay: 0.2,
-            }}
+            className="h-full origin-left"
+            style={{ background: `linear-gradient(90deg, ${palette.accent}, ${palette.accentCalm})` }}
+            animate={{ scaleX: progress }}
+            transition={{ duration: 0.15 }}
           />
-        ))}
-
-      {/* Chaos strobe core */}
-      <motion.div
-        className="absolute z-[2] rounded-full"
-        style={{
-          width: 'min(58vmin, 20rem)',
-          height: 'min(58vmin, 20rem)',
-          border: `1px solid ${palette.accent}${isEngaged ? '99' : '44'}`,
-          background: `radial-gradient(circle at 40% 35%, ${palette.accent}55 0%, ${palette.background}cc 65%)`,
-          boxShadow: `0 0 ${30 + chaos * 70}px ${palette.accent}66`,
-        }}
-        animate={{
-          scale: isEngaged && !isPaused ? [0.92 + chaos * 0.08, 1.02, 0.94] : 0.88,
-          opacity: isPaused ? 0.5 : 1,
-        }}
-        transition={{
-          duration: chaos > 0.4 ? 0.45 : pulseDuration,
-          repeat: isEngaged && !isPaused ? Infinity : 0,
-          ease: 'easeInOut',
-        }}
-      />
-
-      {/* Decay curve dot — brand logomark anchor */}
-      <motion.div
-        className="absolute z-[3] h-2 w-2 rounded-full"
-        style={{
-          background: palette.copy,
-          boxShadow: `0 0 16px ${palette.accent}`,
-        }}
-        animate={{
-          scale: isEngaged && !isPaused ? [1, 1.15 + heartbeat * 0.1, 1] : 0.8,
-          opacity: isEngaged ? 0.9 : 0.35,
-        }}
-        transition={{ duration: pulseDuration, repeat: Infinity }}
-      />
+        </div>
+        <p
+          className="mt-2 font-sans text-[9px] uppercase tracking-[0.22em]"
+          style={{ color: 'rgba(143, 181, 150, 0.45)' }}
+        >
+          Arousal decay · {Math.round(progress * 100)}%
+        </p>
+      </div>
 
       {isPaused ? (
         <motion.div
-          className="pointer-events-none absolute inset-0 z-[4] bg-[#0A0A0A]/30 backdrop-blur-[1px]"
+          className="pointer-events-none absolute inset-0 z-[4] bg-[#020610]/50 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         />

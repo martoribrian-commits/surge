@@ -212,7 +212,7 @@ export default function FieldCanvas({
       let strobe = 1;
       if (!reducedMotion && phase === 'active') {
         const s = 0.5 + 0.5 * Math.sin(2 * Math.PI * STROBE_HZ * t);
-        strobe = 1 - 0.26 * chaos * s;
+        strobe = 1 - 0.38 * input.chaos * s;
       }
 
       // Ink rings
