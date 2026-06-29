@@ -112,7 +112,7 @@ export default function InstantResetVisual({
               transition={{ duration: 0.55, repeat: Infinity }}
             >
               <div
-                className="h-28 w-28 border-2"
+                className="h-[min(42vmin,11rem)] w-[min(42vmin,11rem)] border-2"
                 style={{
                   borderColor: palette.accent,
                   boxShadow: `0 0 40px ${palette.accent}, inset 0 0 24px ${palette.accent}44`,
@@ -144,8 +144,8 @@ export default function InstantResetVisual({
                 className="absolute rounded-full"
                 style={{
                   border: `1px solid ${palette.accentCalm}`,
-                  width: `${24 + ring * 14}vmin`,
-                  height: `${24 + ring * 14}vmin`,
+                  width: `${28 + ring * 16}vmin`,
+                  height: `${28 + ring * 16}vmin`,
                   boxShadow: `0 0 ${20 + ring * 8}px ${palette.accentCalm}33`,
                 }}
                 initial={{ scale: 0.5, opacity: 0 }}

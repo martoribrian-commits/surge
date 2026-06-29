@@ -30,6 +30,7 @@ export const InteractionMode = {
  * @property {string} feelsLike — body state in plain language
  * @property {string} whatItDoes — what the sequence does for your body
  * @property {string} whenToUse — when to pick this one
+ * @property {string} modality — clinical protocol label for providers
  * @property {number} durationSeconds
  * @property {keyof typeof InteractionMode} interactionMode
  * @property {SequencePalette} palette
@@ -44,6 +45,7 @@ export const SEQUENCE_VARIANTS = {
   'instant-reset': {
     id: 'instant-reset',
     name: 'Instant Reset',
+    modality: 'Physiological sigh intercept',
     tagline: 'When you need to breathe out the panic fast',
     tabLabel: '30',
     feelsLike:
@@ -68,6 +70,7 @@ export const SEQUENCE_VARIANTS = {
   'orienting-anchor': {
     id: 'orienting-anchor',
     name: 'Orienting Anchor',
+    modality: 'Bilateral sensory orienting',
     tagline: 'When your thoughts are stuck on repeat',
     tabLabel: '60',
     feelsLike:
@@ -92,6 +95,7 @@ export const SEQUENCE_VARIANTS = {
   'coherence-ripple': {
     id: 'coherence-ripple',
     name: 'Coherence Ripple',
+    modality: 'Resonant breath entrainment',
     tagline: 'When you need to slow down and breathe with something',
     tabLabel: '90 · breath',
     feelsLike:
@@ -116,37 +120,39 @@ export const SEQUENCE_VARIANTS = {
   'vagal-downshift': {
     id: 'vagal-downshift',
     name: 'Vagal Downshift',
-    tagline: 'When everything feels too loud inside',
+    modality: 'Visual decay protocol',
+    tagline: 'When overwhelm needs to visibly settle — not static',
     tabLabel: '90 · decay',
     feelsLike:
-      'Overwhelmed, flooded, body on high alert — like static in your nerves with no volume knob.',
+      'Flooded and overwhelmed — your nervous system needs to see intensity drop, layer by layer, not noise.',
     whatItDoes:
-      'Press and hold while sound, visuals, and vibration start intense and slowly fade to a steady heartbeat. You control the pace by holding; the system walks your arousal down a fixed curve over ninety seconds.',
+      'A clinical visual decay system: cool fog strata descend while a breath diaphragm guides you down a fixed arousal curve. Warm sub-bass audio, no harsh static. You watch the system settle over ninety seconds.',
     whenToUse:
-      'Full-body overwhelm, anger flooding up, or when you need something strong that visibly gets quieter as you stay with it.',
-    science: 'Sustained somatic anchor with deterministic intensity decay — visual, haptic, and audio channels phase-lock to one downshift curve.',
+      'Emotional flooding, anger, or overwhelm when you need a visible, structured downshift — distinct from the sonic Static Field.',
+    science: 'Deterministic multi-channel decay curve — visual fog descent, breath diaphragm, and warm sub-bass phase-locked to one downshift timeline.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
     palette: {
-      background: '#120600',
-      backgroundEnd: '#0a0e24',
-      accent: '#B6502E',
-      accentCalm: '#C45A32',
-      muted: 'rgba(244,240,235,0.45)',
-      copy: '#f4f0eb',
+      background: '#020610',
+      backgroundEnd: '#061420',
+      accent: '#6B9AAA',
+      accentCalm: '#8FB596',
+      muted: 'rgba(143,181,150,0.45)',
+      copy: '#E8F0EC',
     },
   },
   'static-field': {
     id: 'static-field',
     name: 'Static Field',
-    tagline: 'When you need sound to carry you down',
+    modality: 'Sonic entrainment field',
+    tagline: 'Maximum impact — the original Surge sonic engine',
     tabLabel: '90 · static',
     feelsLike:
       'Restless, agitated, unable to sit still — your body wants noise and release, not silence.',
     whatItDoes:
-      'Procedural static and deep bass that start chaotic and carve down to a slow heartbeat while you hold. Sound does the heavy lifting; your job is to stay with it.',
+      'The original Surge sonic engine at full intensity: live TV static, pink-noise carve, sub-bass heartbeat lock, and stereo wander. Warm chaotic canvas with maximum sensory impact. Headphones required.',
     whenToUse:
-      'Agitation, sensory overload, or when you respond better to audio than breath cues. Headphones strongly recommended.',
+      'Agitation, sensory overload, or when you need the hardest-hitting acoustic downshift. Not the same as Vagal — this is sound-first chaos-to-pulse.',
     science: 'Procedural pink-noise carve-down with sub-bass heartbeat entrainment — chaotic field at peak decaying to grounded pulse.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
@@ -161,7 +167,7 @@ export const SEQUENCE_VARIANTS = {
   },
 };
 
-export const DEFAULT_VARIANT_ID = 'coherence-ripple';
+export const DEFAULT_VARIANT_ID = 'static-field';
 
 /** @param {string | undefined | null} id */
 export function resolveVariantId(id) {

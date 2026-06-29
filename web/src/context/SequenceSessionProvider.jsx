@@ -137,6 +137,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
   useEffect(() => {
     if (!clock.isComplete || state.phase !== SurgePhase.REGULATION) return;
 
+    setIsEngaged(false);
     haptics.sequenceComplete();
 
     const elapsed = sessionStartRef.current

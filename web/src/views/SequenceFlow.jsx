@@ -6,6 +6,7 @@ import SequenceEngine from '../engine/SequenceEngine';
 import SequenceEntryView from './SequenceEntryView';
 import AftermathView from './AftermathView';
 import DecompressionView from './DecompressionView';
+import SequenceCompletingView from './SequenceCompletingView';
 import SequenceCraneBridge from '../components/crane/SequenceCraneBridge';
 
 const PAGE_TRANSITION = {
@@ -23,6 +24,7 @@ function SequenceFlowRouter() {
     phase === SurgePhase.REGULATION ||
     phase === SurgePhase.PAUSED ||
     phase === SurgePhase.COMPLETING;
+  const showCompleting = phase === SurgePhase.COMPLETING;
   const showAftermath = phase === SurgePhase.AFTERMATH;
   const showDecompression = phase === SurgePhase.DECOMPRESSION;
 
@@ -39,6 +41,7 @@ function SequenceFlowRouter() {
       ) : showEngine ? (
         <div key="engine" className="fixed inset-0 z-40 h-screen w-screen">
           <SequenceEngine />
+          <AnimatePresence>{showCompleting ? <SequenceCompletingView /> : null}</AnimatePresence>
         </div>
       ) : showEntry ? (
         <motion.div key="entry" className="min-h-screen" {...PAGE_TRANSITION}>

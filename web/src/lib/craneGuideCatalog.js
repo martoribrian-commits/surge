@@ -80,7 +80,7 @@ export function matchGuideFallback(userMessage) {
   }
 
   if (/overwhelm|flood|too much|static|agitat|restless/.test(q)) {
-    return 'Two options: Vagal Downshift walks intensity down from loud to quiet while you hold. Static Field uses sound — chaotic static fading to a slow heartbeat. Both are ninety seconds; headphones help for Static Field.';
+    return 'Two distinct 90-second protocols:\n\n• **Vagal Downshift** — visual decay. Cool fog layers descend; you watch arousal drop on a clinical curve. Warm audio, no harsh static. For emotional flooding.\n\n• **Static Field** — sonic entrainment. Live TV static + pink noise at full intensity. Headphones required. For agitation and sensory overload.';
   }
 
   return (

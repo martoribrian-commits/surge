@@ -37,7 +37,7 @@ export default function SequencePicker({ activeId, onSelect }) {
               {variant.name}
             </h2>
             <p className="mt-1 font-sans text-sm font-medium text-[#B6502E]/90">
-              {variant.tagline}
+              {variant.modality ?? variant.tagline}
             </p>
           </div>
           <span

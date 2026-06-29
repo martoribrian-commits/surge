@@ -59,6 +59,7 @@ export default function VagalDownshiftSequence({
         palette={variant.palette}
         isEngaged={isEngaged}
         isPaused={clock.isPaused}
+        isComplete={clock.isComplete}
       />
     </SequenceStage>
   );

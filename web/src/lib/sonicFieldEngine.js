@@ -35,8 +35,8 @@ export class SonicFieldEngine {
     const now = this.ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setValueAtTime(0.0001, now);
-    this.master.gain.exponentialRampToValueAtTime(1, now + 0.12);
-    this.master.gain.exponentialRampToValueAtTime(0.92, now + 0.55);
+    this.master.gain.exponentialRampToValueAtTime(1, now + 0.08);
+    this.master.gain.exponentialRampToValueAtTime(0.98, now + 0.45);
   }
 
   /** @param {number} durationMs */
@@ -52,7 +52,7 @@ export class SonicFieldEngine {
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.92, now + 0.45);
+    master.gain.exponentialRampToValueAtTime(0.98, now + 0.35);
     master.connect(ctx.destination);
     this.master = master;
 
@@ -72,7 +72,7 @@ export class SonicFieldEngine {
     this.noiseFilter = filter;
 
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.62, now);
+    noiseGain.gain.setValueAtTime(0.85, now);
     this.noiseGain = noiseGain;
 
     noise.connect(filter).connect(noiseGain).connect(panner);
@@ -123,13 +123,13 @@ export class SonicFieldEngine {
     const now = this.ctx.currentTime;
     const { chaos, heartbeat } = state;
 
-    const noiseVol = 0.08 + chaos * 0.58;
-    this.noiseGain.gain.setTargetAtTime(noiseVol, now, 0.08);
+    const noiseVol = 0.2 + chaos * 0.88;
+    this.noiseGain.gain.setTargetAtTime(noiseVol, now, 0.06);
 
-    const cutoff = 120 + (1 - chaos) * 8200 + heartbeat * 400;
+    const cutoff = 80 + (1 - chaos) * 9200 + heartbeat * 500;
     this.noiseFilter.frequency.setTargetAtTime(Math.max(140, cutoff), now, 0.12);
 
-    const subVol = 0.04 + heartbeat * 0.52;
+    const subVol = 0.06 + heartbeat * 0.58;
     this.subGain.gain.setTargetAtTime(subVol, now, 0.1);
 
     const lfoDepth = 0.02 + heartbeat * 0.38;
@@ -141,7 +141,7 @@ export class SonicFieldEngine {
     this.breathGain.gain.setTargetAtTime(breathVol, now, 0.15);
 
     if (this.panner && chaos > 0.2) {
-      const panTarget = Math.sin(elapsedMs * 0.0022) * chaos * 0.35;
+      const panTarget = Math.sin(elapsedMs * 0.0028) * chaos * 0.48;
       if (Math.abs(panTarget - this.lastPan) > 0.02) {
         this.panner.pan.setTargetAtTime(panTarget, now, 0.06);
         this.lastPan = panTarget;
