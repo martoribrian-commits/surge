@@ -139,14 +139,14 @@ export const SEQUENCE_VARIANTS = {
   'static-field': {
     id: 'static-field',
     name: 'Static Field',
-    tagline: 'When you need sound to carry you down',
+    tagline: 'The original Surge engine — sound carries you down',
     tabLabel: '90 · static',
     feelsLike:
       'Restless, agitated, unable to sit still — your body wants noise and release, not silence.',
     whatItDoes:
-      'Procedural static and deep bass that start chaotic and carve down to a slow heartbeat while you hold. Sound does the heavy lifting; your job is to stay with it.',
+      'The first Surge sonic engine: full-screen static and deep bass that start chaotic and carve down to a slow heartbeat while you hold. Pink noise, sub-bass lock, stereo wander — headphones strongly recommended.',
     whenToUse:
-      'Agitation, sensory overload, or when you respond better to audio than breath cues. Headphones strongly recommended.',
+      'When you need maximum sensory impact. This is the original 90-second field — the one Surge was built on.',
     science: 'Procedural pink-noise carve-down with sub-bass heartbeat entrainment — chaotic field at peak decaying to grounded pulse.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
@@ -161,7 +161,7 @@ export const SEQUENCE_VARIANTS = {
   },
 };
 
-export const DEFAULT_VARIANT_ID = 'coherence-ripple';
+export const DEFAULT_VARIANT_ID = 'static-field';
 
 /** @param {string | undefined | null} id */
 export function resolveVariantId(id) {

@@ -31,7 +31,7 @@ export default function InteractionGuide({
       <AnimatePresence mode="wait">
         <motion.p
           key={displayHint}
-          className="text-center font-sans text-[clamp(1.75rem,6vw,2.75rem)] font-semibold uppercase tracking-[0.08em]"
+          className="text-center font-sans text-[clamp(2rem,7vw,3.25rem)] font-semibold uppercase tracking-[0.06em]"
           style={{ color: isPaused ? accentCalm ?? accent : '#F4F0EB' }}
           initial={{ opacity: 0, y: 10, filter: 'blur(6px)' }}
           animate={{ opacity: isPaused ? 0.7 : 1, y: 0, filter: 'blur(0px)' }}

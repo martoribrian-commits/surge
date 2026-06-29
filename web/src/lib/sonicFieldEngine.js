@@ -72,7 +72,7 @@ export class SonicFieldEngine {
     this.noiseFilter = filter;
 
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.62, now);
+    noiseGain.gain.setValueAtTime(0.72, now);
     this.noiseGain = noiseGain;
 
     noise.connect(filter).connect(noiseGain).connect(panner);
@@ -123,7 +123,7 @@ export class SonicFieldEngine {
     const now = this.ctx.currentTime;
     const { chaos, heartbeat } = state;
 
-    const noiseVol = 0.08 + chaos * 0.58;
+    const noiseVol = 0.12 + chaos * 0.72;
     this.noiseGain.gain.setTargetAtTime(noiseVol, now, 0.08);
 
     const cutoff = 120 + (1 - chaos) * 8200 + heartbeat * 400;

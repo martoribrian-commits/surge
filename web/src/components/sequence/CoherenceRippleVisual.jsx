@@ -79,8 +79,8 @@ export default function CoherenceRippleVisual({
       {/* Hold charge ring */}
       <svg
         className="absolute z-[1]"
-        width="min(58vmin, 20rem)"
-        height="min(58vmin, 20rem)"
+        width="min(78vmin, 26rem)"
+        height="min(78vmin, 26rem)"
         viewBox="0 0 200 200"
         aria-hidden="true"
       >
@@ -109,8 +109,8 @@ export default function CoherenceRippleVisual({
       <motion.div
         className="absolute z-[2] rounded-full"
         style={{
-          width: 'min(52vmin, 18rem)',
-          height: 'min(52vmin, 18rem)',
+          width: 'min(72vmin, 24rem)',
+          height: 'min(72vmin, 24rem)',
           boxShadow: `0 0 ${60 + glow * 80}px rgba(90, 143, 114, ${glow}), inset 0 0 60px ${palette.accentCalm}33`,
           border: `1px solid ${palette.accent}66`,
           background: `radial-gradient(circle at 38% 32%, ${palette.accentCalm}55 0%, ${palette.background}88 70%)`,

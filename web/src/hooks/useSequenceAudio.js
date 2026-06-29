@@ -90,12 +90,19 @@ export function useSequenceAudio({
         return;
       }
 
+      const isStaticField = variantId === 'static-field';
+
       if (isHold) {
         if (!isEngaged) {
-          if (!startedRef.current) {
-            engine.start?.();
-            startedRef.current = true;
-            engine.pause?.();
+          // Static field: no pre-start — original engine starts on first engage only
+          if (!isStaticField) {
+            if (!startedRef.current) {
+              engine.start?.();
+              startedRef.current = true;
+              engine.pause?.();
+            } else if (wasEngagedRef.current) {
+              engine.pause?.();
+            }
           } else if (wasEngagedRef.current) {
             engine.pause?.();
           }

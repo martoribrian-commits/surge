@@ -5,7 +5,7 @@ import { CHROME_HEIGHT } from '../../brand/tokens';
 /**
  * Full-screen hold target below chrome — does not intercept chrome taps.
  */
-export default function HoldSurface({ onEngage, onRelease }) {
+export default function HoldSurface({ onEngage, onRelease, ripple = false }) {
   const pointerDownRef = useRef(false);
 
   const handlePointerDown = useCallback(
@@ -14,9 +14,13 @@ export default function HoldSurface({ onEngage, onRelease }) {
       if (pointerDownRef.current) return;
       pointerDownRef.current = true;
       unlockAudioContext();
-      onEngage?.();
+      if (ripple) {
+        onEngage?.({ x: e.clientX, y: e.clientY });
+      } else {
+        onEngage?.();
+      }
     },
-    [onEngage],
+    [onEngage, ripple],
   );
 
   const handlePointerUp = useCallback(() => {

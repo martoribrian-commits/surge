@@ -53,7 +53,7 @@ export default function OrientingAnchorVisual({
           }}
         />
         <motion.div
-          className="absolute bottom-[18%] left-[12%] h-32 w-32 rounded-full blur-3xl"
+          className="absolute bottom-[18%] left-[12%] h-48 w-48 rounded-full blur-3xl"
           style={{ background: palette.accent }}
           animate={{ opacity: leftLit ? [0.2, 0.45, 0.2] : 0.08, scale: leftLit ? [1, 1.15, 1] : 0.9 }}
           transition={{ duration: beatPeriod, repeat: Infinity }}
@@ -76,7 +76,7 @@ export default function OrientingAnchorVisual({
           }}
         />
         <motion.div
-          className="absolute bottom-[22%] right-[10%] h-36 w-36 rounded-full blur-3xl"
+          className="absolute bottom-[22%] right-[10%] h-52 w-52 rounded-full blur-3xl"
           style={{ background: palette.accentCalm }}
           animate={{ opacity: rightLit ? [0.2, 0.45, 0.2] : 0.08, scale: rightLit ? [1, 1.15, 1] : 0.9 }}
           transition={{ duration: beatPeriod, repeat: Infinity, delay: beatPeriod / 2 }}
@@ -85,7 +85,7 @@ export default function OrientingAnchorVisual({
 
       {/* Traveling pulse orb */}
       <motion.div
-        className="absolute top-[48%] h-3 w-3 -translate-y-1/2 rounded-full"
+        className="absolute top-[48%] h-5 w-5 -translate-y-1/2 rounded-full"
         style={{
           background: palette.copy,
           boxShadow: `0 0 24px ${palette.accentCalm}`,

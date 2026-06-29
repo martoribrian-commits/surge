@@ -90,8 +90,8 @@ export default function VagalDownshiftVisual({
       <motion.div
         className="absolute z-[2] rounded-full"
         style={{
-          width: 'min(44vmin, 15rem)',
-          height: 'min(44vmin, 15rem)',
+          width: 'min(58vmin, 20rem)',
+          height: 'min(58vmin, 20rem)',
           border: `1px solid ${palette.accent}${isEngaged ? '99' : '44'}`,
           background: `radial-gradient(circle at 40% 35%, ${palette.accent}55 0%, ${palette.background}cc 65%)`,
           boxShadow: `0 0 ${30 + chaos * 70}px ${palette.accent}66`,

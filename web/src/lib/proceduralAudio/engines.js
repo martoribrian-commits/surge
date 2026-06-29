@@ -43,7 +43,7 @@ export class InstantResetAudioEngine {
 
     this.stop();
     const { master, panner } = createMasterChain(ctx);
-    fadeInMaster(master, ctx, 0.92, 0.35);
+    fadeInMaster(master, ctx, 1, 0.35);
 
     const noise = ctx.createBufferSource();
     noise.buffer = makePinkNoiseBuffer(ctx);
@@ -93,7 +93,7 @@ export class InstantResetAudioEngine {
 
     if (t < 1.2) {
       const inhale1 = clamp01(t / 1.2);
-      rampGain(noiseGain.gain, 0.18 + inhale1 * 0.62, now, 0.05);
+      rampGain(noiseGain.gain, 0.28 + inhale1 * 0.78, now, 0.05);
       rampGain(toneGain.gain, inhale1 * 0.16, now, 0.04);
       tone.frequency.setTargetAtTime(180 + inhale1 * 80, now, 0.06);
       noiseFilter.frequency.setTargetAtTime(12000 - inhale1 * 2000, now, 0.08);
@@ -159,7 +159,7 @@ export class OrientingAnchorAudioEngine {
 
     this.stop();
     const { master, panner } = createMasterChain(ctx);
-    fadeInMaster(master, ctx, 0.82, 0.6);
+    fadeInMaster(master, ctx, 0.95, 0.6);
 
     const leftOsc = ctx.createOscillator();
     leftOsc.type = 'sine';
@@ -191,7 +191,7 @@ export class OrientingAnchorAudioEngine {
     bedFilter.type = 'lowpass';
     bedFilter.frequency.value = 320;
     const bedGain = ctx.createGain();
-    bedGain.gain.value = 0.045;
+    bedGain.gain.value = 0.07;
     bedNoise.connect(bedFilter).connect(bedGain).connect(panner);
 
     bedNoise.start();
@@ -238,7 +238,7 @@ export class OrientingAnchorAudioEngine {
     osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.08);
 
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.42, ctx.currentTime + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.14);
 
     tickPan.pan.value = clamp01((pan + 1) / 2) * 2 - 1;
@@ -287,7 +287,7 @@ export class CoherenceRippleAudioEngine {
 
     this.stop();
     const { master, panner } = createMasterChain(ctx);
-    fadeInMaster(master, ctx, 0.88, 0.5);
+    fadeInMaster(master, ctx, 1, 0.5);
 
     const sub = ctx.createOscillator();
     sub.type = 'sine';
@@ -357,7 +357,7 @@ export class CoherenceRippleAudioEngine {
       breathAmount = 1 - (0.5 - 0.5 * Math.cos((Math.PI * exhaleT) / breathCycle.exhale));
     }
 
-    rampGain(subGain.gain, 0.06 + breathAmount * 0.32, now, 0.1);
+    rampGain(subGain.gain, 0.1 + breathAmount * 0.48, now, 0.1);
     rampGain(padGain.gain, breathAmount * 0.08, now, 0.12);
     rampGain(shimmerGain.gain, 0.01 + breathAmount * 0.03, now, 0.1);
     sub.frequency.setTargetAtTime(52 + breathAmount * 14, now, 0.12);
@@ -403,7 +403,7 @@ export class VagalDownshiftAudioEngine {
 
     this.stop();
     const { master, panner } = createMasterChain(ctx);
-    fadeInMaster(master, ctx, 0.85, 0.55);
+    fadeInMaster(master, ctx, 0.95, 0.55);
 
     const drone = ctx.createOscillator();
     drone.type = 'sine';
@@ -454,7 +454,7 @@ export class VagalDownshiftAudioEngine {
     const now = ctx.currentTime;
     const { chaos, heartbeat } = state;
 
-    rampGain(noiseGain.gain, 0.08 + chaos * 0.26, now, 0.1);
+    rampGain(noiseGain.gain, 0.12 + chaos * 0.38, now, 0.1);
     noiseFilter.frequency.setTargetAtTime(900 + (1 - chaos) * 5200 + heartbeat * 400, now, 0.14);
     const pulse = 0.5 + 0.5 * Math.sin((elapsedMs / 1000) * Math.PI * 2 * 0.5);
     rampGain(droneGain.gain, 0.05 + heartbeat * 0.26 + pulse * 0.08, now, 0.1);
@@ -479,38 +479,33 @@ export class VagalDownshiftAudioEngine {
   }
 }
 
-/** Static field delegates to existing SonicFieldEngine. */
+/** Static field — original pink-noise engine. Starts only on engage (lazy). */
 export class StaticFieldAudioAdapter {
   constructor() {
     this.engine = new SonicFieldEngine();
-    this.wasEngaged = false;
   }
 
   prime() {
     this.engine.prime();
   }
 
+  /** First engage — build graph and ignite like site/js/engine.js */
   start() {
     if (!this.engine.master) {
       unlockAudioContext();
       this.engine.start(90_000);
-      this.engine.ignite();
-    } else {
-      this.engine.resume();
-      this.engine.ignite();
     }
-    this.wasEngaged = true;
+    this.engine.resume();
+    this.engine.ignite();
   }
 
   pause() {
     this.engine.pause();
-    this.wasEngaged = false;
   }
 
   resume() {
     this.engine.resume();
     this.engine.ignite();
-    this.wasEngaged = true;
   }
 
   sync(elapsedMs) {
@@ -524,7 +519,6 @@ export class StaticFieldAudioAdapter {
 
   stop() {
     this.engine.stop();
-    this.wasEngaged = false;
   }
 }
 
