@@ -1,5 +1,6 @@
-import { useCallback, useRef } from 'react';
-import SurgeSequence from './SurgeSequence';
+import { useCallback } from 'react';
+import SequenceStage from './SequenceStage';
+import HoldSurface from './HoldSurface';
 import CoherenceRippleVisual from './CoherenceRippleVisual';
 import { InteractionMode } from '../../sequences';
 
@@ -14,26 +15,6 @@ export default function CoherenceRippleSequence({
   onExit,
   onChangeSequence,
 }) {
-  const pointerDownRef = useRef(false);
-
-  const handlePointerDown = useCallback(
-    (e) => {
-      e.preventDefault();
-      pointerDownRef.current = true;
-      haptics.holdEngage(variant.id);
-      onEngage?.();
-      onStarted?.();
-    },
-    [haptics, onEngage, onStarted],
-  );
-
-  const handlePointerUp = useCallback(() => {
-    if (!pointerDownRef.current) return;
-    pointerDownRef.current = false;
-    haptics.holdRelease();
-    onRelease?.();
-  }, [haptics, onRelease]);
-
   const breathCycle = variant.breathCycle ?? { inhale: 4, exhale: 6 };
   const cycleT = clock.elapsedSeconds % (breathCycle.inhale + breathCycle.exhale);
   const breathPhase =
@@ -53,8 +34,19 @@ export default function CoherenceRippleSequence({
         ? breathPhase
         : 'Press and hold';
 
+  const handleEngage = useCallback(() => {
+    haptics.holdEngage(variant.id);
+    onEngage?.();
+    onStarted?.();
+  }, [haptics, variant.id, onEngage, onStarted]);
+
+  const handleRelease = useCallback(() => {
+    haptics.holdRelease();
+    onRelease?.();
+  }, [haptics, onRelease]);
+
   return (
-    <SurgeSequence
+    <SequenceStage
       variant={variant}
       elapsedSeconds={clock.elapsedSeconds}
       progress={clock.progress}
@@ -64,13 +56,7 @@ export default function CoherenceRippleSequence({
       interactionMode={InteractionMode.HOLD}
       onExit={onExit}
       onChangeSequence={onChangeSequence}
-      containerProps={{
-        onPointerDown: handlePointerDown,
-        onPointerUp: handlePointerUp,
-        onPointerLeave: handlePointerUp,
-        onPointerCancel: handlePointerUp,
-        style: { touchAction: 'none' },
-      }}
+      interactionLayer={<HoldSurface onEngage={handleEngage} onRelease={handleRelease} />}
     >
       <CoherenceRippleVisual
         elapsedSeconds={clock.elapsedSeconds}
@@ -80,7 +66,7 @@ export default function CoherenceRippleSequence({
         isPaused={clock.isPaused}
         holdCharge={isEngaged ? 1 : clock.progress}
       />
-    </SurgeSequence>
+    </SequenceStage>
   );
 }
 

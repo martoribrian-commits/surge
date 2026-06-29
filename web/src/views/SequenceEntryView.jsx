@@ -6,6 +6,7 @@ import { SequencePicker, SequencePreview } from '../components/sequence';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
 import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
+import { BRAND } from '../brand/tokens';
 import { getVariant } from '../sequences';
 
 const HEADLINE_BY_SECONDS = {
@@ -16,17 +17,12 @@ const HEADLINE_BY_SECONDS = {
 
 const SUBHEAD_BY_VARIANT = {
   'instant-reset': 'Double inhale, long exhale — runs automatically once you begin.',
-  'orienting-anchor': 'Alternate left and right taps to integrate hemispheres.',
-  'coherence-ripple': 'Resonant 4/6 breath — press and hold to start sound. Release to pause.',
-  'vagal-downshift':
-    'Visual decay curve — press and hold for sound and haptics. Release to pause.',
-  'static-field':
-    'Original Surge sonic engine — press and hold for static and sub-bass. Release to pause.',
+  'orienting-anchor': 'Alternate left and right taps. Exit anytime from the top bar.',
+  'coherence-ripple': 'Resonant 4/6 breath — press and hold anywhere below the header.',
+  'vagal-downshift': 'Visual decay curve — press and hold to engage sound and haptics.',
+  'static-field': 'Original sonic static engine — press and hold to engage.',
 };
 
-/**
- * Entry — marketing hero + 30/60/90 picker + live preview.
- */
 export default function SequenceEntryView() {
   const { variantId, selectVariant, beginRegulation } = useSequenceSession();
   const variant = getVariant(variantId);
@@ -34,10 +30,15 @@ export default function SequenceEntryView() {
   const subhead = SUBHEAD_BY_VARIANT[variant.id] ?? SUBHEAD_BY_VARIANT['vagal-downshift'];
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#0A0A0A]">
+    <div className="relative min-h-screen overflow-x-hidden" style={{ background: BRAND.void }}>
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute inset-0 bg-[#120a06] opacity-40" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_0%,rgba(182,80,46,0.14)_0%,transparent_55%)]" />
+        <div className="absolute inset-0 opacity-40" style={{ background: BRAND.warmWash }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${BRAND.emberGlow} 0%, transparent 55%)`,
+          }}
+        />
       </div>
       <FilmGrainOverlay />
 
@@ -45,20 +46,24 @@ export default function SequenceEntryView() {
         className="relative z-10 mx-auto flex min-h-screen max-w-2xl flex-col px-5 py-[max(1.25rem,env(safe-area-inset-top))] pb-12"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.7 }}
+        transition={{ duration: 0.5 }}
       >
         <SiteHeader />
 
-        <div className="mb-6 text-center">
-          <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-[#B6502E]">
+        <div className="mb-5 text-center">
+          <p
+            className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em]"
+            style={{ color: BRAND.clay }}
+          >
             Somatic circuit breaker
           </p>
           <motion.h1
             key={variant.durationSeconds}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-            className="mt-3 whitespace-pre-line font-sans text-[clamp(1.65rem,4.5vw,2.35rem)] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#F4F0EB]"
+            transition={{ duration: 0.4 }}
+            className="mt-3 whitespace-pre-line font-sans text-[clamp(1.65rem,4.5vw,2.35rem)] font-extrabold leading-[1.08] tracking-[-0.03em]"
+            style={{ color: BRAND.bone }}
           >
             {headline}
           </motion.h1>
@@ -66,16 +71,17 @@ export default function SequenceEntryView() {
             key={variant.id + '-sub'}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mx-auto mt-3 max-w-md font-sans text-sm leading-relaxed text-white/45"
+            className="mx-auto mt-3 max-w-md font-sans text-sm leading-relaxed"
+            style={{ color: BRAND.boneMuted }}
           >
             When your body will not wait for an appointment. Secular. Private. No account.{' '}
             {subhead}
           </motion.p>
         </div>
 
-        <DecayHero className="mb-6 py-2" compact />
+        <DecayHero className="mb-5 py-2" compact />
 
-        <div className="mb-6">
+        <div className="mb-5 overflow-hidden rounded-sm border border-white/[0.08]">
           <SequencePreview variantId={variantId} />
         </div>
 
@@ -84,8 +90,9 @@ export default function SequenceEntryView() {
         <div className="mt-auto pt-8">
           <motion.button
             type="button"
-            className="group relative w-full overflow-hidden border px-6 py-5 font-sans text-[11px] font-semibold uppercase tracking-[0.28em] text-[#F4F0EB]"
+            className="w-full border px-6 py-5 font-sans text-[11px] font-semibold uppercase tracking-[0.28em]"
             style={{
+              color: BRAND.bone,
               borderColor: `${variant.palette.accent}66`,
               background: `linear-gradient(135deg, ${variant.palette.accent}22, ${variant.palette.accentCalm ?? variant.palette.accent}12)`,
             }}
@@ -96,19 +103,21 @@ export default function SequenceEntryView() {
               beginRegulation();
             }}
           >
-            <span className="relative">Begin {variant.durationSeconds}s cycle</span>
+            Begin {variant.durationSeconds}s cycle
           </motion.button>
+
+          <p className="mt-3 text-center font-sans text-[10px] tracking-[0.08em]" style={{ color: BRAND.boneDim }}>
+            Use headphones · Exit anytime from the session header
+          </p>
 
           <div className="mt-4 flex flex-col items-center gap-3">
             <Link
               to="/clinical-token"
-              className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/35 transition-colors hover:text-[#B6502E]"
+              className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] transition-colors hover:text-[#B6502E]"
+              style={{ color: BRAND.boneDim }}
             >
               I have a token
             </Link>
-            <p className="text-center font-sans text-[10px] tracking-[0.08em] text-white/25">
-              Tap 30, 60, or any 90s option — preview updates instantly
-            </p>
           </div>
 
           <nav
@@ -124,7 +133,8 @@ export default function SequenceEntryView() {
               <Link
                 key={link.href}
                 to={link.href}
-                className="font-sans text-[10px] uppercase tracking-[0.18em] text-white/25 transition-colors hover:text-[#B6502E]"
+                className="font-sans text-[10px] uppercase tracking-[0.18em] transition-colors hover:text-[#B6502E]"
+                style={{ color: BRAND.boneDim }}
               >
                 {link.label}
               </Link>

@@ -98,9 +98,16 @@ export default function SequenceEngine() {
       haptics.killAll();
       audio.killAll();
     };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') handleExit();
+    };
     window.addEventListener('pagehide', onPageHide);
-    return () => window.removeEventListener('pagehide', onPageHide);
-  }, [haptics, audio]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [haptics, audio, handleExit]);
 
   if (!isActivePhase) return null;
 

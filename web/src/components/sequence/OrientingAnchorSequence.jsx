@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import SurgeSequence from './SurgeSequence';
+import SequenceStage from './SequenceStage';
+import BilateralSurface from './BilateralSurface';
 import OrientingAnchorVisual from './OrientingAnchorVisual';
 import { unlockAudioContext } from '../../lib/proceduralAudio/shared';
 import { InteractionMode } from '../../sequences';
@@ -44,7 +45,7 @@ export default function OrientingAnchorSequence({
           : 'Alternate';
 
   return (
-    <SurgeSequence
+    <SequenceStage
       variant={variant}
       elapsedSeconds={clock.elapsedSeconds}
       progress={clock.progress}
@@ -53,6 +54,12 @@ export default function OrientingAnchorSequence({
       interactionMode={InteractionMode.BILATERAL}
       onExit={onExit}
       onChangeSequence={onChangeSequence}
+      interactionLayer={
+        <BilateralSurface
+          onLeftTap={() => handleSideTap('left')}
+          onRightTap={() => handleSideTap('right')}
+        />
+      }
     >
       <OrientingAnchorVisual
         elapsedSeconds={clock.elapsedSeconds}
@@ -61,32 +68,7 @@ export default function OrientingAnchorSequence({
         tapFlash={tapFlash}
         bpm={variant.bilateralBpm ?? 60}
       />
-
-      {/* Touch zones with subtle edge affordance */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-[8] w-1/2 border-r border-white/[0.04]" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-[8] w-1/2 border-l border-white/[0.04]" />
-
-      <button
-        type="button"
-        aria-label="Left anchor"
-        className="absolute inset-y-0 left-0 z-10 w-1/2 cursor-default border-0 bg-transparent outline-none"
-        style={{ WebkitTapHighlightColor: 'transparent' }}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleSideTap('left');
-        }}
-      />
-      <button
-        type="button"
-        aria-label="Right anchor"
-        className="absolute inset-y-0 right-0 z-10 w-1/2 cursor-default border-0 bg-transparent outline-none"
-        style={{ WebkitTapHighlightColor: 'transparent' }}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleSideTap('right');
-        }}
-      />
-    </SurgeSequence>
+    </SequenceStage>
   );
 }
 

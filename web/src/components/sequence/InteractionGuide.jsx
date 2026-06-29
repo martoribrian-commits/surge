@@ -22,7 +22,7 @@ export default function InteractionGuide({
   const displayHint = isComplete ? 'Complete' : hint ?? meta.action;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex flex-col items-center px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8">
       <div
         className="mb-4 h-px w-12 opacity-40"
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}

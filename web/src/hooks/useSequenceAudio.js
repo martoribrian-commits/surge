@@ -92,7 +92,13 @@ export function useSequenceAudio({
 
       if (isHold) {
         if (!isEngaged) {
-          if (wasEngagedRef.current) engine.pause?.();
+          if (!startedRef.current) {
+            engine.start?.();
+            startedRef.current = true;
+            engine.pause?.();
+          } else if (wasEngagedRef.current) {
+            engine.pause?.();
+          }
           wasEngagedRef.current = false;
           rafRef.current = requestAnimationFrame(loop);
           return;

@@ -18,7 +18,8 @@ export default function VagalDownshiftVisual({
   const { chaos, heartbeat } = state;
   const pulseHz = 0.5 + heartbeat * 0.5;
   const pulseDuration = 1 / pulseHz;
-  const fogOpacity = isEngaged && !isPaused ? 0.04 + chaos * 0.28 + heartbeat * 0.12 : 0.02;
+  const fogOpacity =
+    isPaused ? 0.02 : isEngaged ? 0.04 + chaos * 0.28 + heartbeat * 0.12 : 0.03 + chaos * 0.08;
   const ringCount = 3;
 
   return (
@@ -32,11 +33,11 @@ export default function VagalDownshiftVisual({
         duration={18}
       />
 
-      {/* Cinematic fog beacon — intensity linked to decay curve */}
-      {isEngaged && !isPaused ? (
+      {/* Cinematic fog beacon — visible before hold, stronger when engaged */}
+      {!isPaused ? (
         <motion.div
           className="pointer-events-none absolute inset-0 z-[1]"
-          animate={{ opacity: [fogOpacity * 0.7, fogOpacity, fogOpacity * 0.75] }}
+          animate={{ opacity: [fogOpacity * 0.5, fogOpacity, fogOpacity * 0.55] }}
           transition={{ duration: pulseDuration, repeat: Infinity, ease: 'easeInOut' }}
         >
           <div
@@ -60,9 +61,9 @@ export default function VagalDownshiftVisual({
         </motion.div>
       ) : null}
 
-      {/* Heartbeat rings */}
-      {isEngaged &&
-        !isPaused &&
+      {/* Heartbeat rings — stronger when engaged */}
+      {!isPaused &&
+        (isEngaged || heartbeat > 0.05) &&
         Array.from({ length: ringCount }).map((_, i) => (
           <motion.div
             key={`${Math.floor(elapsedSeconds * pulseHz)}-${i}`}
