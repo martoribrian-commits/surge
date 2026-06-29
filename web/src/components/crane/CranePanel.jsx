@@ -13,6 +13,8 @@ import {
 import { getCachedSessionPayload } from '../../lib/sessionPayload';
 import { VARIANT_LIST } from '../../sequences';
 
+import CraneActions from './CraneActions';
+
 const EASE = [0.25, 0.1, 0.25, 1];
 
 const QUICK_PROMPTS = [
@@ -22,8 +24,8 @@ const QUICK_PROMPTS = [
   'Explain all five sequences',
 ];
 
-function createMessage(role, content) {
-  return { id: crypto.randomUUID(), role, content };
+function createMessage(role, content, { actions = [] } = {}) {
+  return { id: crypto.randomUUID(), role, content, actions };
 }
 
 function MessageBubble({ message, isLatest }) {
@@ -45,6 +47,9 @@ function MessageBubble({ message, isLatest }) {
           {i < message.content.split('\n').length - 1 ? <br /> : null}
         </span>
       ))}
+      {!isUser && message.actions?.length ? (
+        <CraneActions actions={message.actions} compact />
+      ) : null}
     </motion.div>
   );
 }
@@ -138,7 +143,10 @@ export default function CranePanel() {
           conversationHistory: nextMessages.slice(0, -1),
         });
       }
-      setMessages((prev) => [...prev, createMessage('crane', inference.text)]);
+      setMessages((prev) => [
+        ...prev,
+        createMessage('crane', inference.text, { actions: inference.actions ?? [] }),
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,

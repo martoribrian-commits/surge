@@ -11,6 +11,8 @@ import {
 } from '../lib/craneClient';
 import { getCachedSessionPayload } from '../lib/sessionPayload';
 
+import CraneActions from './crane/CraneActions';
+
 const EASE = [0.25, 0.1, 0.25, 1];
 
 const QUICK_PROMPTS = [
@@ -19,11 +21,12 @@ const QUICK_PROMPTS = [
   'Explain all five sequences',
 ];
 
-function createMessage(role, content, { reveal = false } = {}) {
+function createMessage(role, content, { reveal = false, actions = [] } = {}) {
   return {
     id: crypto.randomUUID(),
     role,
     content,
+    actions,
     reveal: role === 'crane' && reveal,
   };
 }
@@ -79,6 +82,11 @@ function StreamMessage({ message, isFocal, onRevealComplete }) {
       ) : (
         message.content
       )}
+      {message.role === 'crane' && message.actions?.length ? (
+        <div className="mt-6">
+          <CraneActions actions={message.actions} />
+        </div>
+      ) : null}
     </motion.div>
   );
 }
@@ -179,7 +187,10 @@ export default function CraneChat() {
       }
       setMessages((prev) => [
         ...prev,
-        createMessage('crane', inference.text, { reveal: true }),
+        createMessage('crane', inference.text, {
+          reveal: true,
+          actions: inference.actions ?? [],
+        }),
       ]);
     } catch {
       setMessages((prev) => [
@@ -224,7 +235,10 @@ export default function CraneChat() {
                 });
           setMessages((prev) => [
             ...prev,
-            createMessage('crane', inference.text, { reveal: true }),
+            createMessage('crane', inference.text, {
+              reveal: true,
+              actions: inference.actions ?? [],
+            }),
           ]);
         } catch {
           setMessages((prev) => [

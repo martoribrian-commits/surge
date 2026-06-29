@@ -126,12 +126,50 @@ export async function requestCraneGuideInference({
     });
   } catch {
     const fallback = matchGuideFallback(userMessage);
+    const actions = inferFallbackActions(userMessage);
     return {
-      text: fallback ?? 'I can help you pick a sequence. Tell me what your body feels like right now.',
+      text:
+        fallback ??
+        'I can help you pick a sequence. Tell me what your body feels like right now.',
+      actions,
+      advisorUsed: false,
       model: 'fallback',
       mode: 'guide',
     };
   }
+}
+
+/**
+ * Build navigate actions from keyword fallback when API is down.
+ */
+function inferFallbackActions(userMessage) {
+  const q = userMessage.toLowerCase().trim();
+  if (/panic|racing|heart|can't breathe|cant breathe/.test(q)) {
+    return [buildFallbackAction('instant-reset', 'Start Instant Reset')];
+  }
+  if (/stuck|loop|replay|dissoci|intrusive/.test(q)) {
+    return [buildFallbackAction('orienting-anchor', 'Start Orienting Anchor')];
+  }
+  if (/overwhelm|flood|too much/.test(q)) {
+    return [buildFallbackAction('vagal-downshift', 'Start Vagal Downshift')];
+  }
+  if (/restless|agitat|static/.test(q)) {
+    return [buildFallbackAction('static-field', 'Start Static Field')];
+  }
+  if (/wired|tired|breath/.test(q)) {
+    return [buildFallbackAction('coherence-ripple', 'Start Coherence Ripple')];
+  }
+  return [];
+}
+
+function buildFallbackAction(variantId, label) {
+  return {
+    type: 'navigate',
+    path: `/engine/${variantId}`,
+    label,
+    variantId,
+    primary: true,
+  };
 }
 
 /**
@@ -151,6 +189,8 @@ export async function initiateCraneContact(userMessage = CRANE_INITIAL_MESSAGE) 
   return {
     supabaseContext,
     reply: inference.text,
+    actions: inference.actions ?? [],
     model: inference.model,
+    advisorUsed: inference.advisorUsed ?? false,
   };
 }
