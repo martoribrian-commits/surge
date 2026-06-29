@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
+import { useCraneOptional } from '../context/CraneProvider';
 import { unlockAudioContext } from '../lib/proceduralAudio/shared';
 import { SequencePicker, SequencePreview } from '../components/sequence';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
@@ -10,24 +11,16 @@ import { BRAND } from '../brand/tokens';
 import { getVariant } from '../sequences';
 
 const HEADLINE_BY_SECONDS = {
-  30: 'Thirty seconds\nto reset your nervous system.',
-  60: 'Sixty seconds\nto reset your nervous system.',
-  90: 'Ninety seconds\nto reset your nervous system.',
-};
-
-const SUBHEAD_BY_VARIANT = {
-  'instant-reset': 'Double inhale, long exhale — runs automatically once you begin.',
-  'orienting-anchor': 'Alternate left and right taps. Exit anytime from the top bar.',
-  'coherence-ripple': 'Resonant 4/6 breath — press and hold anywhere below the header.',
-  'vagal-downshift': 'Visual decay curve — press and hold to engage sound and haptics.',
-  'static-field': 'Original sonic static engine — press and hold to engage.',
+  30: 'Thirty seconds\nto bring your body back down.',
+  60: 'Sixty seconds\nto bring your body back down.',
+  90: 'Ninety seconds\nto bring your body back down.',
 };
 
 export default function SequenceEntryView() {
   const { variantId, selectVariant, beginRegulation } = useSequenceSession();
+  const crane = useCraneOptional();
   const variant = getVariant(variantId);
   const headline = HEADLINE_BY_SECONDS[variant.durationSeconds] ?? HEADLINE_BY_SECONDS[90];
-  const subhead = SUBHEAD_BY_VARIANT[variant.id] ?? SUBHEAD_BY_VARIANT['vagal-downshift'];
 
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ background: BRAND.void }}>
@@ -74,8 +67,25 @@ export default function SequenceEntryView() {
             className="mx-auto mt-3 max-w-md font-sans text-sm leading-relaxed"
             style={{ color: BRAND.boneMuted }}
           >
-            When your body will not wait for an appointment. Secular. Private. No account.{' '}
-            {subhead}
+            When your body will not wait for an appointment. No account. No jargon. Pick the
+            sequence that matches what you feel right now — or{' '}
+            {crane ? (
+              <button
+                type="button"
+                onClick={crane.openCrane}
+                className="underline decoration-[#B6502E]/50 underline-offset-2 transition-colors hover:text-[#B6502E]"
+              >
+                ask Crane
+              </button>
+            ) : (
+              <Link
+                to="/crane"
+                className="underline decoration-[#B6502E]/50 underline-offset-2 transition-colors hover:text-[#B6502E]"
+              >
+                ask Crane
+              </Link>
+            )}{' '}
+            to explain which one fits.
           </motion.p>
         </div>
 
@@ -103,11 +113,11 @@ export default function SequenceEntryView() {
               beginRegulation();
             }}
           >
-            Begin {variant.durationSeconds}s cycle
+            Begin {variant.durationSeconds}s · {variant.name}
           </motion.button>
 
           <p className="mt-3 text-center font-sans text-[10px] tracking-[0.08em]" style={{ color: BRAND.boneDim }}>
-            Use headphones · Exit anytime from the session header
+            Headphones help · Exit anytime from the session header
           </p>
 
           <div className="mt-4 flex flex-col items-center gap-3">
@@ -125,7 +135,7 @@ export default function SequenceEntryView() {
             aria-label="Legal and support"
           >
             {[
-              { href: '/how-it-works', label: 'Science' },
+              { href: '/how-it-works', label: 'How it works' },
               { href: '/privacy', label: 'Privacy' },
               { href: '/terms', label: 'Terms' },
               { href: '/support', label: 'Support' },

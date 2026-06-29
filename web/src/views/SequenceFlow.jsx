@@ -6,6 +6,7 @@ import SequenceEngine from '../engine/SequenceEngine';
 import SequenceEntryView from './SequenceEntryView';
 import AftermathView from './AftermathView';
 import DecompressionView from './DecompressionView';
+import SequenceCraneBridge from '../components/crane/SequenceCraneBridge';
 
 const PAGE_TRANSITION = {
   initial: { opacity: 0 },
@@ -56,6 +57,7 @@ function SequenceFlowRouter() {
 export default function SequenceFlow({ initialVariantId = null }) {
   return (
     <SequenceSessionProvider initialVariantId={resolveVariantId(initialVariantId)}>
+      <SequenceCraneBridge />
       <SequenceFlowRouter />
     </SequenceSessionProvider>
   );

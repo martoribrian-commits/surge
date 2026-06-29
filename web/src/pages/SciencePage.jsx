@@ -4,56 +4,58 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
+import { useCraneOptional } from '../context/CraneProvider';
 import { VARIANT_LIST } from '../sequences';
 
 const SECTIONS = [
   {
     id: 'problem',
     label: 'The problem',
-    summary: 'Peak activation shuts down the prefrontal cortex.',
+    summary: 'When stress peaks, thinking stops working.',
     body: [
-      'Acute nervous system dysregulation does not wait for a scheduled session. At peak activation, the prefrontal cortex goes offline. Verbal reasoning fails. Standard coping tools arrive too late, or require cognitive capacity the patient no longer has.',
-      'Most digital interventions add friction at the worst moment: accounts, mood check-ins, gamified streaks, or open-ended prompts that demand self-reflection under stress.',
+      'At full activation your body is in alarm mode. Heart rate up, breathing shallow, muscles tight. In that state, "just calm down" or "think rationally" does not land — your brain literally does not have the bandwidth.',
+      'Most apps make it worse: log in, track your mood, read a paragraph, choose from twelve options. Surge does the opposite. One sequence. One interaction. Thirty to ninety seconds.',
     ],
   },
   {
     id: 'window',
     label: 'The window',
-    summary: 'Regulation is measured in seconds, not minutes.',
+    summary: 'Your body can still come down — if you give it a path.',
     body: [
-      'Somatic regulation research identifies a narrow window after peak activation when the nervous system can still be guided back to baseline without pharmacological intervention.',
-      'Surge is built for that window — five calibrated sequences at 30, 60, and three ninety-second protocols. One interaction each. No identity required.',
+      'There is a short window after a spike when your nervous system can still be guided back without medication. Surge is built for that window.',
+      'Five sequences, each tuned to a different body state: racing heart, stuck thoughts, wired exhaustion, full overwhelm, or restless agitation. Pick the one that matches what you feel.',
     ],
   },
   {
     id: 'mechanism',
-    label: 'The mechanism',
-    summary: 'Visual, haptic, and audio channels phase-lock to one curve.',
+    label: 'What actually happens',
+    summary: 'Sound, visuals, and touch follow one downshift curve.',
     body: [
-      'Each sequence uses a deterministic somatic protocol: physiological sigh, bilateral grounding, or resonant breath with tactile anchor. Visual intensity, haptic pulse, and timing derive from a single decay curve.',
-      'There is no scoring, no feedback loop, no variable reward. The system does one thing: bring the body down on a schedule the user controls.',
+      'Each sequence uses breath, bilateral tapping, or press-and-hold contact — paired with sound and visuals that start where you are and fade toward calm on a fixed timeline.',
+      'Nothing to score. Nothing to optimize. You hold on (or tap, or breathe) and the system walks your arousal down. Exit anytime from the header.',
     ],
   },
   {
-    id: 'handoff',
-    label: 'The handoff',
-    summary: 'Quiet next steps when the cycle completes.',
+    id: 'crane',
+    label: 'Crane',
+    summary: 'Plain-language help, anywhere on the site.',
     body: [
-      'When the cycle completes, the system holds at its softest state, then offers optional transition to Crane — a recovery guide for patients with a Clinical Token from their provider. Crane is presence, not intervention.',
-      'Session data stays local unless a token is present. Providers receive de-identified usage signals, never patient narrative unless the patient chooses to share it in session.',
+      'Crane explains what each sequence does for your body — without clinical jargon. Not sure which one fits? Ask before you begin. Finished a cycle and something came up? Crane is there after, too.',
+      'Guide mode works without an account. Deeper post-session support is available with a clinical token from your provider. Everything stays on your device unless you choose otherwise.',
     ],
   },
 ];
 
 const INTERACTION_COPY = {
-  auto: 'Runs automatically once started',
-  bilateral: 'Alternate left / right taps',
-  hold: 'Press and hold to advance',
+  auto: 'Starts on its own',
+  bilateral: 'Tap left · right',
+  hold: 'Press and hold',
 };
 
 export default function SciencePage() {
   const [activeSection, setActiveSection] = useState('problem');
   const [hoverVariant, setHoverVariant] = useState(null);
+  const crane = useCraneOptional();
   const section = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0];
 
   return (
@@ -71,7 +73,6 @@ export default function SciencePage() {
         <SiteHeader />
 
         <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-          {/* Visual column */}
           <div className="flex flex-col items-center lg:sticky lg:top-8 lg:self-start">
             <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-[#B6502E]">
               How it works
@@ -80,7 +81,7 @@ export default function SciencePage() {
 
             <div className="w-full space-y-3">
               <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">
-                Choose a sequence
+                Five sequences — pick by body state
               </p>
               {VARIANT_LIST.map((variant) => {
                 const active = hoverVariant === variant.id;
@@ -99,19 +100,22 @@ export default function SciencePage() {
                         opacity: active ? 1 : 0.55,
                       }}
                     />
-                    <div className="flex items-center justify-between gap-4 px-4 py-4">
-                      <div>
-                        <p className="font-sans text-lg font-bold tracking-tight">{variant.name}</p>
-                        <p className="mt-0.5 font-sans text-sm text-white/45">{variant.tagline}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-sans text-2xl font-extrabold tabular-nums text-[#B6502E]">
+                    <div className="px-4 py-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-sans text-lg font-bold tracking-tight">{variant.name}</p>
+                          <p className="mt-0.5 font-sans text-sm text-[#B6502E]/85">{variant.tagline}</p>
+                        </div>
+                        <p className="shrink-0 font-sans text-2xl font-extrabold tabular-nums text-[#B6502E]">
                           {variant.durationSeconds}s
                         </p>
-                        <p className="font-sans text-[10px] uppercase tracking-[0.12em] text-white/30">
-                          {INTERACTION_COPY[variant.interactionMode]}
-                        </p>
                       </div>
+                      <p className="mt-3 font-sans text-sm leading-relaxed text-white/45">
+                        {variant.feelsLike}
+                      </p>
+                      <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.12em] text-white/30">
+                        {INTERACTION_COPY[variant.interactionMode]}
+                      </p>
                     </div>
                   </Link>
                 );
@@ -119,17 +123,16 @@ export default function SciencePage() {
             </div>
           </div>
 
-          {/* Copy column — interactive sections */}
           <div>
             <h1 className="font-sans text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.08] tracking-[-0.03em]">
-              Science behind the somatic circuit breaker
+              What Surge does to your body
             </h1>
             <p className="mt-4 max-w-lg font-sans text-base leading-relaxed text-white/50">
-              Secular, evidence-informed protocols designed for the moment cognition fails and the
-              body still needs a way back.
+              Evidence-informed regulation for the moment your nervous system will not wait. No
+              accounts. No streaks. No therapy-speak.
             </p>
 
-            <div className="mt-10 flex flex-wrap gap-2" role="tablist" aria-label="Science sections">
+            <div className="mt-10 flex flex-wrap gap-2" role="tablist" aria-label="How it works sections">
               {SECTIONS.map((s) => (
                 <button
                   key={s.id}
@@ -180,12 +183,22 @@ export default function SciencePage() {
               >
                 Choose your sequence
               </Link>
-              <Link
-                to="/for-providers"
-                className="inline-flex px-2 py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35 transition-colors hover:text-[#B6502E]"
-              >
-                For providers →
-              </Link>
+              {crane ? (
+                <button
+                  type="button"
+                  onClick={crane.openCrane}
+                  className="inline-flex px-2 py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35 transition-colors hover:text-[#B6502E]"
+                >
+                  Ask Crane →
+                </button>
+              ) : (
+                <Link
+                  to="/crane"
+                  className="inline-flex px-2 py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35 transition-colors hover:text-[#B6502E]"
+                >
+                  Ask Crane →
+                </Link>
+              )}
             </div>
           </div>
         </div>

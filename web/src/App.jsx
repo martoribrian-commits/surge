@@ -16,6 +16,9 @@ import {
   ClinicalTokenPage,
 } from './pages';
 import { resolveVariantId } from './sequences';
+import { CraneProvider } from './context/CraneProvider';
+import CraneFab from './components/crane/CraneFab';
+import CranePanel from './components/crane/CranePanel';
 
 function EngineRoute() {
   const { variantId } = useParams();
@@ -34,9 +37,11 @@ function EngineRoute() {
  */
 export default function App() {
   return (
-    <>
+    <CraneProvider>
       <TelemetryFlush />
       <DevPerformanceOverlay />
+      <CraneFab />
+      <CranePanel />
       <Routes>
         <Route path="/" element={<SequenceFlow />} />
         <Route path="/engine" element={<Navigate to="/" replace />} />
@@ -62,6 +67,6 @@ export default function App() {
         <Route path="/for-providers.html" element={<Navigate to="/for-providers" replace />} />
         <Route path="/clinical-token.html" element={<Navigate to="/clinical-token" replace />} />
       </Routes>
-    </>
+    </CraneProvider>
   );
 }

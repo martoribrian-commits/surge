@@ -44,6 +44,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/crane-inference"
+  to = "/.netlify/functions/crane-inference"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/.netlify/functions/crane-inference"
   to = "/.netlify/functions/crane-inference"
   status = 200

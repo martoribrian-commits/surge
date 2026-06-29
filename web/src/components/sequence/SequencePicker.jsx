@@ -3,9 +3,9 @@ import { getVariant } from '../../sequences';
 import VariantTabBar from './VariantTabBar';
 
 const INTERACTION_LABELS = {
-  auto: 'Starts on its own once you begin',
+  auto: 'Starts on its own once you tap Begin',
   bilateral: 'Tap left, then right, in rhythm',
-  hold: 'Hold anywhere. Release to pause.',
+  hold: 'Press and hold anywhere below the header. Release to pause.',
 };
 
 /**
@@ -19,7 +19,7 @@ export default function SequencePicker({ activeId, onSelect }) {
     <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
       <div>
         <p className="mb-3 text-center font-sans text-[10px] font-semibold uppercase tracking-[0.24em] text-white/35">
-          Select sequence
+          What does your body need right now?
         </p>
         <VariantTabBar activeId={activeId} onSelect={onSelect} />
       </div>
@@ -36,7 +36,7 @@ export default function SequencePicker({ activeId, onSelect }) {
             <h2 className="font-sans text-2xl font-extrabold tracking-tight text-[#F4F0EB]">
               {variant.name}
             </h2>
-            <p className="mt-1 font-sans text-sm font-medium text-white/50">
+            <p className="mt-1 font-sans text-sm font-medium text-[#B6502E]/90">
               {variant.tagline}
             </p>
           </div>
@@ -52,13 +52,34 @@ export default function SequencePicker({ activeId, onSelect }) {
           </span>
         </div>
 
-        <p className="mt-4 font-sans text-sm leading-relaxed text-white/45">
-          {variant.science}
-        </p>
+        <div className="mt-5 space-y-4">
+          <div>
+            <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+              Feels like
+            </p>
+            <p className="mt-1.5 font-sans text-sm leading-relaxed text-white/60">
+              {variant.feelsLike}
+            </p>
+          </div>
+          <div>
+            <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+              What it does
+            </p>
+            <p className="mt-1.5 font-sans text-sm leading-relaxed text-white/60">
+              {variant.whatItDoes}
+            </p>
+          </div>
+          <div>
+            <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+              Pick this when
+            </p>
+            <p className="mt-1.5 font-sans text-sm leading-relaxed text-white/50">
+              {variant.whenToUse}
+            </p>
+          </div>
+        </div>
 
-        <div
-          className="mt-5 flex items-center gap-3 border-t border-white/[0.06] pt-4"
-        >
+        <div className="mt-5 flex items-center gap-3 border-t border-white/[0.06] pt-4">
           <span
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
             style={{
