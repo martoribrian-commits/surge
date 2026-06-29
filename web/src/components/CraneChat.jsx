@@ -3,13 +3,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FilmGrainOverlay from './FilmGrainOverlay';
 import {
+  buildCraneGuideOpener,
   buildCraneTelemetryOpener,
   fetchCraneContext,
+  requestCraneGuideInference,
   requestCraneInference,
 } from '../lib/craneClient';
 import { getCachedSessionPayload } from '../lib/sessionPayload';
 
 const EASE = [0.25, 0.1, 0.25, 1];
+
+const QUICK_PROMPTS = [
+  'Which sequence should I pick?',
+  'My heart is racing',
+  'Explain all five sequences',
+];
 
 function createMessage(role, content, { reveal = false } = {}) {
   return {
@@ -76,7 +84,7 @@ function StreamMessage({ message, isFocal, onRevealComplete }) {
 }
 
 /**
- * Immersive Crane chat — Surge's post-regulation companion (distinct from Marrow's Heron).
+ * Full-screen Crane — guide mode (no session) or post-session when telemetry exists.
  */
 export default function CraneChat() {
   const navigate = useNavigate();
@@ -86,8 +94,8 @@ export default function CraneChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [supabaseContext, setSupabaseContext] = useState(passedContext);
-  const [status, setStatus] = useState(passedContext ? 'ready' : 'connecting');
-  const [error, setError] = useState('');
+  const [mode, setMode] = useState('guide');
+  const [status, setStatus] = useState('connecting');
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const initializedRef = useRef(false);
@@ -108,27 +116,33 @@ export default function CraneChat() {
     initializedRef.current = true;
 
     const session = getCachedSessionPayload();
-    if (!session?.sessionId && !passedContext) {
-      setStatus('error');
-      setError('No session data. Complete a Surge cycle first.');
-      return;
-    }
 
     (async () => {
       try {
         let context = passedContext;
-        if (!context) {
-          context = await fetchCraneContext(session.sessionId);
+        if (!context && session?.sessionId) {
+          try {
+            context = await fetchCraneContext(session.sessionId);
+          } catch {
+            context = null;
+          }
         }
 
-        setSupabaseContext(context);
-        setMessages([
-          createMessage('crane', buildCraneTelemetryOpener(context), { reveal: true }),
-        ]);
+        if (context) {
+          setSupabaseContext(context);
+          setMode('post-session');
+          setMessages([
+            createMessage('crane', buildCraneTelemetryOpener(context), { reveal: true }),
+          ]);
+        } else {
+          setMode('guide');
+          setMessages([createMessage('crane', buildCraneGuideOpener(), { reveal: true })]);
+        }
         setStatus('ready');
-      } catch (err) {
-        setStatus('error');
-        setError(err.message ?? 'Connection failed');
+      } catch {
+        setMode('guide');
+        setMessages([createMessage('crane', buildCraneGuideOpener(), { reveal: true })]);
+        setStatus('ready');
       }
     })();
   }, [passedContext]);
@@ -140,16 +154,29 @@ export default function CraneChat() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || status !== 'ready' || !supabaseContext || inferenceLockRef.current) {
+    if (!trimmed || status !== 'ready' || inferenceLockRef.current) {
       return;
     }
 
     setInput('');
-    setMessages((prev) => [...prev, createMessage('user', trimmed)]);
+    const history = [...messages, createMessage('user', trimmed)];
+    setMessages(history);
 
     inferenceLockRef.current = true;
     try {
-      const inference = await requestCraneInference({ userMessage: trimmed, supabaseContext });
+      let inference;
+      if (mode === 'post-session' && supabaseContext) {
+        inference = await requestCraneInference({
+          userMessage: trimmed,
+          supabaseContext,
+          conversationHistory: messages,
+        });
+      } else {
+        inference = await requestCraneGuideInference({
+          userMessage: trimmed,
+          conversationHistory: messages,
+        });
+      }
       setMessages((prev) => [
         ...prev,
         createMessage('crane', inference.text, { reveal: true }),
@@ -157,7 +184,9 @@ export default function CraneChat() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        createMessage('crane', 'Signal lost. Rest. Try again when stable.', { reveal: true }),
+        createMessage('crane', 'Signal lost. Try again — or pick a sequence from the home page.', {
+          reveal: true,
+        }),
       ]);
     } finally {
       inferenceLockRef.current = false;
@@ -170,6 +199,43 @@ export default function CraneChat() {
       event.preventDefault();
       handleSubmit(event);
     }
+  };
+
+  const sendQuick = (text) => {
+    setInput(text);
+    setTimeout(() => {
+      const fakeEvent = { preventDefault: () => {} };
+      setInput('');
+      inferenceLockRef.current = false;
+      setMessages((prev) => [...prev, createMessage('user', text)]);
+      inferenceLockRef.current = true;
+      (async () => {
+        try {
+          const inference =
+            mode === 'post-session' && supabaseContext
+              ? await requestCraneInference({
+                  userMessage: text,
+                  supabaseContext,
+                  conversationHistory: messages,
+                })
+              : await requestCraneGuideInference({
+                  userMessage: text,
+                  conversationHistory: messages,
+                });
+          setMessages((prev) => [
+            ...prev,
+            createMessage('crane', inference.text, { reveal: true }),
+          ]);
+        } catch {
+          setMessages((prev) => [
+            ...prev,
+            createMessage('crane', 'Connection dropped. Try again.', { reveal: true }),
+          ]);
+        } finally {
+          inferenceLockRef.current = false;
+        }
+      })();
+    }, 0);
   };
 
   const focalIndex = messages.length - 1;
@@ -207,11 +273,11 @@ export default function CraneChat() {
         <LayoutGroup>
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-14 py-24">
             {status === 'connecting' && (
-              <p className="font-sans text-sm tracking-[0.2em] text-white/20">Establishing contact.</p>
+              <p className="font-sans text-sm tracking-[0.2em] text-white/20">Connecting.</p>
             )}
-            {status === 'error' && (
-              <p className="font-sans text-sm tracking-[0.2em] text-white/30">{error}</p>
-            )}
+            <p className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#B6502E]/70">
+              {mode === 'guide' ? 'Guide mode' : 'After your sequence'}
+            </p>
             {messages.map((message, index) => (
               <StreamMessage
                 key={message.id}
@@ -224,6 +290,21 @@ export default function CraneChat() {
         </LayoutGroup>
       </div>
 
+      {status === 'ready' && messages.length <= 1 ? (
+        <div className="relative z-10 flex flex-wrap justify-center gap-2 px-14 pb-4">
+          {QUICK_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              onClick={() => sendQuick(prompt)}
+              className="rounded-sm border border-white/10 px-3 py-2 font-sans text-[10px] text-white/40 transition-colors hover:border-[#B6502E]/40 hover:text-white/70"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="relative z-10 shrink-0 px-14 pb-14 pt-6">
         <textarea
           ref={inputRef}
@@ -231,7 +312,7 @@ export default function CraneChat() {
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
           disabled={status !== 'ready'}
-          placeholder="Speak directly."
+          placeholder="What does your body feel like right now?"
           rows={1}
           aria-label="Message to Crane"
           className="mx-auto block w-full max-w-2xl resize-none border-0 bg-transparent text-center font-sans text-sm tracking-[0.28em] text-white/35 placeholder:text-white/12 focus:outline-none focus:ring-0 disabled:opacity-30"

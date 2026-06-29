@@ -27,6 +27,9 @@ export const InteractionMode = {
  * @property {string} name
  * @property {string} tagline
  * @property {string} science
+ * @property {string} feelsLike — body state in plain language
+ * @property {string} whatItDoes — what the sequence does for your body
+ * @property {string} whenToUse — when to pick this one
  * @property {number} durationSeconds
  * @property {keyof typeof InteractionMode} interactionMode
  * @property {SequencePalette} palette
@@ -41,9 +44,15 @@ export const SEQUENCE_VARIANTS = {
   'instant-reset': {
     id: 'instant-reset',
     name: 'Instant Reset',
-    tagline: 'Physiological sigh',
+    tagline: 'When you need to breathe out the panic fast',
     tabLabel: '30',
-    science: 'Double inhale and extended exhale to offload CO2 and trigger parasympathetic activation.',
+    feelsLike:
+      'Chest tight, breathing shallow, heart racing — like your body hit the gas and forgot how to stop.',
+    whatItDoes:
+      'Guides you through two quick inhales and one long exhale. That long exhale tells your nervous system the threat is over and slows your heart within about thirty seconds.',
+    whenToUse:
+      'Panic spike, before a hard conversation, or any moment you need the fastest possible downshift.',
+    science: 'Physiological sigh — double inhale plus extended exhale to offload CO₂ and activate the calming branch of your nervous system.',
     durationSeconds: 30,
     interactionMode: InteractionMode.AUTO,
     transitionAtSeconds: 10,
@@ -59,9 +68,15 @@ export const SEQUENCE_VARIANTS = {
   'orienting-anchor': {
     id: 'orienting-anchor',
     name: 'Orienting Anchor',
-    tagline: 'Bilateral grounding',
+    tagline: 'When your thoughts are stuck on repeat',
     tabLabel: '60',
-    science: 'Rhythmic bilateral stimulation and sensory tracking to integrate hemispheres and exit cognitive loops.',
+    feelsLike:
+      'Mind racing in circles, replaying the same scene, unable to land in the present — like you are watching yourself from outside your body.',
+    whatItDoes:
+      'Rhythmic left-right tapping with sound and visuals pulls attention back into your body and out of the mental loop. Sixty seconds of alternating touch gives your brain something concrete to follow.',
+    whenToUse:
+      'Intrusive thoughts, dissociation, rumination, or when you feel mentally "stuck" and need to get back into the room.',
+    science: 'Bilateral stimulation — alternating left/right sensory input to integrate brain hemispheres and interrupt cognitive loops.',
     durationSeconds: 60,
     interactionMode: InteractionMode.BILATERAL,
     bilateralBpm: 60,
@@ -77,9 +92,15 @@ export const SEQUENCE_VARIANTS = {
   'coherence-ripple': {
     id: 'coherence-ripple',
     name: 'Coherence Ripple',
-    tagline: 'Resonant breath hold',
+    tagline: 'When you need to slow down and breathe with something',
     tabLabel: '90 · breath',
-    science: 'Resonant breathing with continuous tactile anchor to settle the nervous system over ninety seconds.',
+    feelsLike:
+      'Wired but exhausted, breathing fast and uneven, body buzzing — not full panic, but nowhere near calm.',
+    whatItDoes:
+      'A steady four-second inhale and six-second exhale, synced to sound and a gentle pulse you hold on screen. Ninety seconds of paced breathing trains your heart rate to settle into a smoother rhythm.',
+    whenToUse:
+      'Anxiety that will not peak but will not quit, pre-sleep wind-down, or when you want the gentlest full-length reset.',
+    science: 'Resonant breathing near ~6 breaths per minute with continuous tactile anchor to increase heart-rate variability.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
     breathCycle: { inhale: 4, exhale: 6 },
@@ -95,10 +116,15 @@ export const SEQUENCE_VARIANTS = {
   'vagal-downshift': {
     id: 'vagal-downshift',
     name: 'Vagal Downshift',
-    tagline: 'Visual decay curve',
+    tagline: 'When everything feels too loud inside',
     tabLabel: '90 · decay',
-    science:
-      'Press-and-hold with cinematic fog and expanding rings. Visual and haptic intensity decay on a fixed curve from peak chaos to grounded heartbeat.',
+    feelsLike:
+      'Overwhelmed, flooded, body on high alert — like static in your nerves with no volume knob.',
+    whatItDoes:
+      'Press and hold while sound, visuals, and vibration start intense and slowly fade to a steady heartbeat. You control the pace by holding; the system walks your arousal down a fixed curve over ninety seconds.',
+    whenToUse:
+      'Full-body overwhelm, anger flooding up, or when you need something strong that visibly gets quieter as you stay with it.',
+    science: 'Sustained somatic anchor with deterministic intensity decay — visual, haptic, and audio channels phase-lock to one downshift curve.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
     palette: {
@@ -113,10 +139,15 @@ export const SEQUENCE_VARIANTS = {
   'static-field': {
     id: 'static-field',
     name: 'Static Field',
-    tagline: 'Original sonic engine',
+    tagline: 'When you need sound to carry you down',
     tabLabel: '90 · static',
-    science:
-      'Procedural pink noise carve-down with sub-bass heartbeat lock. Chaotic static at peak — the original acoustic field from the first Surge site.',
+    feelsLike:
+      'Restless, agitated, unable to sit still — your body wants noise and release, not silence.',
+    whatItDoes:
+      'Procedural static and deep bass that start chaotic and carve down to a slow heartbeat while you hold. Sound does the heavy lifting; your job is to stay with it.',
+    whenToUse:
+      'Agitation, sensory overload, or when you respond better to audio than breath cues. Headphones strongly recommended.',
+    science: 'Procedural pink-noise carve-down with sub-bass heartbeat entrainment — chaotic field at peak decaying to grounded pulse.',
     durationSeconds: 90,
     interactionMode: InteractionMode.HOLD,
     palette: {

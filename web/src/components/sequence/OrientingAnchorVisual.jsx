@@ -1,4 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedGround from './shared/AnimatedGround';
+import { orientingSkyGradient } from './shared/groundStyles';
 
 /**
  * 60s Orienting Anchor — landscape horizon, bilateral hemispheres, touch ripples.
@@ -17,17 +19,13 @@ export default function OrientingAnchorVisual({
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Sky → earth gradient */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          background: [
-            `linear-gradient(180deg, ${palette.backgroundEnd} 0%, ${palette.background} 45%, #1a120c 100%)`,
-            `linear-gradient(180deg, ${palette.background} 0%, ${palette.backgroundEnd} 50%, #141a14 100%)`,
-            `linear-gradient(180deg, ${palette.backgroundEnd} 0%, ${palette.background} 45%, #1a120c 100%)`,
-          ],
-        }}
-        transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+      <AnimatedGround
+        backgrounds={[
+          orientingSkyGradient(palette, 0),
+          orientingSkyGradient(palette, 1),
+          orientingSkyGradient(palette, 0),
+        ]}
+        duration={24}
       />
 
       {/* Horizon glow */}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import SurgeSequence from './SurgeSequence';
+import SequenceStage from './SequenceStage';
+import HoldSurface from './HoldSurface';
 import InstantResetVisual from './InstantResetVisual';
 import { InteractionMode } from '../../sequences';
 
@@ -41,7 +42,7 @@ export default function InstantResetSequence({
         : 'Rest';
 
   return (
-    <SurgeSequence
+    <SequenceStage
       variant={variant}
       elapsedSeconds={clock.elapsedSeconds}
       progress={clock.progress}
@@ -57,7 +58,7 @@ export default function InstantResetSequence({
         palette={variant.palette}
         onTransition={handleTransition}
       />
-    </SurgeSequence>
+    </SequenceStage>
   );
 }
 

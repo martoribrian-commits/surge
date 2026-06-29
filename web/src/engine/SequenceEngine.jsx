@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
 import { useSequenceAudio } from '../hooks/useSequenceAudio';
 import { SurgePhase } from '../state/surgeSessionMachine';
@@ -51,6 +51,9 @@ export default function SequenceEngine() {
     enabled: isActivePhase,
   });
 
+  const audioKillRef = useRef(audio.killAll);
+  audioKillRef.current = audio.killAll;
+
   const handleStarted = useCallback(() => {
     if (phase === SurgePhase.ENTRY) beginRegulation();
   }, [phase, beginRegulation]);
@@ -86,18 +89,25 @@ export default function SequenceEngine() {
 
     return () => {
       haptics.killAll();
-      audio.killAll();
+      audioKillRef.current();
     };
-  }, [isActivePhase, variant.id, variant.interactionMode, haptics, audio]);
+  }, [isActivePhase, variant.id, variant.interactionMode, haptics]);
 
   useEffect(() => {
     const onPageHide = () => {
       haptics.killAll();
       audio.killAll();
     };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') handleExit();
+    };
     window.addEventListener('pagehide', onPageHide);
-    return () => window.removeEventListener('pagehide', onPageHide);
-  }, [haptics, audio]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [haptics, audio, handleExit]);
 
   if (!isActivePhase) return null;
 

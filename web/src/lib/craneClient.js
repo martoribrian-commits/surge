@@ -1,5 +1,11 @@
 import { supabase } from './supabaseClient';
 import { getCachedSessionPayload } from './sessionPayload';
+import {
+  buildSequenceGuideCatalog,
+  CRANE_GUIDE_OPENER,
+  CRANE_POST_SESSION_OPENER,
+  matchGuideFallback,
+} from './craneGuideCatalog';
 
 const TELEMETRY_FUNCTION = 'process-surge-telemetry';
 
@@ -13,6 +19,8 @@ const VALIDATE_TOKEN_URL =
 export const CRANE_INITIAL_MESSAGE =
   'Surge cycle complete. Initiate post-regulation guidance.';
 
+export const SEQUENCE_GUIDE_CATALOG = buildSequenceGuideCatalog();
+
 /**
  * Builds Crane's telemetry-aware opener from Supabase context.
  */
@@ -20,7 +28,7 @@ export function buildCraneTelemetryOpener(supabaseContext) {
   const telemetry = supabaseContext?.telemetry;
 
   if (telemetry?.completed_full_cycle) {
-    return "The system registered a full reset. You held on. Let's process the trigger when you're ready.";
+    return "The sequence finished. You stayed with it. If something came up, you can say it here — or ask me to explain what just happened in your body.";
   }
 
   const duration = telemetry?.duration_in_seconds;
@@ -28,10 +36,14 @@ export function buildCraneTelemetryOpener(supabaseContext) {
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;
     const held = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-    return `The system logged ${held} of containment. Cycle incomplete. We can work from here when you're ready.`;
+    return `You held for ${held}. The cycle was not complete, and that is fine. I am here if you want to talk through what came up — or pick a different sequence.`;
   }
 
-  return 'Contact established. The Surge phase is behind you. Speak when ready.';
+  return CRANE_POST_SESSION_OPENER;
+}
+
+export function buildCraneGuideOpener() {
+  return CRANE_GUIDE_OPENER;
 }
 
 /**
@@ -67,13 +79,27 @@ export async function fetchCraneContext(sessionId) {
 }
 
 /**
- * Step B — Run Crane inference via Netlify Function + AI Gateway.
+ * Crane inference — guide mode (no session) or post-session mode.
  */
-export async function requestCraneInference({ userMessage, supabaseContext }) {
+export async function requestCraneInference({
+  userMessage,
+  supabaseContext = null,
+  conversationHistory = [],
+  mode = null,
+}) {
+  const resolvedMode =
+    mode ?? (supabaseContext?.telemetry ? 'post-session' : 'guide');
+
   const response = await fetch(CRANE_INFERENCE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userMessage, supabaseContext }),
+    body: JSON.stringify({
+      userMessage,
+      supabaseContext,
+      conversationHistory,
+      sequenceCatalog: SEQUENCE_GUIDE_CATALOG,
+      mode: resolvedMode,
+    }),
   });
 
   const data = await response.json();
@@ -83,6 +109,29 @@ export async function requestCraneInference({ userMessage, supabaseContext }) {
   }
 
   return data;
+}
+
+/**
+ * Guide-mode inference with static fallback when API unavailable.
+ */
+export async function requestCraneGuideInference({
+  userMessage,
+  conversationHistory = [],
+}) {
+  try {
+    return await requestCraneInference({
+      userMessage,
+      conversationHistory,
+      mode: 'guide',
+    });
+  } catch {
+    const fallback = matchGuideFallback(userMessage);
+    return {
+      text: fallback ?? 'I can help you pick a sequence. Tell me what your body feels like right now.',
+      model: 'fallback',
+      mode: 'guide',
+    };
+  }
 }
 
 /**

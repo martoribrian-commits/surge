@@ -6,12 +6,13 @@ import SequenceEngine from '../engine/SequenceEngine';
 import SequenceEntryView from './SequenceEntryView';
 import AftermathView from './AftermathView';
 import DecompressionView from './DecompressionView';
+import SequenceCraneBridge from '../components/crane/SequenceCraneBridge';
 
 const PAGE_TRANSITION = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
   exit: { opacity: 0 },
-  transition: { duration: 1.1, ease: [0.25, 0.1, 0.25, 1] },
+  transition: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] },
 };
 
 function SequenceFlowRouter() {
@@ -26,9 +27,9 @@ function SequenceFlowRouter() {
   const showDecompression = phase === SurgePhase.DECOMPRESSION;
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       {showDecompression ? (
-        <motion.div key="decompression" className="h-screen w-screen" {...PAGE_TRANSITION}>
+        <motion.div key="decompression" className="fixed inset-0 z-40 h-screen w-screen" {...PAGE_TRANSITION}>
           <DecompressionView />
         </motion.div>
       ) : showAftermath ? (
@@ -36,9 +37,9 @@ function SequenceFlowRouter() {
           <AftermathView />
         </motion.div>
       ) : showEngine ? (
-        <motion.div key="engine" className="h-screen w-screen" {...PAGE_TRANSITION}>
+        <div key="engine" className="fixed inset-0 z-40 h-screen w-screen">
           <SequenceEngine />
-        </motion.div>
+        </div>
       ) : showEntry ? (
         <motion.div key="entry" className="min-h-screen" {...PAGE_TRANSITION}>
           <SequenceEntryView />
@@ -56,6 +57,7 @@ function SequenceFlowRouter() {
 export default function SequenceFlow({ initialVariantId = null }) {
   return (
     <SequenceSessionProvider initialVariantId={resolveVariantId(initialVariantId)}>
+      <SequenceCraneBridge />
       <SequenceFlowRouter />
     </SequenceSessionProvider>
   );

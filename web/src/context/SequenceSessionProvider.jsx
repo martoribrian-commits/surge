@@ -220,5 +220,9 @@ export function useSequenceSession() {
   return ctx;
 }
 
+export function useSequenceSessionOptional() {
+  return useContext(SequenceSessionContext);
+}
+
 /** @deprecated alias for gradual migration */
 export const useSurgeSession = useSequenceSession;

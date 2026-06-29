@@ -1,26 +1,22 @@
-import { useCallback, useRef } from 'react';
-import SurgeSequence from './SurgeSequence';
+import { useCallback } from 'react';
+import SequenceStage from './SequenceStage';
+import HoldSurface from './HoldSurface';
 import StaticFieldVisual from './StaticFieldVisual';
 import { InteractionMode } from '../../sequences';
 import { curveAtElapsed, phaseAt } from '../../lib/surgeCurve';
 import { useStaticFieldHaptics } from '../../hooks/useStaticFieldHaptics';
 
-/**
- * Original 90s Surge — procedural pink noise, static haptics, decay curve hold.
- */
 export default function StaticFieldSequence({
   variant,
   clock,
+  isEngaged,
   onEngage,
   onRelease,
   onStarted,
   onExit,
   onChangeSequence,
-  isEngaged,
 }) {
-  const pointerDownRef = useRef(false);
-  const state = curveAtElapsed(clock.elapsedSeconds);
-  const phase = phaseAt(state);
+  const phase = phaseAt(curveAtElapsed(clock.elapsedSeconds));
 
   useStaticFieldHaptics({
     elapsedMs: clock.elapsedMs,
@@ -28,22 +24,6 @@ export default function StaticFieldSequence({
     isComplete: clock.isComplete,
     enabled: true,
   });
-
-  const handlePointerDown = useCallback(
-    (e) => {
-      e.preventDefault();
-      pointerDownRef.current = true;
-      onEngage?.();
-      onStarted?.();
-    },
-    [onEngage, onStarted],
-  );
-
-  const handlePointerUp = useCallback(() => {
-    if (!pointerDownRef.current) return;
-    pointerDownRef.current = false;
-    onRelease?.();
-  }, [onRelease]);
 
   const phaseLabel = clock.isPaused ? 'Paused' : phase.label;
 
@@ -55,8 +35,17 @@ export default function StaticFieldSequence({
         ? phase.hint
         : 'Press and hold';
 
+  const handleEngage = useCallback(() => {
+    onEngage?.();
+    onStarted?.();
+  }, [onEngage, onStarted]);
+
+  const handleRelease = useCallback(() => {
+    onRelease?.();
+  }, [onRelease]);
+
   return (
-    <SurgeSequence
+    <SequenceStage
       variant={variant}
       elapsedSeconds={clock.elapsedSeconds}
       progress={clock.progress}
@@ -66,13 +55,7 @@ export default function StaticFieldSequence({
       interactionMode={InteractionMode.HOLD}
       onExit={onExit}
       onChangeSequence={onChangeSequence}
-      containerProps={{
-        onPointerDown: handlePointerDown,
-        onPointerUp: handlePointerUp,
-        onPointerLeave: handlePointerUp,
-        onPointerCancel: handlePointerUp,
-        style: { touchAction: 'none' },
-      }}
+      interactionLayer={<HoldSurface onEngage={handleEngage} onRelease={handleRelease} />}
     >
       <StaticFieldVisual
         elapsedSeconds={clock.elapsedSeconds}
@@ -80,7 +63,7 @@ export default function StaticFieldSequence({
         isEngaged={isEngaged}
         isPaused={clock.isPaused}
       />
-    </SurgeSequence>
+    </SequenceStage>
   );
 }
 

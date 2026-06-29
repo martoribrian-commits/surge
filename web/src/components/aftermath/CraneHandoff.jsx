@@ -22,8 +22,8 @@ export default function CraneHandoff({ sessionId: _sessionId, brainDumpText }) {
         Crane
       </h3>
       <p className="mt-4 max-w-lg font-sans text-sm leading-relaxed text-white/45">
-        Offload what surfaced. Ephemeral by default. Auto-deletes in 24 hours unless you
-        choose to save insights locally.
+        Offload what surfaced — or ask Crane to explain what the sequence just did in your body.
+        Ephemeral by default. Auto-deletes in 24 hours unless you choose to save insights locally.
       </p>
       {brainDumpText?.trim() ? (
         <p className="mt-3 font-sans text-[10px] text-white/30">

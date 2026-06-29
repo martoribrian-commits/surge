@@ -1,3 +1,7 @@
+export { default as SequenceStage } from './SequenceStage';
+export { default as SequenceChrome } from './SequenceChrome';
+export { default as HoldSurface } from './HoldSurface';
+export { default as BilateralSurface } from './BilateralSurface';
 export { default as SurgeSequence } from './SurgeSequence';
 export { default as SequenceHud } from './SequenceHud';
 export { default as InteractionGuide } from './InteractionGuide';
