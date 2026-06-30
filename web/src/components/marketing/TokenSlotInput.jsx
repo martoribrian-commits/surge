@@ -11,8 +11,11 @@ export default function TokenSlotInput({ value, onChange, disabled, id = 'clinic
   return (
     <div className="relative">
       <label htmlFor={id} className="sr-only">
-        Clinical token
+        Clinical token, six characters
       </label>
+      <p id="token-slot-hint" className="mb-3 text-center font-sans text-[11px]" style={{ color: BRAND.boneDim }}>
+        Six characters from your clinician. Letters and numbers.
+      </p>
       <input
         id={id}
         type="text"
@@ -23,14 +26,10 @@ export default function TokenSlotInput({ value, onChange, disabled, id = 'clinic
         autoCapitalize="characters"
         spellCheck={false}
         disabled={disabled}
-        className="absolute inset-0 z-10 cursor-text opacity-0"
+        className="absolute inset-0 top-8 z-10 cursor-text opacity-0"
         aria-describedby="token-slot-hint"
       />
-      <div
-        className="grid grid-cols-6 gap-2"
-        aria-hidden
-        id="token-slot-hint"
-      >
+      <div className="grid grid-cols-6 gap-2" aria-hidden>
         {chars.map((char, i) => {
           const filled = char.trim().length > 0;
           const active = i === focusIndex && value.length < 6;

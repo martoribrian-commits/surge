@@ -23,11 +23,7 @@ export default function SupportPage() {
             Support
           </h1>
           <p className="mt-3 max-w-md font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
-            Direct answers. No chatbot. Check{' '}
-            <Link to="/faq" className="underline decoration-[#B6502E]/40 underline-offset-2 hover:text-[#B6502E]">
-              FAQ
-            </Link>{' '}
-            first, then reach out below.
+            Direct answers below. Use the form for human support. The Crane guide is separate from tickets.
           </p>
         </motion.div>
 

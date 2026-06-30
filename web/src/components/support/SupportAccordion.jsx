@@ -11,7 +11,7 @@ const BUCKETS = [
     items: [
       'If the sequence will not start, refresh once and try again on a current browser.',
       'Audio requires a first touch to unlock on iOS and Safari. Tap the screen once before holding.',
-      'Clinical tokens are six characters, case-sensitive. Contact your provider if validation fails.',
+      'Clinical tokens are six characters. Letters and numbers. Contact your provider if validation fails.',
       'Provider portal access is separate from patient tokens. Use the email your clinic registered.',
     ],
   },

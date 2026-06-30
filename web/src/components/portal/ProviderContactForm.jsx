@@ -38,14 +38,15 @@ export default function ProviderContactForm() {
     });
 
     try {
-      await fetch('/', {
+      const res = await fetch('/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload.toString(),
       });
+      if (!res.ok) throw new Error('Submit failed');
       setStatus('sent');
     } catch {
-      setStatus('sent');
+      setStatus('error');
     }
   };
 
@@ -111,6 +112,12 @@ export default function ProviderContactForm() {
           <Field label="Message (optional)">
             <textarea name="message" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} className={`${INPUT_CLASS} resize-none`} />
           </Field>
+
+          {status === 'error' ? (
+            <p className="font-sans text-sm" style={{ color: BRAND.clay }} role="alert">
+              Could not submit. Check your connection and try again.
+            </p>
+          ) : null}
 
           <button
             type="submit"

@@ -111,7 +111,7 @@ export default function SciencePage() {
 
         {/* Hero + interactive explainer */}
         <div className="grid gap-12 pb-20 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-          <div className="flex flex-col items-center lg:sticky lg:top-8 lg:self-start">
+          <div className="order-2 flex flex-col items-center lg:order-1 lg:sticky lg:top-8 lg:self-start">
             <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: BRAND.clay }}>
               How it works
             </p>
@@ -163,7 +163,7 @@ export default function SciencePage() {
             </div>
           </div>
 
-          <div>
+          <div className="order-1 lg:order-2">
             <h1 className="font-sans text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.08] tracking-[-0.03em]">
               What Surge does to your body
             </h1>
@@ -299,11 +299,11 @@ export default function SciencePage() {
             {BODY_STATE_GUIDE.map((row, i) => (
               <div
                 key={row.state}
-                className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-5 py-4 ${i > 0 ? 'border-t border-white/[0.05]' : ''}`}
+                className={`flex flex-col gap-1 px-5 py-4 sm:grid sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-4 ${i > 0 ? 'border-t border-white/[0.05]' : ''}`}
               >
                 <p className="font-sans text-sm" style={{ color: BRAND.boneMuted }}>{row.state}</p>
-                <p className="font-sans text-sm font-semibold">{row.sequence}</p>
-                <p className="font-sans text-sm tabular-nums" style={{ color: BRAND.clay }}>{row.duration}</p>
+                <p className="font-sans text-sm font-semibold sm:text-right">{row.sequence}</p>
+                <p className="font-sans text-sm tabular-nums sm:text-right" style={{ color: BRAND.clay }}>{row.duration}</p>
               </div>
             ))}
           </motion.div>
