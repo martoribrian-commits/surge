@@ -9,22 +9,25 @@ import {
   SiteFooter,
   ProtocolCard,
   CaseStudyCarousel,
+  MarketingCtaBand,
   fadeUp,
 } from '../components/marketing';
 import { EVIDENCE_STUDIES } from '../data/evidenceStudies';
 import { BRAND } from '../brand/tokens';
 import { VARIANT_LIST } from '../sequences';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_META } from '../data/pageMeta';
 
 const PILLARS = [
   {
-    num: '30–90',
+    num: '30 to 90',
     unit: 'Seconds',
-    text: 'Seven evidence-informed sequences. Each runs one fixed downshift curve — visual, audio, and touch phase-locked until completion.',
+    text: 'Seven evidence-informed sequences. Each runs one fixed downshift curve. Visual, audio, and touch phase-locked until completion.',
   },
   {
     num: '0',
     unit: 'Accounts',
-    text: 'No signup gate. No streaks. No mood tracking. Your body stays in control — release to pause, exit anytime.',
+    text: 'No signup gate. No streaks. No mood tracking. Your body stays in control. Release to pause, exit anytime.',
   },
   {
     num: '24h',
@@ -37,30 +40,31 @@ const SCIENCE_PILLARS = [
   {
     label: 'Physiological sigh',
     protocol: 'Instant Reset · 30s',
-    body: 'Double inhale plus extended exhale offloads CO₂ and activates the parasympathetic branch — the fastest evidence-backed breath pattern for acute downshift.',
-    cite: 'Huberman Lab / Stanford — physiological sigh research',
+    body: 'Double inhale plus extended exhale offloads CO₂ and activates the parasympathetic branch. The fastest evidence-backed breath pattern for acute downshift.',
+    cite: 'Balban et al., Cell Reports Medicine, 2023',
   },
   {
     label: 'Bilateral stimulation',
     protocol: 'Orienting Anchor · 60s',
-    body: 'Rhythmic left-right sensory input interrupts cognitive loops and re-orients attention into the body — the same mechanism used in EMDR-adjacent protocols.',
-    cite: 'Bilateral sensory integration literature',
+    body: 'Rhythmic left-right sensory input interrupts cognitive loops and re-orients attention into the body. Same mechanism as EMDR-adjacent protocols.',
+    cite: 'Valiente-Gómez et al., JEMDR Practice, 2021',
   },
   {
     label: 'Resonant breathing',
     protocol: 'Coherence Ripple · 90s',
-    body: 'Paced breathing near ~6 breaths per minute with continuous tactile anchor increases heart-rate variability — the biomarker most linked to autonomic flexibility.',
+    body: 'Paced breathing near ~6 breaths per minute with continuous tactile anchor increases heart-rate variability. The biomarker most linked to autonomic flexibility.',
     cite: 'HRV biofeedback · resonant frequency breathing',
   },
   {
     label: 'Polyvagal downshift',
     protocol: 'Vagal Downshift · 90s',
-    body: 'Multi-channel decay — visual fog descent, breath diaphragm, warm sub-bass — phase-locked to one deterministic arousal curve. Structured, visible settling.',
+    body: 'Multi-channel decay: visual fog descent, breath diaphragm, warm sub-bass. Phase-locked to one deterministic arousal curve. Structured, visible settling.',
     cite: 'Polyvagal-informed somatic regulation',
   },
 ];
 
 export default function MarketingHome() {
+  usePageMeta(PAGE_META.home);
   const [hoverVariant, setHoverVariant] = useState(null);
 
   return (
@@ -100,7 +104,7 @@ export default function MarketingHome() {
               transition={{ delay: 0.35 }}
             >
               When your body will not wait for an appointment. Secular. Private. No account.
-              Seven sequences mapped to physiological protocols — not wellness trends.
+              Seven sequences mapped to physiological protocols. Not wellness trends.
             </motion.p>
 
             <motion.div
@@ -206,8 +210,8 @@ export default function MarketingHome() {
         <div className="mx-auto max-w-5xl px-5 py-20">
           <MarketingSectionHeader
             kicker="Science-backed protocols"
-            title="Each sequence maps to a named physiological mechanism — not a generic meditation timer."
-            description="Surge is evidence-informed, not FDA-cleared. We use language clinicians recognize and patients can feel — without overclaiming efficacy we have not yet measured in trials."
+            title="Each sequence maps to a named physiological mechanism. Not a generic meditation timer."
+            description="Surge is evidence-informed, not FDA-cleared. We use language clinicians recognize and patients can feel, without overclaiming efficacy we have not yet measured in trials."
           />
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -252,7 +256,7 @@ export default function MarketingHome() {
           <MarketingSectionHeader
             kicker="The mechanism"
             title="Chaos at the peak. A slow heartbeat at the end."
-            description="Sound, visuals, and touch follow one downshift curve — starting where your body is and fading toward calm on a fixed timeline. After the cycle: re-enter the world, write what surfaced, or talk with Crane through your provider if you choose."
+            description="Sound, visuals, and touch follow one downshift curve, starting where your body is and fading toward calm on a fixed timeline. After the cycle: re-enter the world, write what surfaced, or talk with Crane through your provider if you choose."
             className="mb-0"
           />
 
@@ -294,7 +298,7 @@ export default function MarketingHome() {
         <div className="mx-auto max-w-5xl px-5 py-20">
           <MarketingSectionHeader
             kicker="Seven sequences"
-            title="Pick by body state — not by mood score."
+            title="Pick by body state. Not by mood score."
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -413,7 +417,7 @@ export default function MarketingHome() {
           </h2>
           <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
             Issue clinical tokens from the provider portal. Patients run the same evidence-informed
-            sequences between visits — with optional Crane post-session support tied to your practice.
+            sequences between visits, with optional Crane post-session support tied to your practice.
             Session outcomes aggregate across your clinical team.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
@@ -435,6 +439,7 @@ export default function MarketingHome() {
         </motion.div>
       </section>
 
+      <MarketingCtaBand />
       <SiteFooter />
     </MarketingShell>
   );

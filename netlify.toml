@@ -110,6 +110,11 @@
   status = 301
 
 [[redirects]]
+  from = "/faq.html"
+  to = "/faq"
+  status = 301
+
+[[redirects]]
   from = "/index.html"
   to = "/"
   status = 301

@@ -37,7 +37,7 @@ export default function LegalLayout({ title, eyebrow = 'Martori Studio', childre
               to="/"
               className="font-sans text-[10px] font-semibold uppercase tracking-[0.24em] text-white/30 transition-colors hover:text-[#B6502E]"
             >
-              ← Back to app
+              ← Back home
             </Link>
             <nav className="flex gap-5" aria-label="Legal and support">
               {LEGAL_LINKS.map((link) => {

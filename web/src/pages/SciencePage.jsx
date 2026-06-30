@@ -10,10 +10,13 @@ import {
   MarketingFaq,
   ComparisonTable,
   ProtocolCard,
+  MarketingCtaBand,
   fadeUp,
 } from '../components/marketing';
 import { useCraneOptional } from '../context/CraneProvider';
 import { VARIANT_LIST } from '../sequences';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_META } from '../data/pageMeta';
 import { BRAND } from '../brand/tokens';
 
 const SECTIONS = [
@@ -22,14 +25,14 @@ const SECTIONS = [
     label: 'The problem',
     summary: 'When stress peaks, thinking stops working.',
     body: [
-      'At full activation your body is in alarm mode. Heart rate up, breathing shallow, muscles tight. In that state, "just calm down" or "think rationally" does not land — your prefrontal cortex literally does not have the bandwidth.',
+      'At full activation your body is in alarm mode. Heart rate up, breathing shallow, muscles tight. In that state, "just calm down" or "think rationally" does not land. Your prefrontal cortex literally does not have the bandwidth.',
       'Most apps make it worse: log in, track your mood, read a paragraph, choose from twelve options. Surge does the opposite. One sequence. One interaction. Thirty to ninety seconds.',
     ],
   },
   {
     id: 'window',
     label: 'The window',
-    summary: 'Your body can still come down — if you give it a path.',
+    summary: 'Your body can still come down if you give it a path.',
     body: [
       'Somatic regulation research identifies a narrow window after peak activation when the nervous system can still be guided back toward baseline without pharmacological intervention. That window is measured in seconds, not minutes.',
       'Seven sequences, each tuned to a different body state: racing heart, hot anger, stuck thoughts, scattered disorientation, wired exhaustion, full overwhelm, or restless agitation.',
@@ -40,7 +43,7 @@ const SECTIONS = [
     label: 'What actually happens',
     summary: 'Sound, visuals, and touch follow one downshift curve.',
     body: [
-      'Each sequence uses breath, bilateral tapping, or press-and-hold contact — paired with sound and visuals that start where you are and fade toward calm on a fixed timeline.',
+      'Each sequence uses breath, bilateral tapping, or press-and-hold contact, paired with sound and visuals that start where you are and fade toward calm on a fixed timeline.',
       'Nothing to score. Nothing to optimize. You hold on (or tap, or breathe) and the system walks your arousal down. Exit anytime from the header.',
     ],
   },
@@ -49,7 +52,7 @@ const SECTIONS = [
     label: 'Crane',
     summary: 'Plain-language help, anywhere on the site.',
     body: [
-      'Crane explains what each sequence does for your body — without clinical jargon. Not sure which one fits? Ask before you begin. Finished a cycle and something came up? Crane is there after, too.',
+      'Crane explains what each sequence does for your body, without clinical jargon. Not sure which one fits? Ask before you begin. Finished a cycle and something came up? Crane is there after, too.',
       'Guide mode works without an account. Deeper post-session support is available with a clinical token from your provider. Everything stays on your device unless you choose otherwise.',
     ],
   },
@@ -68,7 +71,7 @@ const BODY_STATE_GUIDE = [
 const SCIENCE_FAQ = [
   {
     q: 'Is Surge a medical device or FDA-cleared?',
-    a: 'No. Surge is evidence-informed somatic software — not a diagnostic or treatment device. We use language from established physiological protocols without claiming clinical trial outcomes we have not measured.',
+    a: 'No. Surge is evidence-informed somatic software, not a diagnostic or treatment device. We use language from established physiological protocols without claiming clinical trial outcomes we have not measured.',
   },
   {
     q: 'Why fixed durations instead of open-ended sessions?',
@@ -84,7 +87,7 @@ const SCIENCE_FAQ = [
   },
   {
     q: 'How is this different from a breathing app?',
-    a: 'Breathing apps typically offer one paced-breath pattern. Surge maps seven distinct protocols — sigh intercept, bilateral orienting, resonant HRV breathing, visual decay, sonic entrainment — each matched to a specific body state.',
+    a: 'Breathing apps typically offer one paced-breath pattern. Surge maps seven distinct protocols: sigh intercept, bilateral orienting, resonant HRV breathing, visual decay, sonic entrainment. Each matched to a specific body state.',
   },
 ];
 
@@ -95,6 +98,7 @@ const INTERACTION_COPY = {
 };
 
 export default function SciencePage() {
+  usePageMeta(PAGE_META.science);
   const [activeSection, setActiveSection] = useState('problem');
   const [hoverVariant, setHoverVariant] = useState(null);
   const crane = useCraneOptional();
@@ -115,7 +119,7 @@ export default function SciencePage() {
 
             <div className="w-full space-y-3">
               <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.boneDim }}>
-                Seven sequences — pick by body state
+                Seven sequences. Pick by body state
               </p>
               {VARIANT_LIST.map((variant) => {
                 const active = hoverVariant === variant.id;
@@ -246,14 +250,14 @@ export default function SciencePage() {
           <MarketingSectionHeader
             kicker="The autonomic ladder"
             title="Your nervous system has three gears. Surge targets the downshift."
-            description="Under threat, sympathetic activation ramps up — heart rate, breath rate, muscle tension. The goal is not to think your way out. It is to give the body a somatic path back toward ventral safety."
+            description="Under threat, sympathetic activation ramps up: heart rate, breath rate, muscle tension. The goal is not to think your way out. It is to give the body a somatic path back toward ventral safety."
           />
           <motion.div {...fadeUp} className="grid gap-4 md:grid-cols-3">
             {[
               {
                 gear: 'Sympathetic',
                 signal: 'Fight · flight · freeze',
-                role: 'Alarm mode — where most acute dysregulation lives',
+                role: 'Alarm mode. Where most acute dysregulation lives',
                 color: BRAND.clay,
               },
               {
@@ -265,7 +269,7 @@ export default function SciencePage() {
               {
                 gear: 'Ventral vagal',
                 signal: 'Safety · connection',
-                role: 'The baseline Surge walks you toward — not through talk, through body',
+                role: 'The baseline Surge walks you toward. Not through talk, through body',
                 color: '#8FB596',
               },
             ].map((item) => (
@@ -289,7 +293,7 @@ export default function SciencePage() {
         <section className="border-t border-white/[0.06] py-20">
           <MarketingSectionHeader
             kicker="Which sequence?"
-            title="Match what you feel — not what you think you should pick."
+            title="Match what you feel. Not what you think you should pick."
           />
           <motion.div {...fadeUp} className="overflow-hidden rounded-sm border border-white/[0.08]">
             {BODY_STATE_GUIDE.map((row, i) => (
@@ -310,7 +314,7 @@ export default function SciencePage() {
           <MarketingSectionHeader
             kicker="Protocol library"
             title="Every sequence names its mechanism."
-            description="These are the physiological protocols behind each experience — written for clinicians and readable by anyone."
+            description="These are the physiological protocols behind each experience, written for clinicians and readable by anyone."
           />
           <div className="grid gap-4 sm:grid-cols-2">
             {VARIANT_LIST.map((variant, i) => (
@@ -340,6 +344,7 @@ export default function SciencePage() {
         </section>
       </div>
 
+      <MarketingCtaBand />
       <SiteFooter />
     </MarketingShell>
   );
