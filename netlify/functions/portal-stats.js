@@ -42,10 +42,12 @@ export default async (request) => {
   const tokenCodes = (tokenRows ?? []).map((r) => r.token);
 
   let sessionsCompleted = 0;
+  const variantBreakdown: Record<string, number> = {};
+
   if (tokenCodes.length > 0) {
-    const { count, error: sessionsError } = await supabase
+    const { data: sessionRows, error: sessionsError } = await supabase
       .from('sessions')
-      .select('*', { count: 'exact', head: true })
+      .select('variant_id, completion_state')
       .in('token_used', tokenCodes)
       .eq('completion_state', 'complete');
 
@@ -53,7 +55,12 @@ export default async (request) => {
       console.error('[portal-stats]', sessionsError.message);
       return corsJson({ error: 'Failed to load stats' }, 500);
     }
-    sessionsCompleted = count ?? 0;
+
+    sessionsCompleted = sessionRows?.length ?? 0;
+    for (const row of sessionRows ?? []) {
+      const key = row.variant_id ?? 'unknown';
+      variantBreakdown[key] = (variantBreakdown[key] ?? 0) + 1;
+    }
   }
 
   return corsJson({
@@ -64,6 +71,7 @@ export default async (request) => {
       tokensIssued: issued ?? 0,
       tokensActivated: activated ?? 0,
       sessionsCompleted,
+      variantBreakdown,
     },
   });
 };

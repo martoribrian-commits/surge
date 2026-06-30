@@ -12,9 +12,13 @@ import ProviderStatsBar from './portal/ProviderStatsBar';
 import ProviderGenerateForm from './portal/ProviderGenerateForm';
 import ProviderTokenTable from './portal/ProviderTokenTable';
 import ProviderSessionsTable from './portal/ProviderSessionsTable';
+import ProviderVariantBreakdown from './portal/ProviderVariantBreakdown';
+import ProviderOnboardingGuide from './portal/ProviderOnboardingGuide';
 import { BRAND } from '../brand/tokens';
+import { Link } from 'react-router-dom';
 
 const REVEAL_MS = 10_000;
+const ONBOARDING_KEY = 'surge.portal.onboardingDismissed';
 
 /**
  * Provider portal — Netlify API + Supabase Auth. Service role only on backend.
@@ -31,9 +35,21 @@ export default function ProviderPortal() {
 
   const [orgName, setOrgName] = useState('');
   const [tier, setTier] = useState('');
-  const [stats, setStats] = useState({ tokensIssued: 0, tokensActivated: 0, sessionsCompleted: 0 });
+  const [stats, setStats] = useState({
+    tokensIssued: 0,
+    tokensActivated: 0,
+    sessionsCompleted: 0,
+    variantBreakdown: {},
+  });
   const [tokens, setTokens] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(ONBOARDING_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [generating, setGenerating] = useState(false);
   const [revealedToken, setRevealedToken] = useState(null);
@@ -69,7 +85,12 @@ export default function ProviderPortal() {
       ]);
       setOrgName(statsData.orgName ?? '');
       setTier(statsData.tier ?? '');
-      setStats(statsData.stats ?? { tokensIssued: 0, tokensActivated: 0, sessionsCompleted: 0 });
+      setStats(statsData.stats ?? {
+        tokensIssued: 0,
+        tokensActivated: 0,
+        sessionsCompleted: 0,
+        variantBreakdown: {},
+      });
       setTokens(tokensData.tokens ?? []);
       setSessions(sessionsData.sessions ?? []);
     } catch (err) {
@@ -167,6 +188,17 @@ export default function ProviderPortal() {
     }
   };
 
+  const handleDismissOnboarding = () => {
+    setOnboardingDismissed(true);
+    try {
+      localStorage.setItem(ONBOARDING_KEY, 'true');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const showOnboarding = stats.tokensIssued === 0 && !onboardingDismissed;
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: BRAND.void, color: BRAND.boneDim }}>
@@ -202,7 +234,10 @@ export default function ProviderPortal() {
         <main className="mx-auto max-w-lg px-8 py-16">
           <p className="font-sans text-sm" style={{ color: BRAND.boneMuted }}>{portalError}</p>
           <p className="mt-4 font-sans text-sm" style={{ color: BRAND.boneDim }}>
-            No provider account linked to this email. Contact Surge to provision access.
+            No provider account linked to this email.{' '}
+            <Link to="/for-providers#contact" className="underline hover:text-[#B6502E]">
+              Request access
+            </Link>
           </p>
         </main>
       </div>
@@ -243,7 +278,13 @@ export default function ProviderPortal() {
           <p className="mb-6 font-sans text-xs" style={{ color: BRAND.clay }}>{portalError}</p>
         ) : null}
 
+        {showOnboarding ? <ProviderOnboardingGuide onDismiss={handleDismissOnboarding} /> : null}
+
         <ProviderStatsBar stats={stats} />
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+          <ProviderVariantBreakdown breakdown={stats.variantBreakdown} />
+        </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2">

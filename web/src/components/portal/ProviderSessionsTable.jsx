@@ -1,5 +1,6 @@
 import { BRAND } from '../../brand/tokens';
 import { formatPortalDate } from '../../lib/portalClient';
+import { VARIANT_LABELS } from '../../lib/craneCarePlanUtils';
 
 export default function ProviderSessionsTable({ sessions }) {
   if (!sessions.length) {
@@ -16,6 +17,7 @@ export default function ProviderSessionsTable({ sessions }) {
         <thead>
           <tr className="border-b border-white/[0.08] font-sans text-[9px] uppercase tracking-[0.18em]" style={{ color: BRAND.boneDim }}>
             <th className="px-3 py-3 font-normal">When</th>
+            <th className="px-3 py-3 font-normal">Sequence</th>
             <th className="px-3 py-3 font-normal">Token</th>
             <th className="px-3 py-3 font-normal">Duration</th>
             <th className="px-3 py-3 font-normal">Outcome</th>
@@ -31,6 +33,9 @@ export default function ProviderSessionsTable({ sessions }) {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
+              </td>
+              <td className="px-3 py-3 text-white/55">
+                {row.variantId ? (VARIANT_LABELS[row.variantId] ?? row.variantId) : '—'}
               </td>
               <td className="px-3 py-3 font-mono text-[13px] tracking-[0.2em]">{row.token}</td>
               <td className="px-3 py-3 tabular-nums text-white/45">{row.durationSeconds}s</td>

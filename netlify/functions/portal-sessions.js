@@ -27,7 +27,7 @@ export default async (request) => {
 
   const { data: rows, error } = await supabase
     .from('sessions')
-    .select('id, token_used, duration, completion_state, synced_at')
+    .select('id, token_used, duration, completion_state, synced_at, variant_id')
     .in('token_used', tokenCodes)
     .order('synced_at', { ascending: false })
     .limit(limit);
@@ -43,6 +43,7 @@ export default async (request) => {
     durationSeconds: row.duration,
     completionState: row.completion_state,
     syncedAt: row.synced_at,
+    variantId: row.variant_id ?? null,
   }));
 
   return corsJson({ sessions });
