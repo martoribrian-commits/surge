@@ -86,6 +86,8 @@ export async function requestCraneInference({
   supabaseContext = null,
   conversationHistory = [],
   mode = null,
+  sessionMeta = null,
+  proactiveCarePlan = false,
 }) {
   const resolvedMode =
     mode ?? (supabaseContext?.telemetry ? 'post-session' : 'guide');
@@ -99,6 +101,8 @@ export async function requestCraneInference({
       conversationHistory,
       sequenceCatalog: SEQUENCE_GUIDE_CATALOG,
       mode: resolvedMode,
+      sessionMeta,
+      proactiveCarePlan,
     }),
   });
 
@@ -112,26 +116,53 @@ export async function requestCraneInference({
 }
 
 /**
+ * Proactively generate a post-session care plan (silent — not shown as user message).
+ */
+export async function requestPostSessionCarePlan({ supabaseContext, sessionMeta = {} }) {
+  return requestCraneInference({
+    userMessage: '',
+    supabaseContext,
+    mode: 'post-session',
+    sessionMeta,
+    proactiveCarePlan: true,
+  });
+}
+
+/**
  * Guide-mode inference with static fallback when API unavailable.
  */
 export async function requestCraneGuideInference({
   userMessage,
   conversationHistory = [],
+  sessionMeta = null,
 }) {
   try {
     return await requestCraneInference({
       userMessage,
       conversationHistory,
       mode: 'guide',
+      sessionMeta,
     });
   } catch {
     const fallback = matchGuideFallback(userMessage);
     const actions = inferFallbackActions(userMessage);
+    const urgent = /panic|racing|help now|right now/i.test(userMessage);
+    const primary = actions[0];
     return {
       text:
         fallback ??
         'I can help you pick a sequence. Tell me what your body feels like right now.',
       actions,
+      autoLaunch:
+        urgent && primary
+          ? {
+              path: primary.path,
+              variantId: primary.variantId,
+              label: primary.label,
+              countdownMs: 2000,
+              urgency: 'immediate',
+            }
+          : null,
       advisorUsed: false,
       model: 'fallback',
       mode: 'guide',
@@ -190,6 +221,8 @@ export async function initiateCraneContact(userMessage = CRANE_INITIAL_MESSAGE) 
     supabaseContext,
     reply: inference.text,
     actions: inference.actions ?? [],
+    autoLaunch: inference.autoLaunch ?? null,
+    carePlan: inference.carePlan ?? null,
     model: inference.model,
     advisorUsed: inference.advisorUsed ?? false,
   };

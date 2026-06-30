@@ -3,8 +3,13 @@ import { motion } from 'framer-motion';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
 import { useCraneRetention } from '../hooks/useCraneRetention';
+import { useCraneAutoLaunch } from '../hooks/useCraneAutoLaunch';
+import { useCraneSessionMeta } from '../hooks/useCraneSessionMeta';
 import { useTokenManager } from '../hooks/useTokenManager';
-import { fetchCraneContext, requestCraneInference } from '../lib/craneClient';
+import { fetchCraneContext, requestCraneInference, requestPostSessionCarePlan } from '../lib/craneClient';
+import { loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
+import CraneAutoLaunchBanner from '../components/crane/CraneAutoLaunch';
+import CraneCarePlan from '../components/crane/CraneCarePlan';
 import CraneLineInput from '../components/decompression/CraneLineInput';
 import CraneThread from '../components/decompression/CraneThread';
 import SaveInsightsToggle from '../components/decompression/SaveInsightsToggle';
@@ -29,9 +34,14 @@ export default function DecompressionView() {
 
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [carePlan, setCarePlan] = useState(null);
   const inferenceLockRef = useRef(false);
   const scrollRef = useRef(null);
   const seededRef = useRef(false);
+  const carePlanFetchedRef = useRef(false);
+
+  const { getSessionMeta, nextTurn, recordInferenceMeta } = useCraneSessionMeta();
+  const autoLaunch = useCraneAutoLaunch({});
 
   useEffect(() => {
     if (!hydrated || seededRef.current) return;
@@ -41,6 +51,33 @@ export default function DecompressionView() {
     }
     seededRef.current = true;
   }, [hydrated, messages.length, consumeBrainDumpSeed, appendMessage]);
+
+  useEffect(() => {
+    if (!hydrated || !sessionId || carePlanFetchedRef.current) return;
+    const cached = loadCarePlan(sessionId);
+    if (cached?.steps?.length) {
+      setCarePlan(cached);
+      carePlanFetchedRef.current = true;
+      return;
+    }
+
+    if (!isCraneUnlocked) return;
+    carePlanFetchedRef.current = true;
+
+    (async () => {
+      try {
+        const context = await fetchCraneContext(sessionId);
+        const inference = await requestPostSessionCarePlan({
+          supabaseContext: context,
+          sessionMeta: { advisorCallsTotal: 0, turnCount: 0 },
+        });
+        processCraneInferenceResult(inference, { sessionId, recordMeta: recordInferenceMeta });
+        if (inference.carePlan) setCarePlan(inference.carePlan);
+      } catch {
+        /* optional */
+      }
+    })();
+  }, [hydrated, sessionId, isCraneUnlocked, recordInferenceMeta]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = draft.trim();
@@ -53,12 +90,23 @@ export default function DecompressionView() {
 
     inferenceLockRef.current = true;
     setSubmitting(true);
+    nextTurn();
     try {
       const context = await fetchCraneContext(sessionId);
-      const inference = await requestCraneInference({
-        userMessage: trimmed,
-        supabaseContext: context,
-      });
+      const inference = processCraneInferenceResult(
+        await requestCraneInference({
+          userMessage: trimmed,
+          supabaseContext: context,
+          conversationHistory: messages,
+          sessionMeta: getSessionMeta(),
+        }),
+        {
+          sessionId,
+          scheduleAutoLaunch: autoLaunch.schedule,
+          recordMeta: recordInferenceMeta,
+        },
+      );
+      if (inference.carePlan) setCarePlan(inference.carePlan);
       appendMessage('crane', inference.text);
     } catch {
       appendMessage('crane', 'Held locally. No response sent.');
@@ -66,7 +114,18 @@ export default function DecompressionView() {
       inferenceLockRef.current = false;
       setSubmitting(false);
     }
-  }, [draft, submitting, isCraneUnlocked, sessionId, appendMessage]);
+  }, [
+    draft,
+    submitting,
+    isCraneUnlocked,
+    sessionId,
+    appendMessage,
+    messages,
+    getSessionMeta,
+    nextTurn,
+    autoLaunch.schedule,
+    recordInferenceMeta,
+  ]);
 
   if (!hydrated) {
     return <div className="h-screen w-screen bg-[#0A0A0A]" />;
@@ -134,6 +193,21 @@ export default function DecompressionView() {
         ref={scrollRef}
         className="relative z-10 flex flex-1 flex-col items-center justify-end overflow-y-auto px-6 py-12"
       >
+        {autoLaunch.pending ? (
+          <div className="mb-6 w-full max-w-lg">
+            <CraneAutoLaunchBanner
+              pending={autoLaunch.pending}
+              secondsLeft={autoLaunch.secondsLeft}
+              onCancel={autoLaunch.cancel}
+              onLaunchNow={() => autoLaunch.launchNow()}
+            />
+          </div>
+        ) : null}
+        {carePlan ? (
+          <div className="mb-8 w-full max-w-lg">
+            <CraneCarePlan carePlan={carePlan} compact />
+          </div>
+        ) : null}
         <CraneThread messages={messages} />
       </div>
 

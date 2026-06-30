@@ -1,3 +1,4 @@
+import { resolveAdvisorPolicy } from './craneAdvisorPolicy.js';
 import { buildCraneClientTools, buildAdvisorTool, executeCraneTool } from './craneTools.js';
 
 const EXECUTOR_MODEL = 'claude-sonnet-4-6';
@@ -51,20 +52,48 @@ async function callAnthropic({ apiKey, system, messages, tools }) {
   return response.json();
 }
 
+function buildToolsList({ mode, advisorPolicy, advisorModel }) {
+  const clientTools = buildCraneClientTools(mode);
+  if (!advisorPolicy.includeAdvisor || advisorPolicy.maxUsesThisRequest <= 0) {
+    return clientTools;
+  }
+  return [
+    ...clientTools,
+    buildAdvisorTool({
+      model: advisorModel,
+      maxUses: advisorPolicy.maxUsesThisRequest,
+      enableCaching: advisorPolicy.enableCaching,
+    }),
+  ];
+}
+
 /**
- * Run Crane agent loop: Sonnet executor + Opus advisor + client tool execution.
+ * Run Crane agent loop with tuned advisor frequency and executable tools.
  */
 export async function runCraneAgent({
   apiKey,
   systemPrompt,
   messages,
+  mode = 'guide',
+  sessionMeta = {},
+  userMessage = '',
+  proactiveCarePlan = false,
   advisorModel = 'claude-opus-4-8',
   maxTurns = MAX_AGENT_TURNS,
 }) {
-  const tools = [...buildCraneClientTools(), buildAdvisorTool({ model: advisorModel })];
+  const advisorPolicy = resolveAdvisorPolicy({
+    mode,
+    sessionMeta,
+    userMessage,
+    proactiveCarePlan,
+  });
+
+  const tools = buildToolsList({ mode, advisorPolicy, advisorModel });
   const anthropicMessages = [...messages];
   let advisorUsed = false;
+  let advisorCallsThisRequest = 0;
   const actions = [];
+  let carePlan = null;
   let finalText = '';
   let lastResponse = null;
 
@@ -77,7 +106,11 @@ export async function runCraneAgent({
     });
 
     lastResponse = response;
-    advisorUsed = advisorUsed || advisorWasCalled(response.content);
+
+    if (advisorWasCalled(response.content)) {
+      advisorUsed = true;
+      advisorCallsThisRequest += 1;
+    }
 
     if (response.stop_reason === 'end_turn') {
       finalText = extractText(response.content);
@@ -95,17 +128,14 @@ export async function runCraneAgent({
       const toolResults = [];
 
       for (const block of toolUses) {
-        const { result, action, actions: planActions } = executeCraneTool(
+        const { result, action, actions: planActions, carePlan: plan } = executeCraneTool(
           block.name,
           block.input,
         );
 
-        if (action) {
-          actions.push(action);
-        }
-        if (Array.isArray(planActions)) {
-          actions.push(...planActions);
-        }
+        if (action) actions.push(action);
+        if (Array.isArray(planActions)) actions.push(...planActions);
+        if (plan) carePlan = plan;
 
         toolResults.push({
           type: 'tool_result',
@@ -131,14 +161,36 @@ export async function runCraneAgent({
   }
 
   const dedupedActions = dedupeActions(actions);
+  const autoLaunch = pickAutoLaunchAction(dedupedActions);
 
   return {
     text: finalText,
     actions: dedupedActions,
+    autoLaunch,
+    carePlan,
     advisorUsed,
+    advisorCallsThisRequest,
+    advisorPolicy: {
+      intent: advisorPolicy.intent,
+      reason: advisorPolicy.reason,
+      maxUsesThisRequest: advisorPolicy.maxUsesThisRequest,
+    },
     model: EXECUTOR_MODEL,
     advisorModel,
     usage: lastResponse?.usage ?? null,
+  };
+}
+
+function pickAutoLaunchAction(actions) {
+  const candidate = actions.find((a) => a.autoLaunch && a.path);
+  if (!candidate) return null;
+  return {
+    path: candidate.path,
+    variantId: candidate.variantId,
+    label: candidate.label,
+    prepNote: candidate.prepNote,
+    countdownMs: candidate.countdownMs ?? 2500,
+    urgency: candidate.urgency ?? 'standard',
   };
 }
 
@@ -146,7 +198,7 @@ function dedupeActions(actions) {
   const seen = new Set();
   const out = [];
   for (const action of actions) {
-    const key = `${action.type}:${action.path ?? action.label}:${action.variantId ?? ''}`;
+    const key = `${action.type}:${action.path ?? action.label}:${action.variantId ?? ''}:${action.autoLaunch ?? false}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(action);

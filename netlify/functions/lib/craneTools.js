@@ -16,86 +16,115 @@ const VARIANT_PREP = {
   'static-field': 'Use headphones. Press and hold. The static field is intentionally intense.',
 };
 
-export function buildCraneClientTools() {
-  const variantEnum = [...VALID_VARIANT_IDS];
+const URGENCY_COUNTDOWN_MS = {
+  immediate: 2000,
+  confirmed: 3500,
+  standard: 2500,
+};
 
-  return [
-    {
-      name: 'recommend_sequence',
-      description:
-        'Recommend a Surge sequence for the user and surface a Start button. Call when you have enough body-state signal to pick one protocol.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          variantId: {
-            type: 'string',
-            enum: variantEnum,
-            description: 'Sequence variant ID from the catalog',
-          },
-          rationale: {
-            type: 'string',
-            description: 'Plain-language why this sequence fits their body state (1-2 sentences)',
-          },
-          bodyStateSummary: {
-            type: 'string',
-            description: 'Brief recap of what they reported feeling',
-          },
+const variantEnum = [...VALID_VARIANT_IDS];
+
+const STEP_SCHEMA = {
+  type: 'object',
+  properties: {
+    order: { type: 'number' },
+    action: { type: 'string', description: 'Plain-language step for the user' },
+    variantId: {
+      type: 'string',
+      enum: variantEnum,
+      description: 'Optional Surge sequence for this step',
+    },
+    category: {
+      type: 'string',
+      enum: ['rest', 'grounding', 'sequence', 'hydration', 'environment'],
+      description: 'Step type for care plan display',
+    },
+  },
+  required: ['order', 'action'],
+};
+
+const BASE_TOOLS = [
+  {
+    name: 'recommend_sequence',
+    description:
+      'Recommend a Surge sequence and surface a Start button. Never auto-launches. Use when they may want to choose first.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        variantId: { type: 'string', enum: variantEnum },
+        rationale: { type: 'string' },
+        bodyStateSummary: { type: 'string' },
+      },
+      required: ['variantId', 'rationale'],
+    },
+  },
+  {
+    name: 'start_sequence_for_user',
+    description:
+      'Launch a sequence for the user with auto-start after a brief countdown. Use for acute need or after they confirm.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        variantId: { type: 'string', enum: variantEnum },
+        prepNote: { type: 'string' },
+        urgency: {
+          type: 'string',
+          enum: ['immediate', 'confirmed', 'standard'],
+          description: 'immediate = panic/acute (2s countdown), confirmed = they said yes (3.5s), standard = 2.5s',
         },
-        required: ['variantId', 'rationale'],
+      },
+      required: ['variantId'],
+    },
+  },
+  {
+    name: 'suggest_regulation_plan',
+    description: 'Acute multi-step somatic plan (max 3 steps). Not for post-session recovery — use build_post_session_care_plan instead.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        steps: { type: 'array', maxItems: 3, items: STEP_SCHEMA },
+        clinicalNote: { type: 'string' },
+      },
+      required: ['steps'],
+    },
+  },
+];
+
+const POST_SESSION_CARE_PLAN_TOOL = {
+  name: 'build_post_session_care_plan',
+  description:
+    'Build a 2-3 step post-session recovery care plan after sequence completion. Mix rest, grounding, environment, and optional follow-up sequences. Not a diagnosis.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      steps: {
+        type: 'array',
+        maxItems: 3,
+        items: STEP_SCHEMA,
+      },
+      clinicalNote: {
+        type: 'string',
+        description: 'Brief somatic framing of what their nervous system likely needs now',
+      },
+      completedVariantId: {
+        type: 'string',
+        enum: variantEnum,
+        description: 'The sequence they just finished',
+      },
+      launchFirstSequenceStep: {
+        type: 'boolean',
+        description: 'If a step includes a sequence, auto-launch the first one',
       },
     },
-    {
-      name: 'start_sequence_for_user',
-      description:
-        'Launch a sequence for the user immediately. Use when urgency is clear or they confirmed they want to start.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          variantId: {
-            type: 'string',
-            enum: variantEnum,
-          },
-          prepNote: {
-            type: 'string',
-            description: 'One sentence prep (headphones, hold vs tap, etc.)',
-          },
-        },
-        required: ['variantId'],
-      },
-    },
-    {
-      name: 'suggest_regulation_plan',
-      description:
-        'Suggest a short multi-step somatic regulation plan (not a diagnosis). Max 3 steps. Use when they need a sequence of actions, not just one protocol.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          steps: {
-            type: 'array',
-            maxItems: 3,
-            items: {
-              type: 'object',
-              properties: {
-                order: { type: 'number' },
-                action: { type: 'string', description: 'Plain-language step for the user' },
-                variantId: {
-                  type: 'string',
-                  enum: variantEnum,
-                  description: 'Optional sequence for this step',
-                },
-              },
-              required: ['order', 'action'],
-            },
-          },
-          clinicalNote: {
-            type: 'string',
-            description: 'Brief somatic framing without diagnosing',
-          },
-        },
-        required: ['steps'],
-      },
-    },
-  ];
+    required: ['steps', 'clinicalNote'],
+  },
+};
+
+export function buildCraneClientTools(mode = 'guide') {
+  if (mode === 'post-session') {
+    return [...BASE_TOOLS, POST_SESSION_CARE_PLAN_TOOL];
+  }
+  return [...BASE_TOOLS];
 }
 
 function normalizeVariantId(variantId) {
@@ -103,7 +132,10 @@ function normalizeVariantId(variantId) {
   return VALID_VARIANT_IDS.includes(id) ? id : null;
 }
 
-function buildNavigateAction(variantId, { label, rationale, prepNote, primary = false } = {}) {
+function buildNavigateAction(
+  variantId,
+  { label, rationale, prepNote, primary = false, autoLaunch = false, urgency = 'standard' } = {},
+) {
   const name = VARIANT_LABELS[variantId] ?? variantId;
   return {
     type: 'navigate',
@@ -113,11 +145,53 @@ function buildNavigateAction(variantId, { label, rationale, prepNote, primary = 
     rationale: rationale ?? null,
     prepNote: prepNote ?? VARIANT_PREP[variantId] ?? null,
     primary: Boolean(primary),
+    autoLaunch: Boolean(autoLaunch),
+    countdownMs: autoLaunch ? (URGENCY_COUNTDOWN_MS[urgency] ?? URGENCY_COUNTDOWN_MS.standard) : null,
+    urgency,
   };
 }
 
+function normalizeCarePlanSteps(steps) {
+  return (Array.isArray(steps) ? steps.slice(0, 3) : [])
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((step, index) => ({
+      order: step.order ?? index + 1,
+      action: String(step.action ?? '').trim(),
+      variantId: normalizeVariantId(step.variantId),
+      category: step.category ?? (step.variantId ? 'sequence' : 'grounding'),
+    }));
+}
+
+function buildCarePlanFromSteps(steps, { clinicalNote, completedVariantId, planType = 'regulation' }) {
+  const normalizedSteps = normalizeCarePlanSteps(steps);
+  const actions = [];
+  let firstSequenceIndex = -1;
+
+  normalizedSteps.forEach((step, index) => {
+    if (step.variantId) {
+      if (firstSequenceIndex === -1) firstSequenceIndex = index;
+      actions.push(
+        buildNavigateAction(step.variantId, {
+          label: `Step ${step.order}: ${VARIANT_LABELS[step.variantId]}`,
+          primary: index === firstSequenceIndex,
+        }),
+      );
+    }
+  });
+
+  const carePlan = {
+    planType,
+    completedVariantId: normalizeVariantId(completedVariantId),
+    steps: normalizedSteps,
+    clinicalNote: String(clinicalNote ?? '').trim() || null,
+    generatedAt: Date.now(),
+  };
+
+  return { carePlan, actions, normalizedSteps };
+}
+
 /**
- * Execute a Crane client tool server-side. Returns tool result for the model and optional UI action.
+ * Execute a Crane client tool server-side.
  */
 export function executeCraneTool(name, input) {
   const args = input && typeof input === 'object' ? input : {};
@@ -126,17 +200,14 @@ export function executeCraneTool(name, input) {
     case 'recommend_sequence': {
       const variantId = normalizeVariantId(args.variantId);
       if (!variantId) {
-        return {
-          result: { ok: false, error: 'Invalid variantId' },
-          action: null,
-        };
+        return { result: { ok: false, error: 'Invalid variantId' }, action: null };
       }
       const rationale = String(args.rationale ?? '').trim();
-      const bodyStateSummary = String(args.bodyStateSummary ?? '').trim();
       const action = buildNavigateAction(variantId, {
         rationale,
         prepNote: VARIANT_PREP[variantId],
         primary: true,
+        autoLaunch: false,
       });
       return {
         result: {
@@ -144,7 +215,6 @@ export function executeCraneTool(name, input) {
           variantId,
           name: VARIANT_LABELS[variantId],
           rationale,
-          bodyStateSummary: bodyStateSummary || null,
           actionPrepared: true,
         },
         action,
@@ -154,78 +224,93 @@ export function executeCraneTool(name, input) {
     case 'start_sequence_for_user': {
       const variantId = normalizeVariantId(args.variantId);
       if (!variantId) {
-        return {
-          result: { ok: false, error: 'Invalid variantId' },
-          action: null,
-        };
+        return { result: { ok: false, error: 'Invalid variantId' }, action: null };
       }
+      const urgency = ['immediate', 'confirmed', 'standard'].includes(args.urgency)
+        ? args.urgency
+        : 'standard';
       const prepNote = String(args.prepNote ?? VARIANT_PREP[variantId] ?? '').trim();
       const action = buildNavigateAction(variantId, {
         label: `Begin ${VARIANT_LABELS[variantId]}`,
         prepNote,
         primary: true,
+        autoLaunch: true,
+        urgency,
       });
       return {
-        result: {
-          ok: true,
-          variantId,
-          launching: true,
-          prepNote,
-        },
+        result: { ok: true, variantId, launching: true, autoLaunch: true, urgency, prepNote },
         action,
       };
     }
 
     case 'suggest_regulation_plan': {
-      const steps = Array.isArray(args.steps) ? args.steps.slice(0, 3) : [];
       const clinicalNote = String(args.clinicalNote ?? '').trim();
-      const actions = [];
-      const normalizedSteps = steps
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((step, index) => {
-          const variantId = normalizeVariantId(step.variantId);
-          const entry = {
-            order: step.order ?? index + 1,
-            action: String(step.action ?? '').trim(),
-            variantId,
-          };
-          if (variantId) {
-            actions.push(
-              buildNavigateAction(variantId, {
-                label: `Step ${entry.order}: ${VARIANT_LABELS[variantId]}`,
-                primary: index === 0,
-              }),
-            );
-          }
-          return entry;
-        });
+      const { carePlan, actions, normalizedSteps } = buildCarePlanFromSteps(args.steps, {
+        clinicalNote,
+        planType: 'acute',
+      });
+      return {
+        result: { ok: true, steps: normalizedSteps, clinicalNote: clinicalNote || null },
+        actions,
+        carePlan,
+      };
+    }
+
+    case 'build_post_session_care_plan': {
+      const clinicalNote = String(args.clinicalNote ?? '').trim();
+      const completedVariantId = normalizeVariantId(args.completedVariantId);
+      const launchFirst = Boolean(args.launchFirstSequenceStep);
+      const { carePlan, actions, normalizedSteps } = buildCarePlanFromSteps(args.steps, {
+        clinicalNote,
+        completedVariantId,
+        planType: 'post-session',
+      });
+
+      if (launchFirst && actions.length > 0) {
+        actions[0] = {
+          ...actions[0],
+          autoLaunch: true,
+          urgency: 'standard',
+          countdownMs: URGENCY_COUNTDOWN_MS.standard,
+          primary: true,
+        };
+      }
 
       return {
         result: {
           ok: true,
+          planType: 'post-session',
           steps: normalizedSteps,
           clinicalNote: clinicalNote || null,
+          completedVariantId,
         },
         actions,
+        carePlan,
       };
     }
 
     default:
-      return {
-        result: { ok: false, error: `Unknown tool: ${name}` },
-        action: null,
-      };
+      return { result: { ok: false, error: `Unknown tool: ${name}` }, action: null };
   }
 }
 
-export function buildAdvisorTool({ model = 'claude-opus-4-8', maxUses = 3, maxTokens = 2048 } = {}) {
-  return {
+export function buildAdvisorTool({
+  model = 'claude-opus-4-8',
+  maxUses = 2,
+  maxTokens = 2048,
+  enableCaching = false,
+} = {}) {
+  const tool = {
     type: 'advisor_20260301',
     name: 'advisor',
     model,
     max_uses: maxUses,
     max_tokens: maxTokens,
   };
+  if (enableCaching) {
+    tool.caching = { type: 'ephemeral', ttl: '5m' };
+  }
+  return tool;
 }
 
-export { VARIANT_LABELS, VARIANT_PREP };
+export { VARIANT_LABELS, VARIANT_PREP, URGENCY_COUNTDOWN_MS };

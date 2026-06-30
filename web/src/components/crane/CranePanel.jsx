@@ -3,17 +3,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCrane } from '../../context/CraneProvider';
 import { useSequenceSessionOptional } from '../../context/SequenceSessionProvider';
+import { useCraneAutoLaunch } from '../../hooks/useCraneAutoLaunch';
+import { useCraneSessionMeta } from '../../hooks/useCraneSessionMeta';
 import {
   buildCraneGuideOpener,
   buildCraneTelemetryOpener,
   fetchCraneContext,
   requestCraneGuideInference,
   requestCraneInference,
+  requestPostSessionCarePlan,
 } from '../../lib/craneClient';
+import { loadCarePlan, processCraneInferenceResult } from '../../lib/craneCarePlanUtils';
 import { getCachedSessionPayload } from '../../lib/sessionPayload';
 import { VARIANT_LIST } from '../../sequences';
-
 import CraneActions from './CraneActions';
+import CraneAutoLaunchBanner from './CraneAutoLaunch';
+import CraneCarePlan from './CraneCarePlan';
 
 const EASE = [0.25, 0.1, 0.25, 1];
 
@@ -21,15 +26,19 @@ const QUICK_PROMPTS = [
   'Which sequence should I pick?',
   'My heart is racing',
   'I feel stuck in my head',
-  'Explain all five sequences',
+  'What should I do next?',
 ];
 
-function createMessage(role, content, { actions = [] } = {}) {
-  return { id: crypto.randomUUID(), role, content, actions };
+function createMessage(role, content, { actions = [], carePlan = null } = {}) {
+  return { id: crypto.randomUUID(), role, content, actions, carePlan };
 }
 
-function MessageBubble({ message, isLatest }) {
+function MessageBubble({ message, isLatest, autoLaunchPath }) {
   const isUser = message.role === 'user';
+  const visibleActions = (message.actions ?? []).filter(
+    (a) => !(a.autoLaunch && a.path === autoLaunchPath),
+  );
+
   return (
     <motion.div
       layout
@@ -47,8 +56,13 @@ function MessageBubble({ message, isLatest }) {
           {i < message.content.split('\n').length - 1 ? <br /> : null}
         </span>
       ))}
-      {!isUser && message.actions?.length ? (
-        <CraneActions actions={message.actions} compact />
+      {!isUser && message.carePlan ? (
+        <div className="mt-3">
+          <CraneCarePlan carePlan={message.carePlan} compact />
+        </div>
+      ) : null}
+      {!isUser && visibleActions.length ? (
+        <CraneActions actions={visibleActions} compact />
       ) : null}
     </motion.div>
   );
@@ -67,18 +81,81 @@ export default function CranePanel() {
   const [input, setInput] = useState('');
   const [status, setStatus] = useState('idle');
   const [mode, setMode] = useState('guide');
+  const [carePlan, setCarePlan] = useState(null);
+  const [carePlanLoading, setCarePlanLoading] = useState(false);
+  const [supabaseContext, setSupabaseContext] = useState(null);
+
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const lockRef = useRef(false);
   const initializedRef = useRef(false);
+  const carePlanFetchedRef = useRef(false);
+
+  const { getSessionMeta, nextTurn, recordInferenceMeta, resetSessionMeta } = useCraneSessionMeta();
+  const autoLaunch = useCraneAutoLaunch({ closeCrane });
 
   const resetPanel = useCallback(() => {
     setMessages([]);
     setInput('');
     setStatus('idle');
     setMode('guide');
+    setCarePlan(null);
+    setSupabaseContext(null);
+    setCarePlanLoading(false);
     initializedRef.current = false;
-  }, []);
+    carePlanFetchedRef.current = false;
+    resetSessionMeta();
+    autoLaunch.cancel();
+  }, [resetSessionMeta, autoLaunch]);
+
+  const handleInferenceResult = useCallback(
+    (inference) => {
+      processCraneInferenceResult(inference, {
+        sessionId,
+        scheduleAutoLaunch: autoLaunch.schedule,
+        recordMeta: recordInferenceMeta,
+      });
+      if (inference.carePlan) setCarePlan(inference.carePlan);
+      return inference;
+    },
+    [sessionId, autoLaunch.schedule, recordInferenceMeta],
+  );
+
+  const fetchProactiveCarePlan = useCallback(
+    async (context) => {
+      if (carePlanFetchedRef.current || !context) return;
+      carePlanFetchedRef.current = true;
+      setCarePlanLoading(true);
+      try {
+        const cached = sessionId ? loadCarePlan(sessionId) : null;
+        if (cached?.steps?.length) {
+          setCarePlan(cached);
+          return;
+        }
+        const inference = await requestPostSessionCarePlan({
+          supabaseContext: context,
+          sessionMeta: getSessionMeta(),
+        });
+        handleInferenceResult(inference);
+        if (inference.carePlan) {
+          setCarePlan(inference.carePlan);
+        } else if (inference.text) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.carePlan)) return prev;
+            return [
+              ...prev,
+              createMessage('crane', inference.text, { carePlan: inference.carePlan }),
+            ];
+          });
+        }
+      } catch {
+        /* care plan is optional enhancement */
+      } finally {
+        setCarePlanLoading(false);
+      }
+    },
+    [sessionId, getSessionMeta, handleInferenceResult],
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -94,30 +171,33 @@ export default function CranePanel() {
       try {
         if (sessionId) {
           const context = await fetchCraneContext(sessionId);
+          setSupabaseContext(context);
           setMode('post-session');
+          const cachedPlan = loadCarePlan(sessionId);
+          if (cachedPlan) setCarePlan(cachedPlan);
           setMessages([createMessage('crane', buildCraneTelemetryOpener(context))]);
+          setStatus('ready');
+          fetchProactiveCarePlan(context);
         } else {
           setMode('guide');
           setMessages([createMessage('crane', buildCraneGuideOpener())]);
+          setStatus('ready');
         }
-        setStatus('ready');
       } catch {
         setMode('guide');
         setMessages([createMessage('crane', buildCraneGuideOpener())]);
         setStatus('ready');
       }
     })();
-  }, [isOpen, sessionId, resetPanel]);
+  }, [isOpen, sessionId, resetPanel, fetchProactiveCarePlan]);
 
   useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus();
-    }
+    if (isOpen) inputRef.current?.focus();
   }, [isOpen, status]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, carePlan, autoLaunch.pending]);
 
   const sendMessage = async (text) => {
     const trimmed = text.trim();
@@ -127,25 +207,39 @@ export default function CranePanel() {
     const nextMessages = [...messages, createMessage('user', trimmed)];
     setMessages(nextMessages);
     lockRef.current = true;
+    nextTurn();
 
     try {
       let inference;
+      const sessionMeta = getSessionMeta();
+
       if (mode === 'post-session' && sessionId) {
-        const context = await fetchCraneContext(sessionId);
-        inference = await requestCraneInference({
-          userMessage: trimmed,
-          supabaseContext: context,
-          conversationHistory: nextMessages.slice(0, -1),
-        });
+        const context = supabaseContext ?? (await fetchCraneContext(sessionId));
+        if (!supabaseContext) setSupabaseContext(context);
+        inference = handleInferenceResult(
+          await requestCraneInference({
+            userMessage: trimmed,
+            supabaseContext: context,
+            conversationHistory: nextMessages.slice(0, -1),
+            sessionMeta,
+          }),
+        );
       } else {
-        inference = await requestCraneGuideInference({
-          userMessage: trimmed,
-          conversationHistory: nextMessages.slice(0, -1),
-        });
+        inference = handleInferenceResult(
+          await requestCraneGuideInference({
+            userMessage: trimmed,
+            conversationHistory: nextMessages.slice(0, -1),
+            sessionMeta,
+          }),
+        );
       }
+
       setMessages((prev) => [
         ...prev,
-        createMessage('crane', inference.text, { actions: inference.actions ?? [] }),
+        createMessage('crane', inference.text, {
+          actions: inference.actions ?? [],
+          carePlan: inference.carePlan ?? null,
+        }),
       ]);
     } catch {
       setMessages((prev) => [
@@ -171,6 +265,7 @@ export default function CranePanel() {
   };
 
   const showSequenceStrip = location.pathname !== '/' && !location.pathname.startsWith('/engine');
+  const showCarePlanCard = mode === 'post-session' && carePlan && !carePlanLoading;
 
   return (
     <AnimatePresence>
@@ -202,7 +297,7 @@ export default function CranePanel() {
                   Crane
                 </p>
                 <p className="mt-0.5 font-sans text-[11px] text-white/40">
-                  {mode === 'post-session' ? 'After your sequence' : 'Plain-language guide'}
+                  {mode === 'post-session' ? 'Clinical recovery guide' : 'Clinical somatic guide'}
                 </p>
               </div>
               <button
@@ -214,12 +309,34 @@ export default function CranePanel() {
               </button>
             </header>
 
+            <CraneAutoLaunchBanner
+              pending={autoLaunch.pending}
+              secondsLeft={autoLaunch.secondsLeft}
+              onCancel={autoLaunch.cancel}
+              onLaunchNow={() => autoLaunch.launchNow()}
+            />
+
             <div ref={scrollRef} className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-6">
               {status === 'connecting' && (
                 <p className="font-sans text-sm text-white/25">Connecting…</p>
               )}
+              {showCarePlanCard ? (
+                <CraneCarePlan
+                  carePlan={carePlan}
+                  compact
+                  onStepClick={() => closeCrane()}
+                />
+              ) : null}
+              {carePlanLoading ? (
+                <p className="font-sans text-[11px] text-white/30">Building your recovery plan…</p>
+              ) : null}
               {messages.map((msg, i) => (
-                <MessageBubble key={msg.id} message={msg} isLatest={i === messages.length - 1} />
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isLatest={i === messages.length - 1}
+                  autoLaunchPath={autoLaunch.pending?.path}
+                />
               ))}
             </div>
 

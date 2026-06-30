@@ -61,7 +61,11 @@ export default function AftermathView() {
         />
 
         <div className="mt-8">
-          <CraneHandoff sessionId={sessionId} brainDumpText={brainDumpText} />
+          <CraneHandoff
+            sessionId={sessionId}
+            brainDumpText={brainDumpText}
+            variantId={variant.id}
+          />
         </div>
 
         <div className="mt-16 flex flex-col items-center gap-6 border-t border-white/[0.06] pt-12">
