@@ -20,7 +20,7 @@ export default async (request) => {
 
   const { data: rows, error } = await supabase
     .from('clinical_tokens')
-    .select('token, issued_at, expires_at, uses_remaining, activated_at')
+    .select('token, patient_alias, issued_at, expires_at, uses_remaining, activated_at')
     .eq('provider_id', userId)
     .order('issued_at', { ascending: false });
 
@@ -31,6 +31,7 @@ export default async (request) => {
 
   const tokens = (rows ?? []).map((row) => ({
     token: row.token,
+    patient_alias: row.patient_alias,
     issued_at: row.issued_at,
     expires_at: row.expires_at,
     uses_remaining: row.uses_remaining,

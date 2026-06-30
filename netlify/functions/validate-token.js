@@ -43,6 +43,7 @@ export default async (request) => {
   }
 
   const raw = body?.token;
+  const checkOnly = body?.check === true;
   if (typeof raw !== 'string') {
     return json({ valid: false });
   }
@@ -76,6 +77,10 @@ export default async (request) => {
 
     if (row.expires_at && new Date(row.expires_at) <= new Date()) {
       return json({ valid: false });
+    }
+
+    if (checkOnly) {
+      return json({ valid: true });
     }
 
     const updates = { uses_remaining: row.uses_remaining - 1 };

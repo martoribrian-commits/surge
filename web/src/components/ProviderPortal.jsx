@@ -1,77 +1,121 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { generateClinicalToken } from '../lib/clinicalToken';
+import {
+  fetchPortalStats,
+  fetchPortalTokens,
+  fetchPortalSessions,
+  generatePortalToken,
+  revokePortalToken,
+} from '../lib/portalClient';
+import ProviderPortalLogin from './portal/ProviderPortalLogin';
+import ProviderStatsBar from './portal/ProviderStatsBar';
+import ProviderGenerateForm from './portal/ProviderGenerateForm';
+import ProviderTokenTable from './portal/ProviderTokenTable';
+import ProviderSessionsTable from './portal/ProviderSessionsTable';
+import { BRAND } from '../brand/tokens';
+
+const REVEAL_MS = 10_000;
 
 /**
- * Provider portal — token inventory, generation, activation stats.
- * Supabase Auth email/password only. Brutally simple.
+ * Provider portal — Netlify API + Supabase Auth. Service role only on backend.
  */
 export default function ProviderPortal() {
   const [session, setSession] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [tokens, setTokens] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [portalError, setPortalError] = useState('');
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [loading, setLoading] = useState(true);
+
+  const [orgName, setOrgName] = useState('');
+  const [tier, setTier] = useState('');
+  const [stats, setStats] = useState({ tokensIssued: 0, tokensActivated: 0, sessionsCompleted: 0 });
+  const [tokens, setTokens] = useState([]);
+  const [sessions, setSessions] = useState([]);
+
   const [generating, setGenerating] = useState(false);
+  const [revealedToken, setRevealedToken] = useState(null);
+  const [revoking, setRevoking] = useState(null);
+  const revealTimerRef = useRef(null);
 
-  const [expiryDays, setExpiryDays] = useState(30);
-  const [useCount, setUseCount] = useState(1);
-  const [patientAlias, setPatientAlias] = useState('');
-
-  const loadProviderData = useCallback(async (userId) => {
-    if (!supabase) return;
-
-    const { data: providerRow, error: providerError } = await supabase
-      .from('providers')
-      .select('id, name, org_name, tier, active')
-      .eq('auth_user_id', userId)
-      .maybeSingle();
-
-    if (providerError || !providerRow) {
-      setProvider(null);
-      setTokens([]);
-      return;
+  const clearReveal = useCallback(() => {
+    if (revealTimerRef.current) {
+      window.clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
     }
+    setRevealedToken(null);
+  }, []);
 
-    setProvider(providerRow);
+  const showReveal = useCallback(
+    (token) => {
+      clearReveal();
+      setRevealedToken(token);
+      revealTimerRef.current = window.setTimeout(clearReveal, REVEAL_MS);
+    },
+    [clearReveal],
+  );
 
-    const { data: tokenRows } = await supabase
-      .from('clinical_tokens')
-      .select('token, patient_alias, issued_at, activated_at, expires_at, uses_remaining')
-      .eq('provider_id', providerRow.id)
-      .order('issued_at', { ascending: false });
-
-    setTokens(tokenRows ?? []);
+  const loadDashboard = useCallback(async (accessToken) => {
+    if (!accessToken) return;
+    setDashboardLoading(true);
+    setPortalError('');
+    try {
+      const [statsData, tokensData, sessionsData] = await Promise.all([
+        fetchPortalStats(accessToken),
+        fetchPortalTokens(accessToken),
+        fetchPortalSessions(accessToken),
+      ]);
+      setOrgName(statsData.orgName ?? '');
+      setTier(statsData.tier ?? '');
+      setStats(statsData.stats ?? { tokensIssued: 0, tokensActivated: 0, sessionsCompleted: 0 });
+      setTokens(tokensData.tokens ?? []);
+      setSessions(sessionsData.sessions ?? []);
+    } catch (err) {
+      if (err.status === 401) {
+        setOrgName('');
+        setPortalError('No provider account linked to this email.');
+      } else {
+        setPortalError('Could not load dashboard. Try again.');
+      }
+    } finally {
+      setDashboardLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
-      return;
+      return undefined;
     }
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session?.user) {
-        loadProviderData(data.session.user.id);
+      if (data.session?.access_token) {
+        loadDashboard(data.session.access_token);
       }
       setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      if (nextSession?.user) {
-        loadProviderData(nextSession.user.id);
+      if (nextSession?.access_token) {
+        loadDashboard(nextSession.access_token);
       } else {
-        setProvider(null);
+        setOrgName('');
+        setTier('');
         setTokens([]);
+        setSessions([]);
+        clearReveal();
       }
     });
 
-    return () => listener.subscription.unsubscribe();
-  }, [loadProviderData]);
+    return () => {
+      listener.subscription.unsubscribe();
+      clearReveal();
+    };
+  }, [loadDashboard, clearReveal]);
 
   const handleSignIn = async (event) => {
     event.preventDefault();
@@ -83,103 +127,81 @@ export default function ProviderPortal() {
   };
 
   const handleSignOut = async () => {
+    clearReveal();
     await supabase?.auth.signOut();
   };
 
-  const handleGenerate = async (event) => {
-    event.preventDefault();
-    if (!supabase || !provider || generating) return;
-
+  const handleGenerate = async (payload) => {
+    if (!session?.access_token || generating) return;
     setGenerating(true);
-    const token = generateClinicalToken();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + Number(expiryDays));
-
-    const { error } = await supabase.from('clinical_tokens').insert({
-      token,
-      provider_id: provider.id,
-      patient_alias: patientAlias.trim() || null,
-      expires_at: expiresAt.toISOString(),
-      uses_remaining: Number(useCount),
-    });
-
-    if (!error) {
-      setPatientAlias('');
-      await loadProviderData(session.user.id);
+    setPortalError('');
+    try {
+      const result = await generatePortalToken(session.access_token, payload);
+      if (result?.token?.token) {
+        showReveal(result.token.token);
+      }
+      await loadDashboard(session.access_token);
+    } catch {
+      setPortalError('Token generation failed.');
+    } finally {
+      setGenerating(false);
     }
-
-    setGenerating(false);
   };
 
-  const activatedCount = tokens.filter((t) => t.activated_at).length;
+  const handleCopyReveal = () => {
+    if (revealedToken) {
+      navigator.clipboard.writeText(revealedToken).catch(() => {});
+    }
+  };
+
+  const handleRevoke = async (token) => {
+    if (!session?.access_token || revoking) return;
+    setRevoking(token);
+    try {
+      await revokePortalToken(session.access_token, token);
+      await loadDashboard(session.access_token);
+    } catch {
+      setPortalError('Could not revoke token.');
+    } finally {
+      setRevoking(null);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-gray-500">
-        <p className="text-xs uppercase tracking-[0.3em]">Loading.</p>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: BRAND.void, color: BRAND.boneDim }}>
+        <p className="font-sans text-[10px] uppercase tracking-[0.3em]">Loading</p>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="flex min-h-screen flex-col bg-black text-white">
-        <header className="border-b border-[#222] px-8 py-6">
-          <p className="text-xs uppercase tracking-[0.45em]">Surge Portal</p>
-        </header>
-        <main className="mx-auto w-full max-w-md flex-1 px-8 py-16">
-          <h1 className="mb-8 text-sm uppercase tracking-[0.25em] text-gray-500">Provider sign in</h1>
-          <form onSubmit={handleSignIn} className="space-y-6">
-            <div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                required
-                className="w-full border border-[#222] bg-black px-4 py-3 text-sm tracking-wide text-white placeholder:text-gray-600 focus:border-[#fbbf24] focus:outline-none"
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                className="w-full border border-[#222] bg-black px-4 py-3 text-sm tracking-wide text-white placeholder:text-gray-600 focus:border-[#fbbf24] focus:outline-none"
-              />
-            </div>
-            {authError && (
-              <p className="text-xs tracking-wide text-gray-500">{authError}</p>
-            )}
-            <button
-              type="submit"
-              className="border border-[#222] px-6 py-3 text-xs uppercase tracking-[0.3em] text-white hover:border-[#fbbf24] hover:text-[#fbbf24]"
-            >
-              Sign in
-            </button>
-          </form>
-        </main>
-      </div>
+      <ProviderPortalLogin
+        email={email}
+        password={password}
+        authError={authError}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleSignIn}
+      />
     );
   }
 
-  if (!provider) {
+  if (!orgName && !dashboardLoading && portalError) {
     return (
-      <div className="flex min-h-screen flex-col bg-black text-white">
-        <header className="flex items-center justify-between border-b border-[#222] px-8 py-6">
-          <p className="text-xs uppercase tracking-[0.45em]">Surge Portal</p>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="text-[10px] uppercase tracking-[0.2em] text-gray-600 hover:text-white"
-          >
+      <div className="flex min-h-screen flex-col" style={{ background: BRAND.void, color: BRAND.bone }}>
+        <header className="flex items-center justify-between border-b border-white/[0.08] px-8 py-6">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.42em]" style={{ color: BRAND.clay }}>
+            Surge Portal
+          </p>
+          <button type="button" onClick={handleSignOut} className="font-sans text-[10px] uppercase tracking-[0.2em]" style={{ color: BRAND.boneDim }}>
             Sign out
           </button>
         </header>
-        <main className="mx-auto w-full max-w-lg px-8 py-16">
-          <p className="text-sm tracking-wide text-gray-500">
+        <main className="mx-auto max-w-lg px-8 py-16">
+          <p className="font-sans text-sm" style={{ color: BRAND.boneMuted }}>{portalError}</p>
+          <p className="mt-4 font-sans text-sm" style={{ color: BRAND.boneDim }}>
             No provider account linked to this email. Contact Surge to provision access.
           </p>
         </main>
@@ -188,135 +210,71 @@ export default function ProviderPortal() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white">
-      <header className="flex items-center justify-between border-b border-[#222] px-8 py-6">
+    <div className="min-h-screen" style={{ background: BRAND.void, color: BRAND.bone }}>
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{ background: `radial-gradient(ellipse 80% 50% at 50% -20%, ${BRAND.emberGlow}, transparent 55%)` }}
+      />
+
+      <header className="relative z-10 flex items-center justify-between border-b border-white/[0.08] px-6 py-5 sm:px-8">
         <div>
-          <p className="text-xs uppercase tracking-[0.45em]">Surge Portal</p>
-          <p className="mt-1 text-[10px] tracking-[0.15em] text-gray-600">
-            {provider.org_name} · {provider.tier}
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.38em]" style={{ color: BRAND.clay }}>
+            Surge Portal
           </p>
+          <p className="mt-1 font-sans text-sm font-medium">{orgName || '…'}</p>
+          {tier ? (
+            <p className="font-sans text-[10px] uppercase tracking-[0.16em]" style={{ color: BRAND.boneDim }}>
+              {tier} tier
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
           onClick={handleSignOut}
-          className="text-[10px] uppercase tracking-[0.2em] text-gray-600 hover:text-white"
+          className="font-sans text-[10px] uppercase tracking-[0.2em] transition-colors hover:text-[#B6502E]"
+          style={{ color: BRAND.boneDim }}
         >
           Sign out
         </button>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-8 py-12">
-        {/* Stats */}
-        <div className="mb-12 grid grid-cols-3 gap-px border border-[#222] bg-[#222]">
-          {[
-            { label: 'Issued', value: tokens.length },
-            { label: 'Activated', value: activatedCount },
-            { label: 'Pending', value: tokens.length - activatedCount },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-black px-6 py-5">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-gray-600">{stat.label}</p>
-              <p className="mt-2 text-2xl font-light tracking-wide">{stat.value}</p>
+      <main className="relative z-10 mx-auto max-w-5xl px-6 py-10 sm:px-8 sm:py-12">
+        {portalError ? (
+          <p className="mb-6 font-sans text-xs" style={{ color: BRAND.clay }}>{portalError}</p>
+        ) : null}
+
+        <ProviderStatsBar stats={stats} />
+
+        <div className="mt-10 grid gap-8 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <ProviderGenerateForm
+              generating={generating}
+              revealedToken={revealedToken}
+              onGenerate={handleGenerate}
+              onCopy={handleCopyReveal}
+            />
+          </div>
+
+          <section className="rounded-sm border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6 lg:col-span-3">
+            <div className="mb-4 flex items-baseline justify-between gap-3">
+              <h2 className="font-sans text-[10px] font-semibold uppercase tracking-[0.32em]" style={{ color: BRAND.clay }}>
+                Token inventory
+              </h2>
+              {dashboardLoading ? (
+                <span className="font-sans text-[9px] uppercase tracking-[0.16em]" style={{ color: BRAND.boneDim }}>
+                  Updating…
+                </span>
+              ) : null}
             </div>
-          ))}
+            <ProviderTokenTable tokens={tokens} revoking={revoking} onRevoke={handleRevoke} />
+          </section>
         </div>
 
-        {/* Generate */}
-        <section className="mb-12 border border-[#222] p-6">
-          <h2 className="mb-6 text-[10px] uppercase tracking-[0.35em] text-gray-600">
-            Generate token
+        <section className="mt-10 rounded-sm border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6">
+          <h2 className="mb-4 font-sans text-[10px] font-semibold uppercase tracking-[0.32em]" style={{ color: BRAND.clay }}>
+            Recent sessions
           </h2>
-          <form onSubmit={handleGenerate} className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-gray-600">
-                Expiry (days)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="365"
-                value={expiryDays}
-                onChange={(e) => setExpiryDays(e.target.value)}
-                className="w-full border border-[#222] bg-black px-3 py-2 text-sm text-white focus:border-[#fbbf24] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-gray-600">
-                Use count
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={useCount}
-                onChange={(e) => setUseCount(e.target.value)}
-                className="w-full border border-[#222] bg-black px-3 py-2 text-sm text-white focus:border-[#fbbf24] focus:outline-none"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-gray-600">
-                Patient alias (internal only)
-              </label>
-              <input
-                type="text"
-                value={patientAlias}
-                onChange={(e) => setPatientAlias(e.target.value)}
-                placeholder="Optional"
-                className="w-full border border-[#222] bg-black px-3 py-2 text-sm text-white placeholder:text-gray-700 focus:border-[#fbbf24] focus:outline-none"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={generating}
-                className="border border-[#222] px-6 py-3 text-xs uppercase tracking-[0.3em] hover:border-[#fbbf24] hover:text-[#fbbf24] disabled:opacity-40"
-              >
-                {generating ? 'Generating.' : 'Generate token'}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        {/* Inventory */}
-        <section>
-          <h2 className="mb-4 text-[10px] uppercase tracking-[0.35em] text-gray-600">
-            Token inventory
-          </h2>
-          {tokens.length === 0 ? (
-            <p className="text-sm text-gray-600">No tokens issued.</p>
-          ) : (
-            <div className="border border-[#222]">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-[#222] text-[10px] uppercase tracking-[0.2em] text-gray-600">
-                    <th className="px-4 py-3 font-normal">Token</th>
-                    <th className="px-4 py-3 font-normal">Status</th>
-                    <th className="px-4 py-3 font-normal">Uses</th>
-                    <th className="px-4 py-3 font-normal">Expires</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tokens.map((row) => {
-                    const expired = new Date(row.expires_at) < new Date();
-                    const status = expired
-                      ? 'Expired'
-                      : row.activated_at
-                        ? 'Activated'
-                        : 'Pending';
-                    return (
-                      <tr key={row.token} className="border-b border-[#222] last:border-0">
-                        <td className="px-4 py-3 font-mono tracking-widest">{row.token}</td>
-                        <td className="px-4 py-3 text-gray-500">{status}</td>
-                        <td className="px-4 py-3 text-gray-500">{row.uses_remaining}</td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {new Date(row.expires_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ProviderSessionsTable sessions={sessions} />
         </section>
       </main>
     </div>

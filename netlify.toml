@@ -44,6 +44,18 @@
   force = true
 
 [[redirects]]
+  from = "/api/portal-sessions"
+  to = "/.netlify/functions/portal-sessions"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-revoke"
+  to = "/.netlify/functions/portal-revoke"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/crane-inference"
   to = "/.netlify/functions/crane-inference"
   status = 200
@@ -68,6 +80,11 @@
 [[redirects]]
   from = "/how-it-works.html"
   to = "/how-it-works"
+  status = 301
+
+[[redirects]]
+  from = "/portal.html"
+  to = "/portal"
   status = 301
 
 [[redirects]]

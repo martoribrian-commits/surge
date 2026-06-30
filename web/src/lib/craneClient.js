@@ -49,11 +49,11 @@ export function buildCraneGuideOpener() {
 /**
  * Validate clinical token via Netlify Function — no PII returned.
  */
-export async function validateClinicalToken(token) {
+export async function validateClinicalToken(token, { check = false } = {}) {
   const response = await fetch(VALIDATE_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, check }),
   });
 
   const data = await response.json();
