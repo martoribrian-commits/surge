@@ -3,7 +3,13 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
-import FilmGrainOverlay from '../components/FilmGrainOverlay';
+import {
+  MarketingShell,
+  MarketingSectionHeader,
+  SiteFooter,
+  ProtocolCard,
+  fadeUp,
+} from '../components/marketing';
 import { BRAND } from '../brand/tokens';
 import { VARIANT_LIST } from '../sequences';
 
@@ -52,39 +58,13 @@ const SCIENCE_PILLARS = [
   },
 ];
 
-const fadeUp = {
-  initial: { opacity: 0, y: 16 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-40px' },
-  transition: { duration: 0.55, ease: [0.25, 0.1, 0.25, 1] },
-};
-
 export default function MarketingHome() {
   const [hoverVariant, setHoverVariant] = useState(null);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden" style={{ background: BRAND.void, color: BRAND.bone }}>
-      {/* Hero atmosphere */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute inset-0 opacity-50" style={{ background: BRAND.warmWash }} />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${BRAND.emberGlow} 0%, transparent 58%)`,
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background:
-              'radial-gradient(ellipse 60% 40% at 80% 60%, rgba(75,136,184,0.08) 0%, transparent 55%)',
-          }}
-        />
-      </div>
-      <FilmGrainOverlay />
-
+    <MarketingShell>
       {/* ── Hero ── */}
-      <section className="relative z-10 mx-auto max-w-5xl px-5 pb-20 pt-[max(1.25rem,env(safe-area-inset-top))]">
+      <section className="mx-auto max-w-5xl px-5 pb-20 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <SiteHeader />
 
         <div className="mt-6 grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
@@ -170,7 +150,7 @@ export default function MarketingHome() {
       </section>
 
       {/* ── Trust strip ── */}
-      <section className="relative z-10 border-y border-white/[0.06] bg-white/[0.02]">
+      <section className="border-y border-white/[0.06] bg-white/[0.02]">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-5 py-5">
           {[
             'Physiological sigh protocol',
@@ -190,10 +170,13 @@ export default function MarketingHome() {
       </section>
 
       {/* ── Pillars ── */}
-      <section className="relative z-10 mx-auto max-w-5xl px-5 py-20">
-        <motion.p {...fadeUp} className="mb-10 text-center font-sans text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: BRAND.clay }}>
-          Built for the acute window
-        </motion.p>
+      <section className="mx-auto max-w-5xl px-5 py-20">
+        <MarketingSectionHeader
+          kicker="Built for the acute window"
+          title=""
+          align="center"
+          className="mb-10"
+        />
         <div className="grid gap-6 md:grid-cols-3">
           {PILLARS.map((pillar, i) => (
             <motion.article
@@ -217,20 +200,13 @@ export default function MarketingHome() {
       </section>
 
       {/* ── Science foundations ── */}
-      <section className="relative z-10 border-t border-white/[0.06] bg-black/30">
+      <section className="border-t border-white/[0.06] bg-black/30">
         <div className="mx-auto max-w-5xl px-5 py-20">
-          <motion.div {...fadeUp} className="mb-12 max-w-2xl">
-            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: BRAND.clay }}>
-              Science-backed protocols
-            </p>
-            <h2 className="mt-3 font-sans text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold leading-tight tracking-[-0.02em]">
-              Each sequence maps to a named physiological mechanism — not a generic meditation timer.
-            </h2>
-            <p className="mt-4 font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
-              Surge is evidence-informed, not FDA-cleared. We use language clinicians recognize and
-              patients can feel — without overclaiming efficacy we have not yet measured in trials.
-            </p>
-          </motion.div>
+          <MarketingSectionHeader
+            kicker="Science-backed protocols"
+            title="Each sequence maps to a named physiological mechanism — not a generic meditation timer."
+            description="Surge is evidence-informed, not FDA-cleared. We use language clinicians recognize and patients can feel — without overclaiming efficacy we have not yet measured in trials."
+          />
 
           <div className="grid gap-5 md:grid-cols-2">
             {SCIENCE_PILLARS.map((item, i) => (
@@ -269,25 +245,14 @@ export default function MarketingHome() {
       </section>
 
       {/* ── Mechanism ── */}
-      <section className="relative z-10 mx-auto max-w-5xl px-5 py-20">
+      <section className="mx-auto max-w-5xl px-5 py-20">
         <div className="grid items-center gap-12 lg:grid-cols-2">
-          <motion.div {...fadeUp}>
-            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: BRAND.clay }}>
-              The mechanism
-            </p>
-            <h2 className="mt-3 font-sans text-2xl font-extrabold tracking-[-0.02em]">
-              Chaos at the peak. A slow heartbeat at the end.
-            </h2>
-            <p className="mt-4 font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
-              Sound, visuals, and touch follow one downshift curve — starting where your body is and
-              fading toward calm on a fixed timeline. Nothing to score. Nothing to optimize. You hold,
-              tap, or breathe — and the system walks your arousal down.
-            </p>
-            <p className="mt-4 font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
-              After the cycle: re-enter the world, write what surfaced, or talk with Crane through your
-              provider if you choose. Guide mode works without an account.
-            </p>
-          </motion.div>
+          <MarketingSectionHeader
+            kicker="The mechanism"
+            title="Chaos at the peak. A slow heartbeat at the end."
+            description="Sound, visuals, and touch follow one downshift curve — starting where your body is and fading toward calm on a fixed timeline. After the cycle: re-enter the world, write what surfaced, or talk with Crane through your provider if you choose."
+            className="mb-0"
+          />
 
           <motion.div
             {...fadeUp}
@@ -323,16 +288,12 @@ export default function MarketingHome() {
       </section>
 
       {/* ── Sequence preview ── */}
-      <section className="relative z-10 border-t border-white/[0.06] bg-white/[0.015]">
+      <section className="border-t border-white/[0.06] bg-white/[0.015]">
         <div className="mx-auto max-w-5xl px-5 py-20">
-          <motion.div {...fadeUp} className="mb-10">
-            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: BRAND.clay }}>
-              Seven sequences
-            </p>
-            <h2 className="mt-3 font-sans text-2xl font-extrabold tracking-[-0.02em]">
-              Pick by body state — not by mood score.
-            </h2>
-          </motion.div>
+          <MarketingSectionHeader
+            kicker="Seven sequences"
+            title="Pick by body state — not by mood score."
+          />
 
           <div className="grid gap-3 sm:grid-cols-2">
             {VARIANT_LIST.map((variant, i) => {
@@ -394,8 +355,27 @@ export default function MarketingHome() {
         </div>
       </section>
 
+      {/* ── Protocol spotlight (compact) ── */}
+      <section className="mx-auto max-w-5xl px-5 py-20">
+        <MarketingSectionHeader
+          kicker="Protocol library"
+          title="Named mechanisms, not generic calm."
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {VARIANT_LIST.slice(0, 3).map((variant, i) => (
+            <ProtocolCard key={variant.id} variant={variant} index={i} />
+          ))}
+        </div>
+        <motion.p {...fadeUp} className="mt-6 text-center font-sans text-[11px]" style={{ color: BRAND.boneDim }}>
+          All seven protocols on the{' '}
+          <Link to="/how-it-works" className="underline underline-offset-2 transition-colors hover:text-[#B6502E]">
+            science page
+          </Link>
+        </motion.p>
+      </section>
+
       {/* ── Clinical path ── */}
-      <section className="relative z-10 mx-auto max-w-5xl px-5 py-20">
+      <section className="mx-auto max-w-5xl px-5 pb-20">
         <motion.div
           {...fadeUp}
           className="overflow-hidden rounded-sm border border-white/[0.08] p-8 sm:p-12"
@@ -433,32 +413,7 @@ export default function MarketingHome() {
         </motion.div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="relative z-10 border-t border-white/[0.06] px-5 py-10">
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <p className="text-center font-sans text-[10px] leading-relaxed tracking-[0.06em] sm:text-left" style={{ color: BRAND.boneDim }}>
-            For acute nervous system regulation. Not a substitute for emergency medical care.
-          </p>
-          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2" aria-label="Secondary">
-            {[
-              { href: '/how-it-works', label: 'How it works' },
-              { href: '/for-providers', label: 'Providers' },
-              { href: '/privacy', label: 'Privacy' },
-              { href: '/terms', label: 'Terms' },
-              { href: '/support', label: 'Support' },
-            ].map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="font-sans text-[10px] uppercase tracking-[0.16em] transition-colors hover:text-[#B6502E]"
-                style={{ color: BRAND.boneDim }}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </footer>
-    </div>
+      <SiteFooter />
+    </MarketingShell>
   );
 }
