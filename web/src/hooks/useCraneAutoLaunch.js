@@ -2,14 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * Countdown auto-launch for Crane navigate actions (start_sequence_for_user).
+ * Countdown auto-launch with smooth progress for Crane navigate actions.
  */
 export function useCraneAutoLaunch({ onLaunch, onCancel, closeCrane }) {
   const navigate = useNavigate();
   const [pending, setPending] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [progress, setProgress] = useState(0);
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
+  const startRef = useRef(0);
+  const durationRef = useRef(0);
 
   const clearTimers = useCallback(() => {
     if (timerRef.current) {
@@ -26,6 +29,7 @@ export function useCraneAutoLaunch({ onLaunch, onCancel, closeCrane }) {
     clearTimers();
     setPending(null);
     setSecondsLeft(0);
+    setProgress(0);
     onCancel?.();
   }, [clearTimers, onCancel]);
 
@@ -35,6 +39,7 @@ export function useCraneAutoLaunch({ onLaunch, onCancel, closeCrane }) {
       if (!launch?.path) return;
       clearTimers();
       setPending(null);
+      setProgress(100);
       closeCrane?.();
       onLaunch?.(launch);
       navigate(launch.path);
@@ -47,14 +52,20 @@ export function useCraneAutoLaunch({ onLaunch, onCancel, closeCrane }) {
       if (!autoLaunch?.path) return;
       clearTimers();
 
-      const ms = autoLaunch.countdownMs ?? 2500;
+      const ms = autoLaunch.countdownMs ?? 4000;
+      durationRef.current = ms;
+      startRef.current = Date.now();
       const secs = Math.max(1, Math.ceil(ms / 1000));
       setPending(autoLaunch);
       setSecondsLeft(secs);
+      setProgress(0);
 
       intervalRef.current = setInterval(() => {
-        setSecondsLeft((s) => Math.max(0, s - 1));
-      }, 1000);
+        const elapsed = Date.now() - startRef.current;
+        const pct = Math.min(100, (elapsed / durationRef.current) * 100);
+        setProgress(pct);
+        setSecondsLeft(Math.max(0, Math.ceil((durationRef.current - elapsed) / 1000)));
+      }, 80);
 
       timerRef.current = setTimeout(() => {
         launchNow(autoLaunch);
@@ -68,6 +79,7 @@ export function useCraneAutoLaunch({ onLaunch, onCancel, closeCrane }) {
   return {
     pending,
     secondsLeft,
+    progress,
     schedule,
     cancel,
     launchNow,

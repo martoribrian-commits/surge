@@ -94,6 +94,7 @@ export async function runCraneAgent({
   let advisorCallsThisRequest = 0;
   const actions = [];
   let carePlan = null;
+  let bodyInsight = null;
   let finalText = '';
   let lastResponse = null;
 
@@ -128,14 +129,13 @@ export async function runCraneAgent({
       const toolResults = [];
 
       for (const block of toolUses) {
-        const { result, action, actions: planActions, carePlan: plan } = executeCraneTool(
-          block.name,
-          block.input,
-        );
+        const { result, action, actions: planActions, carePlan: plan, bodyInsight: insight } =
+          executeCraneTool(block.name, block.input);
 
         if (action) actions.push(action);
         if (Array.isArray(planActions)) actions.push(...planActions);
         if (plan) carePlan = plan;
+        if (insight) bodyInsight = insight;
 
         toolResults.push({
           type: 'tool_result',
@@ -168,6 +168,7 @@ export async function runCraneAgent({
     actions: dedupedActions,
     autoLaunch,
     carePlan,
+    bodyInsight,
     advisorUsed,
     advisorCallsThisRequest,
     advisorPolicy: {

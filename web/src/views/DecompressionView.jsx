@@ -7,9 +7,12 @@ import { useCraneAutoLaunch } from '../hooks/useCraneAutoLaunch';
 import { useCraneSessionMeta } from '../hooks/useCraneSessionMeta';
 import { useTokenManager } from '../hooks/useTokenManager';
 import { fetchCraneContext, requestCraneInference, requestPostSessionCarePlan } from '../lib/craneClient';
-import { loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
+import { loadBodyInsight, loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
+import { useCarePlan } from '../hooks/useCarePlan';
 import CraneAutoLaunchBanner from '../components/crane/CraneAutoLaunch';
+import CraneBodyInsight from '../components/crane/CraneBodyInsight';
 import CraneCarePlan from '../components/crane/CraneCarePlan';
+import CraneClinicalGate from '../components/crane/CraneClinicalGate';
 import CraneLineInput from '../components/decompression/CraneLineInput';
 import CraneThread from '../components/decompression/CraneThread';
 import SaveInsightsToggle from '../components/decompression/SaveInsightsToggle';
@@ -34,7 +37,8 @@ export default function DecompressionView() {
 
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [carePlan, setCarePlan] = useState(null);
+  const [bodyInsight, setBodyInsight] = useState(null);
+  const { carePlan, setPlan, toggleStep } = useCarePlan(sessionId);
   const inferenceLockRef = useRef(false);
   const scrollRef = useRef(null);
   const seededRef = useRef(false);
@@ -55,11 +59,13 @@ export default function DecompressionView() {
   useEffect(() => {
     if (!hydrated || !sessionId || carePlanFetchedRef.current) return;
     const cached = loadCarePlan(sessionId);
+    const cachedInsight = loadBodyInsight(sessionId);
     if (cached?.steps?.length) {
-      setCarePlan(cached);
+      setPlan(cached);
       carePlanFetchedRef.current = true;
-      return;
     }
+    if (cachedInsight) setBodyInsight(cachedInsight);
+    if (cached && cachedInsight) return;
 
     if (!isCraneUnlocked) return;
     carePlanFetchedRef.current = true;
@@ -70,14 +76,16 @@ export default function DecompressionView() {
         const inference = await requestPostSessionCarePlan({
           supabaseContext: context,
           sessionMeta: { advisorCallsTotal: 0, turnCount: 0 },
+          clinicalAccess: true,
         });
         processCraneInferenceResult(inference, { sessionId, recordMeta: recordInferenceMeta });
-        if (inference.carePlan) setCarePlan(inference.carePlan);
+        if (inference.carePlan) setPlan(inference.carePlan);
+        if (inference.bodyInsight) setBodyInsight(inference.bodyInsight);
       } catch {
         /* optional */
       }
     })();
-  }, [hydrated, sessionId, isCraneUnlocked, recordInferenceMeta]);
+  }, [hydrated, sessionId, isCraneUnlocked, recordInferenceMeta, setPlan]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = draft.trim();
@@ -99,6 +107,7 @@ export default function DecompressionView() {
           supabaseContext: context,
           conversationHistory: messages,
           sessionMeta: getSessionMeta(),
+          clinicalAccess: isCraneUnlocked,
         }),
         {
           sessionId,
@@ -106,7 +115,8 @@ export default function DecompressionView() {
           recordMeta: recordInferenceMeta,
         },
       );
-      if (inference.carePlan) setCarePlan(inference.carePlan);
+      if (inference.carePlan) setPlan(inference.carePlan);
+      if (inference.bodyInsight) setBodyInsight(inference.bodyInsight);
       appendMessage('crane', inference.text);
     } catch {
       appendMessage('crane', 'Held locally. No response sent.');
@@ -125,6 +135,7 @@ export default function DecompressionView() {
     nextTurn,
     autoLaunch.schedule,
     recordInferenceMeta,
+    setPlan,
   ]);
 
   if (!hydrated) {
@@ -198,14 +209,25 @@ export default function DecompressionView() {
             <CraneAutoLaunchBanner
               pending={autoLaunch.pending}
               secondsLeft={autoLaunch.secondsLeft}
+              progress={autoLaunch.progress}
               onCancel={autoLaunch.cancel}
               onLaunchNow={() => autoLaunch.launchNow()}
             />
           </div>
         ) : null}
+        {bodyInsight ? (
+          <div className="mb-6 w-full max-w-lg">
+            <CraneBodyInsight insight={bodyInsight} compact />
+          </div>
+        ) : null}
         {carePlan ? (
           <div className="mb-8 w-full max-w-lg">
-            <CraneCarePlan carePlan={carePlan} compact />
+            <CraneCarePlan carePlan={carePlan} compact onToggleStep={toggleStep} />
+          </div>
+        ) : null}
+        {!isCraneUnlocked && !carePlan ? (
+          <div className="mb-8 w-full max-w-lg">
+            <CraneClinicalGate compact />
           </div>
         ) : null}
         <CraneThread messages={messages} />

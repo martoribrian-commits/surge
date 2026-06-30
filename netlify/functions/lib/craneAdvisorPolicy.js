@@ -162,9 +162,9 @@ export function buildProactiveCarePlanPrompt(supabaseContext) {
   const duration = supabaseContext?.telemetry?.duration_in_seconds;
 
   return (
-    `[Care plan request] The user just finished ${variantId} (${completed}` +
+    `[Clinical session debrief] The user just finished ${variantId} (${completed}` +
     `${typeof duration === 'number' ? `, ${duration}s` : ''}). ` +
-    'Generate a 2-3 step post-session somatic care plan using build_post_session_care_plan. ' +
-    'Account for what this protocol typically leaves in the body. Do not ask clarifying questions.'
+    'Call deliver_body_debrief with a personalized nervous-system explanation, then build_post_session_care_plan with 2-3 recovery steps. ' +
+    'Use completedVariantId from session context. Do not ask clarifying questions.'
   );
 }

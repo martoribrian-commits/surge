@@ -16,10 +16,11 @@ const VARIANT_PREP = {
   'static-field': 'Use headphones. Press and hold. The static field is intentionally intense.',
 };
 
+/** Tuned for cancelability — acute still fast, standard gives time to read prep note. */
 const URGENCY_COUNTDOWN_MS = {
-  immediate: 2000,
-  confirmed: 3500,
-  standard: 2500,
+  immediate: 3000,
+  confirmed: 4500,
+  standard: 4000,
 };
 
 const variantEnum = [...VALID_VARIANT_IDS];
@@ -70,10 +71,30 @@ const BASE_TOOLS = [
         urgency: {
           type: 'string',
           enum: ['immediate', 'confirmed', 'standard'],
-          description: 'immediate = panic/acute (2s countdown), confirmed = they said yes (3.5s), standard = 2.5s',
+          description: 'immediate = panic/acute (3s countdown), confirmed = they said yes (4.5s), standard = 4s',
         },
       },
       required: ['variantId'],
+    },
+  },
+  {
+    name: 'interpret_body_state',
+    description:
+      'Clinical somatic read of what the user reported feeling. Call BEFORE recommending a sequence when they describe body state. Surfaces structured insight to the user.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reportedState: { type: 'string', description: 'What they said they feel' },
+        autonomicRead: {
+          type: 'string',
+          description: 'Plain-language autonomic nervous system read (no jargon without translation)',
+        },
+        primaryProtocol: { type: 'string', enum: variantEnum },
+        matchConfidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+        alternativeProtocol: { type: 'string', enum: variantEnum },
+        whyThisProtocol: { type: 'string', description: 'One sentence why primary protocol fits' },
+      },
+      required: ['reportedState', 'autonomicRead', 'primaryProtocol', 'matchConfidence', 'whyThisProtocol'],
     },
   },
   {
@@ -120,9 +141,40 @@ const POST_SESSION_CARE_PLAN_TOOL = {
   },
 };
 
+const DELIVER_BODY_DEBRIEF_TOOL = {
+  name: 'deliver_body_debrief',
+  description:
+    'Personalized plain-language explanation of what the completed sequence likely did in their nervous system. POST-SESSION ONLY. Call alongside build_post_session_care_plan.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      completedVariantId: { type: 'string', enum: variantEnum },
+      debriefSummary: {
+        type: 'string',
+        description: '2-3 sentences for the user — what likely shifted in their body',
+      },
+      autonomicShift: {
+        type: 'string',
+        description: 'Plain-language shift (e.g. alarm tone down, breath slower)',
+      },
+      expectedSensations: {
+        type: 'array',
+        items: { type: 'string' },
+        maxItems: 4,
+        description: 'What they may still feel — normal post-protocol sensations',
+      },
+      watchFor: {
+        type: 'string',
+        description: 'One sentence on what to monitor or do if arousal returns',
+      },
+    },
+    required: ['completedVariantId', 'debriefSummary', 'autonomicShift'],
+  },
+};
+
 export function buildCraneClientTools(mode = 'guide') {
   if (mode === 'post-session') {
-    return [...BASE_TOOLS, POST_SESSION_CARE_PLAN_TOOL];
+    return [...BASE_TOOLS, POST_SESSION_CARE_PLAN_TOOL, DELIVER_BODY_DEBRIEF_TOOL];
   }
   return [...BASE_TOOLS];
 }
@@ -184,6 +236,7 @@ function buildCarePlanFromSteps(steps, { clinicalNote, completedVariantId, planT
     completedVariantId: normalizeVariantId(completedVariantId),
     steps: normalizedSteps,
     clinicalNote: String(clinicalNote ?? '').trim() || null,
+    completedSteps: [],
     generatedAt: Date.now(),
   };
 
@@ -243,6 +296,24 @@ export function executeCraneTool(name, input) {
       };
     }
 
+    case 'interpret_body_state': {
+      const primaryProtocol = normalizeVariantId(args.primaryProtocol);
+      const alternativeProtocol = normalizeVariantId(args.alternativeProtocol);
+      const bodyInsight = {
+        type: 'somatic-read',
+        reportedState: String(args.reportedState ?? '').trim(),
+        autonomicRead: String(args.autonomicRead ?? '').trim(),
+        primaryProtocol,
+        primaryProtocolName: primaryProtocol ? VARIANT_LABELS[primaryProtocol] : null,
+        matchConfidence: ['high', 'medium', 'low'].includes(args.matchConfidence)
+          ? args.matchConfidence
+          : 'medium',
+        alternativeProtocol,
+        whyThisProtocol: String(args.whyThisProtocol ?? '').trim(),
+      };
+      return { result: { ok: true, bodyInsight }, bodyInsight };
+    }
+
     case 'suggest_regulation_plan': {
       const clinicalNote = String(args.clinicalNote ?? '').trim();
       const { carePlan, actions, normalizedSteps } = buildCarePlanFromSteps(args.steps, {
@@ -254,6 +325,23 @@ export function executeCraneTool(name, input) {
         actions,
         carePlan,
       };
+    }
+
+    case 'deliver_body_debrief': {
+      const completedVariantId = normalizeVariantId(args.completedVariantId);
+      const expectedSensations = Array.isArray(args.expectedSensations)
+        ? args.expectedSensations.slice(0, 4).map((s) => String(s).trim())
+        : [];
+      const bodyInsight = {
+        type: 'post-session-debrief',
+        completedVariantId,
+        completedVariantName: completedVariantId ? VARIANT_LABELS[completedVariantId] : null,
+        debriefSummary: String(args.debriefSummary ?? '').trim(),
+        autonomicShift: String(args.autonomicShift ?? '').trim(),
+        expectedSensations,
+        watchFor: String(args.watchFor ?? '').trim() || null,
+      };
+      return { result: { ok: true, bodyInsight }, bodyInsight };
     }
 
     case 'build_post_session_care_plan': {

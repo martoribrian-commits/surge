@@ -10,13 +10,17 @@ import {
   requestCraneInference,
   requestPostSessionCarePlan,
 } from '../lib/craneClient';
-import { loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
+import { loadBodyInsight, loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
 import { getCachedSessionPayload } from '../lib/sessionPayload';
+import { useCarePlan } from '../hooks/useCarePlan';
 import { useCraneAutoLaunch } from '../hooks/useCraneAutoLaunch';
 import { useCraneSessionMeta } from '../hooks/useCraneSessionMeta';
+import { useTokenManager } from '../hooks/useTokenManager';
 import CraneActions from './crane/CraneActions';
 import CraneAutoLaunchBanner from './crane/CraneAutoLaunch';
+import CraneBodyInsight from './crane/CraneBodyInsight';
 import CraneCarePlan from './crane/CraneCarePlan';
+import CraneClinicalGate from './crane/CraneClinicalGate';
 
 const EASE = [0.25, 0.1, 0.25, 1];
 
@@ -26,13 +30,14 @@ const QUICK_PROMPTS = [
   'What should I do next?',
 ];
 
-function createMessage(role, content, { reveal = false, actions = [], carePlan = null } = {}) {
+function createMessage(role, content, { reveal = false, actions = [], carePlan = null, bodyInsight = null } = {}) {
   return {
     id: crypto.randomUUID(),
     role,
     content,
     actions,
     carePlan,
+    bodyInsight,
     reveal: role === 'crane' && reveal,
   };
 }
@@ -59,7 +64,7 @@ function CinematicTextReveal({ text, onComplete }) {
   );
 }
 
-function StreamMessage({ message, isFocal, onRevealComplete, autoLaunchPath }) {
+function StreamMessage({ message, isFocal, onRevealComplete, autoLaunchPath, onToggleStep }) {
   const showReveal = message.role === 'crane' && message.reveal && isFocal;
   const visibleActions = (message.actions ?? []).filter(
     (a) => !(a.autoLaunch && a.path === autoLaunchPath),
@@ -89,9 +94,14 @@ function StreamMessage({ message, isFocal, onRevealComplete, autoLaunchPath }) {
       ) : (
         message.content
       )}
+      {message.role === 'crane' && message.bodyInsight ? (
+        <div className="mt-8">
+          <CraneBodyInsight insight={message.bodyInsight} />
+        </div>
+      ) : null}
       {message.role === 'crane' && message.carePlan ? (
         <div className="mt-8">
-          <CraneCarePlan carePlan={message.carePlan} />
+          <CraneCarePlan carePlan={message.carePlan} onToggleStep={onToggleStep} />
         </div>
       ) : null}
       {message.role === 'crane' && visibleActions.length ? (
@@ -115,8 +125,10 @@ export default function CraneChat() {
   const [supabaseContext, setSupabaseContext] = useState(passedContext);
   const [mode, setMode] = useState('guide');
   const [status, setStatus] = useState('connecting');
-  const [carePlan, setCarePlan] = useState(null);
   const [carePlanLoading, setCarePlanLoading] = useState(false);
+  const [bodyInsight, setBodyInsight] = useState(null);
+  const { isCraneUnlocked } = useTokenManager();
+  const { carePlan, setPlan, toggleStep } = useCarePlan(sessionId);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -134,10 +146,11 @@ export default function CraneChat() {
         scheduleAutoLaunch: autoLaunch.schedule,
         recordMeta: recordInferenceMeta,
       });
-      if (inference.carePlan) setCarePlan(inference.carePlan);
+      if (inference.carePlan) setPlan(inference.carePlan);
+      if (inference.bodyInsight) setBodyInsight(inference.bodyInsight);
       return inference;
     },
-    [sessionId, autoLaunch.schedule, recordInferenceMeta],
+    [sessionId, autoLaunch.schedule, recordInferenceMeta, setPlan],
   );
 
   const scrollToPresent = useCallback(() => {
@@ -162,6 +175,7 @@ export default function CraneChat() {
             supabaseContext,
             conversationHistory: history,
             sessionMeta,
+            clinicalAccess: isCraneUnlocked,
           }),
         );
       } else {
@@ -175,7 +189,7 @@ export default function CraneChat() {
       }
       return inference;
     },
-    [mode, supabaseContext, getSessionMeta, nextTurn, handleInferenceResult],
+    [mode, supabaseContext, getSessionMeta, nextTurn, handleInferenceResult, isCraneUnlocked],
   );
 
   useEffect(() => {
@@ -197,19 +211,22 @@ export default function CraneChat() {
           setSupabaseContext(context);
           setMode('post-session');
           const cached = sessionId ? loadCarePlan(sessionId) : null;
-          if (cached) setCarePlan(cached);
+          const cachedInsight = sessionId ? loadBodyInsight(sessionId) : null;
+          if (cached) setPlan(cached);
+          if (cachedInsight) setBodyInsight(cachedInsight);
           setMessages([
             createMessage('crane', buildCraneTelemetryOpener(context), { reveal: true }),
           ]);
           setStatus('ready');
 
-          if (!cached && !carePlanFetchedRef.current) {
+          if (isCraneUnlocked && !cached && !carePlanFetchedRef.current) {
             carePlanFetchedRef.current = true;
             setCarePlanLoading(true);
             try {
               const planResult = await requestPostSessionCarePlan({
                 supabaseContext: context,
                 sessionMeta: { advisorCallsTotal: 0, turnCount: 0 },
+                clinicalAccess: true,
               });
               handleInferenceResult(planResult);
             } catch {
@@ -229,7 +246,7 @@ export default function CraneChat() {
         setStatus('ready');
       }
     })();
-  }, [passedContext, sessionId, handleInferenceResult]);
+  }, [passedContext, sessionId, handleInferenceResult, isCraneUnlocked, setPlan]);
 
   useEffect(() => {
     scrollToPresent();
@@ -252,6 +269,7 @@ export default function CraneChat() {
           reveal: true,
           actions: inference.actions ?? [],
           carePlan: inference.carePlan ?? null,
+          bodyInsight: inference.bodyInsight ?? null,
         }),
       ]);
     } catch {
@@ -286,6 +304,7 @@ export default function CraneChat() {
           reveal: true,
           actions: inference.actions ?? [],
           carePlan: inference.carePlan ?? null,
+          bodyInsight: inference.bodyInsight ?? null,
         }),
       ]);
     } catch {
@@ -331,6 +350,7 @@ export default function CraneChat() {
           <CraneAutoLaunchBanner
             pending={autoLaunch.pending}
             secondsLeft={autoLaunch.secondsLeft}
+            progress={autoLaunch.progress}
             onCancel={autoLaunch.cancel}
             onLaunchNow={() => autoLaunch.launchNow()}
           />
@@ -349,8 +369,18 @@ export default function CraneChat() {
             <p className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#B6502E]/70">
               {mode === 'guide' ? 'Clinical guide' : 'Post-session recovery'}
             </p>
+            {mode === 'post-session' && bodyInsight ? (
+              <CraneBodyInsight insight={bodyInsight} />
+            ) : null}
             {mode === 'post-session' && carePlan ? (
-              <CraneCarePlan carePlan={carePlan} onStepClick={() => navigate('/')} />
+              <CraneCarePlan
+                carePlan={carePlan}
+                onStepClick={() => navigate('/')}
+                onToggleStep={toggleStep}
+              />
+            ) : null}
+            {mode === 'post-session' && !isCraneUnlocked && !carePlan && !carePlanLoading ? (
+              <CraneClinicalGate />
             ) : null}
             {carePlanLoading ? (
               <p className="font-sans text-sm text-white/25">Building your recovery plan…</p>
@@ -362,6 +392,7 @@ export default function CraneChat() {
                 isFocal={index === focalIndex}
                 onRevealComplete={() => markRevealed(message.id)}
                 autoLaunchPath={autoLaunch.pending?.path}
+                onToggleStep={toggleStep}
               />
             ))}
           </div>

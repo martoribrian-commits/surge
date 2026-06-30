@@ -39,6 +39,17 @@ export default async (request) => {
   }
 
   const proactiveCarePlan = Boolean(body?.proactiveCarePlan);
+  const clinicalAccess = Boolean(body?.clinicalAccess);
+
+  if (proactiveCarePlan && !clinicalAccess) {
+    return json({
+      text: null,
+      carePlan: null,
+      bodyInsight: null,
+      requiresClinicalToken: true,
+      mode: 'post-session',
+    });
+  }
   const mode =
     body?.mode === 'guide' || (!body?.supabaseContext && !proactiveCarePlan)
       ? 'guide'
@@ -100,6 +111,7 @@ export default async (request) => {
       actions: result.actions ?? [],
       autoLaunch: result.autoLaunch ?? null,
       carePlan: result.carePlan ?? null,
+      bodyInsight: result.bodyInsight ?? null,
       advisorUsed: result.advisorUsed ?? false,
       advisorCallsThisRequest: result.advisorCallsThisRequest ?? 0,
       advisorCallsTotal,

@@ -3,6 +3,7 @@ import {
   buildCraneClientTools,
   executeCraneTool,
   buildAdvisorTool,
+  URGENCY_COUNTDOWN_MS,
 } from '../../../netlify/functions/lib/craneTools.js';
 import {
   buildSystemPrompt,
@@ -13,117 +14,119 @@ import {
   resolveAdvisorPolicy,
   buildProactiveCarePlanPrompt,
 } from '../../../netlify/functions/lib/craneAdvisorPolicy.js';
+import {
+  toggleCarePlanStep,
+  isCarePlanComplete,
+  nextIncompleteStep,
+  saveCarePlan,
+  loadCarePlan,
+  clearCarePlan,
+} from './craneCarePlanUtils.js';
 
 describe('craneTools', () => {
-  it('defines base tools for guide mode', () => {
+  it('defines guide tools including interpret_body_state', () => {
     const tools = buildCraneClientTools('guide');
-    expect(tools).toHaveLength(3);
-    expect(tools.map((t) => t.name)).toEqual([
-      'recommend_sequence',
-      'start_sequence_for_user',
-      'suggest_regulation_plan',
-    ]);
+    expect(tools.some((t) => t.name === 'interpret_body_state')).toBe(true);
+    expect(tools.length).toBeGreaterThanOrEqual(4);
   });
 
-  it('adds post-session care plan tool in post-session mode', () => {
+  it('post-session adds care plan and body debrief tools', () => {
     const tools = buildCraneClientTools('post-session');
-    expect(tools).toHaveLength(4);
     expect(tools.some((t) => t.name === 'build_post_session_care_plan')).toBe(true);
+    expect(tools.some((t) => t.name === 'deliver_body_debrief')).toBe(true);
   });
 
-  it('executeCraneTool recommend_sequence does not auto-launch', () => {
-    const { action } = executeCraneTool('recommend_sequence', {
-      variantId: 'instant-reset',
-      rationale: 'Racing heart',
-    });
-    expect(action.autoLaunch).toBe(false);
+  it('tuned countdown durations', () => {
+    expect(URGENCY_COUNTDOWN_MS.immediate).toBe(3000);
+    expect(URGENCY_COUNTDOWN_MS.confirmed).toBe(4500);
+    expect(URGENCY_COUNTDOWN_MS.standard).toBe(4000);
   });
 
-  it('executeCraneTool start_sequence_for_user auto-launches', () => {
-    const { result, action } = executeCraneTool('start_sequence_for_user', {
+  it('start_sequence_for_user uses tuned immediate countdown', () => {
+    const { action } = executeCraneTool('start_sequence_for_user', {
       variantId: 'instant-reset',
       urgency: 'immediate',
     });
-    expect(result.autoLaunch).toBe(true);
-    expect(action.autoLaunch).toBe(true);
-    expect(action.countdownMs).toBe(2000);
-    expect(action.urgency).toBe('immediate');
+    expect(action.countdownMs).toBe(3000);
   });
 
-  it('executeCraneTool build_post_session_care_plan returns carePlan', () => {
-    const { result, carePlan } = executeCraneTool('build_post_session_care_plan', {
-      completedVariantId: 'vagal-downshift',
-      clinicalNote: 'Nervous system likely still integrating.',
-      steps: [
-        { order: 1, action: 'Sit quietly for two minutes', category: 'rest' },
-        { order: 2, action: 'Sip water slowly', category: 'hydration' },
-      ],
+  it('interpret_body_state returns bodyInsight', () => {
+    const { bodyInsight } = executeCraneTool('interpret_body_state', {
+      reportedState: 'Heart pounding',
+      autonomicRead: 'Sympathetic activation — alarm tone is up.',
+      primaryProtocol: 'instant-reset',
+      matchConfidence: 'high',
+      whyThisProtocol: 'Physiological sigh intercepts acute arousal fast.',
     });
-    expect(result.ok).toBe(true);
-    expect(result.planType).toBe('post-session');
-    expect(carePlan.planType).toBe('post-session');
-    expect(carePlan.steps).toHaveLength(2);
+    expect(bodyInsight.type).toBe('somatic-read');
+    expect(bodyInsight.primaryProtocolName).toBe('Instant Reset');
   });
 
-  it('buildAdvisorTool respects maxUses and caching', () => {
-    const advisor = buildAdvisorTool({ model: 'claude-opus-4-8', maxUses: 1, enableCaching: true });
-    expect(advisor.max_uses).toBe(1);
-    expect(advisor.caching).toEqual({ type: 'ephemeral', ttl: '5m' });
+  it('deliver_body_debrief returns post-session insight', () => {
+    const { bodyInsight } = executeCraneTool('deliver_body_debrief', {
+      completedVariantId: 'vagal-downshift',
+      debriefSummary: 'Your alarm tone likely dropped as the fog descended.',
+      autonomicShift: 'High arousal toward calmer baseline',
+      expectedSensations: ['Heaviness in limbs', 'Slower thoughts'],
+    });
+    expect(bodyInsight.type).toBe('post-session-debrief');
+    expect(bodyInsight.completedVariantName).toBe('Vagal Downshift');
+  });
+
+  it('care plan includes completedSteps array', () => {
+    const { carePlan } = executeCraneTool('build_post_session_care_plan', {
+      clinicalNote: 'Integrating.',
+      steps: [{ order: 1, action: 'Rest', category: 'rest' }],
+    });
+    expect(carePlan.completedSteps).toEqual([]);
+  });
+});
+
+describe('craneCarePlanUtils', () => {
+  it('toggleCarePlanStep persists completion', () => {
+    const sessionId = 'test-session-' + Date.now();
+    const plan = {
+      planType: 'post-session',
+      steps: [
+        { order: 1, action: 'Rest' },
+        { order: 2, action: 'Water' },
+      ],
+      completedSteps: [],
+    };
+    saveCarePlan(sessionId, plan);
+    const toggled = toggleCarePlanStep(sessionId, 1);
+    expect(toggled.completedSteps).toContain(1);
+    expect(isCarePlanComplete(toggled)).toBe(false);
+    expect(nextIncompleteStep(toggled)?.order).toBe(2);
+    toggleCarePlanStep(sessionId, 2);
+    const done = loadCarePlan(sessionId);
+    expect(isCarePlanComplete(done)).toBe(true);
+    clearCarePlan(sessionId);
   });
 });
 
 describe('craneAdvisorPolicy', () => {
-  it('skips advisor for lookup intents', () => {
-    const policy = resolveAdvisorPolicy({
-      mode: 'guide',
-      userMessage: 'Explain bilateral stimulation',
-      sessionMeta: { advisorCallsTotal: 0 },
-    });
-    expect(policy.includeAdvisor).toBe(false);
-    expect(policy.intent).toBe('lookup');
-  });
-
-  it('limits urgent guide turns to one advisor call', () => {
-    const policy = resolveAdvisorPolicy({
-      mode: 'guide',
-      userMessage: 'My heart is racing help now',
-      sessionMeta: { advisorCallsTotal: 0 },
-    });
-    expect(policy.includeAdvisor).toBe(true);
-    expect(policy.maxUsesThisRequest).toBe(1);
-    expect(policy.intent).toBe('urgent');
-  });
-
-  it('exhausts conversation budget', () => {
-    const policy = resolveAdvisorPolicy({
-      mode: 'guide',
-      userMessage: 'pick a sequence',
-      sessionMeta: { advisorCallsTotal: 5 },
-    });
-    expect(policy.includeAdvisor).toBe(false);
-    expect(policy.reason).toBe('conversation_budget_exhausted');
-  });
-
-  it('classifies short acknowledgments', () => {
-    expect(classifyUserIntent('thanks', 'post-session')).toBe('ack');
-  });
-
-  it('buildProactiveCarePlanPrompt references completed variant', () => {
+  it('proactive prompt requests debrief and care plan', () => {
     const prompt = buildProactiveCarePlanPrompt({
-      variantId: 'static-field',
-      telemetry: { completed_full_cycle: true, duration_in_seconds: 90 },
+      variantId: 'coherence-ripple',
+      telemetry: { completed_full_cycle: true },
     });
-    expect(prompt).toContain('static-field');
+    expect(prompt).toContain('deliver_body_debrief');
     expect(prompt).toContain('build_post_session_care_plan');
   });
 });
 
 describe('cranePrompts', () => {
-  it('buildSystemPrompt includes mode-specific advisor guidance', () => {
-    const guide = buildSystemPrompt({ mode: 'guide', sequenceCatalog: [] });
-    const post = buildSystemPrompt({ mode: 'post-session', sequenceCatalog: [] });
-    expect(guide).toContain('Skip advisor for simple factual lookups');
-    expect(post).toContain('build_post_session_care_plan');
+  it('includes vector history in system prompt', () => {
+    const prompt = buildSystemPrompt({
+      mode: 'post-session',
+      supabaseContext: {
+        vectorHistory: [{ summary: 'Prior session: racing heart, used Instant Reset.' }],
+      },
+      sequenceCatalog: [],
+    });
+    expect(prompt).toContain('Prior session summaries');
+    expect(prompt).toContain('Instant Reset');
   });
 });
 

@@ -88,6 +88,7 @@ export async function requestCraneInference({
   mode = null,
   sessionMeta = null,
   proactiveCarePlan = false,
+  clinicalAccess = false,
 }) {
   const resolvedMode =
     mode ?? (supabaseContext?.telemetry ? 'post-session' : 'guide');
@@ -103,6 +104,7 @@ export async function requestCraneInference({
       mode: resolvedMode,
       sessionMeta,
       proactiveCarePlan,
+      clinicalAccess,
     }),
   });
 
@@ -118,13 +120,21 @@ export async function requestCraneInference({
 /**
  * Proactively generate a post-session care plan (silent — not shown as user message).
  */
-export async function requestPostSessionCarePlan({ supabaseContext, sessionMeta = {} }) {
+export async function requestPostSessionCarePlan({
+  supabaseContext,
+  sessionMeta = {},
+  clinicalAccess = false,
+}) {
+  if (!clinicalAccess) {
+    return { requiresClinicalToken: true, carePlan: null, bodyInsight: null };
+  }
   return requestCraneInference({
     userMessage: '',
     supabaseContext,
     mode: 'post-session',
     sessionMeta,
     proactiveCarePlan: true,
+    clinicalAccess: true,
   });
 }
 
@@ -159,7 +169,7 @@ export async function requestCraneGuideInference({
               path: primary.path,
               variantId: primary.variantId,
               label: primary.label,
-              countdownMs: 2000,
+              countdownMs: 3000,
               urgency: 'immediate',
             }
           : null,
@@ -223,6 +233,7 @@ export async function initiateCraneContact(userMessage = CRANE_INITIAL_MESSAGE) 
     actions: inference.actions ?? [],
     autoLaunch: inference.autoLaunch ?? null,
     carePlan: inference.carePlan ?? null,
+    bodyInsight: inference.bodyInsight ?? null,
     model: inference.model,
     advisorUsed: inference.advisorUsed ?? false,
   };
