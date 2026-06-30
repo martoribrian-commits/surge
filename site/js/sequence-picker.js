@@ -84,6 +84,15 @@
       headline: 'Ninety seconds\nto reset your nervous system.',
       sub: 'Pink noise static and sub-bass lock — the original Surge acoustic field.',
     },
+    'deep-anchor': {
+      tabLabel: '120 · anchor',
+      seconds: 120,
+      name: 'Deep Anchor',
+      tagline: 'Extended bilateral integration',
+      href: '/engine/deep-anchor',
+      headline: 'Two minutes\nto release the loop.',
+      sub: 'Slow left-right tapping at forty-eight BPM — for shame spirals and intractable rumination.',
+    },
   };
 
   var DEFAULT_ID = 'static-field';

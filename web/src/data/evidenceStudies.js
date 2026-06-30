@@ -98,4 +98,15 @@ export const EVIDENCE_STUDIES = [
     cite: 'Manzoni et al., Journal of Clinical Psychology, 2008',
     url: 'https://doi.org/10.1002/jclp.20481',
   },
+  {
+    id: 'bilateral-extended',
+    protocol: 'Deep Anchor',
+    variantId: 'deep-anchor',
+    metric: '6',
+    metricLabel: 'Month follow-up',
+    headline: 'Bilateral stimulation gains held after extended sessions',
+    detail: 'GAD case series · large effect sizes on excessive worry',
+    cite: 'Valiente-Gómez et al., JEMDR Practice, 2021',
+    url: 'https://connect.springerpub.com/content/sgremdr/15/1/44',
+  },
 ];

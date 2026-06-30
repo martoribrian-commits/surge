@@ -9,7 +9,7 @@ export const InteractionMode = {
   HOLD: 'hold',
 };
 
-/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'still-thaw' | 'coherence-ripple' | 'vagal-downshift' | 'static-field' | 'heavy-tide'} SequenceVariantId */
+/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'still-thaw' | 'coherence-ripple' | 'heavy-tide' | 'vagal-downshift' | 'static-field' | 'deep-anchor'} SequenceVariantId */
 
 /**
  * @typedef {Object} SequencePalette
@@ -260,6 +260,31 @@ export const SEQUENCE_VARIANTS = {
       accent: '#F4F0EB',
       accentCalm: '#B6502E',
       muted: 'rgba(244,240,235,0.4)',
+      copy: '#f4f0eb',
+    },
+  },
+  'deep-anchor': {
+    id: 'deep-anchor',
+    name: 'Deep Anchor',
+    modality: 'Extended bilateral somatic integration',
+    tagline: 'When the loop will not quit — go deeper',
+    tabLabel: '120 · anchor',
+    feelsLike:
+      'Shame spiral, self-criticism on repeat, intrusive "why did I" loops — the kind of mental pattern that keeps running after sixty seconds is not enough.',
+    whatItDoes:
+      'Two full minutes of slow left-right tapping at forty-eight beats per minute. Hemispheres integrate layer by layer until the loop loosens. The longest bilateral protocol — for when Orienting Anchor was close but not quite enough.',
+    whenToUse:
+      'Shame, guilt, self-attack, intractable rumination, or post-conflict mental replay that needs extended bilateral grounding.',
+    science: 'Extended alternating sensory stimulation — slower bilateral cadence over two minutes supports cognitive-emotional integration beyond brief orienting windows.',
+    durationSeconds: 120,
+    interactionMode: InteractionMode.BILATERAL,
+    bilateralBpm: 48,
+    palette: {
+      background: '#1a0e08',
+      backgroundEnd: '#0a1814',
+      accent: '#c49a6c',
+      accentCalm: '#6a9a8a',
+      muted: 'rgba(244,240,235,0.45)',
       copy: '#f4f0eb',
     },
   },

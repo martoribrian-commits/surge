@@ -12,6 +12,7 @@ const VARIANT_COLORS = {
   'heavy-tide': '#7A6AAD',
   'vagal-downshift': '#6B9AAA',
   'static-field': '#F4F0EB',
+  'deep-anchor': '#C49A6C',
   unknown: BRAND.boneDim,
 };
 

@@ -59,6 +59,9 @@ export default function SequencePreview({ variantId }) {
           {variantId === 'static-field' && (
             <StaticFieldPreview palette={variant.palette} />
           )}
+          {variantId === 'deep-anchor' && (
+            <DeepAnchorPreview palette={variant.palette} />
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -315,6 +318,40 @@ function VagalDownshiftPreview({ palette }) {
           transition={{ duration: 2.8 + i * 0.3, repeat: Infinity, delay: i * 0.35 }}
         />
       ))}
+    </>
+  );
+}
+
+function DeepAnchorPreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-y-0 left-0 w-1/2"
+        style={{ background: `linear-gradient(90deg, ${palette.accent}55, transparent)` }}
+        animate={{ opacity: [0.2, 0.65, 0.2] }}
+        transition={{ duration: 2.5, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute inset-y-0 right-0 w-1/2"
+        style={{ background: `linear-gradient(-90deg, ${palette.accentCalm}55, transparent)` }}
+        animate={{ opacity: [0.65, 0.2, 0.65] }}
+        transition={{ duration: 2.5, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border"
+        style={{
+          borderColor: `${palette.accentCalm}88`,
+          boxShadow: `0 0 32px ${palette.accentCalm}44`,
+        }}
+        animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.4, 0.85, 0.4] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: palette.copy }}
+        animate={{ x: [-28, 28, -28] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
     </>
   );
 }

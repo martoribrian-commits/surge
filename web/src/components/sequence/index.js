@@ -21,6 +21,8 @@ export { default as StillThawSequence } from './StillThawSequence';
 export { default as CoherenceRippleSequence } from './CoherenceRippleSequence';
 export { default as HeavyTideVisual } from './HeavyTideVisual';
 export { default as HeavyTideSequence } from './HeavyTideSequence';
+export { default as DeepAnchorVisual } from './DeepAnchorVisual';
+export { default as DeepAnchorSequence } from './DeepAnchorSequence';
 export { default as VagalDownshiftSequence } from './VagalDownshiftSequence';
 export { default as VagalDownshiftVisual } from './VagalDownshiftVisual';
 export { default as StaticFieldSequence } from './StaticFieldSequence';

@@ -35,7 +35,7 @@ const SECTIONS = [
     summary: 'Your body can still come down if you give it a path.',
     body: [
       'Somatic regulation research identifies a narrow window after peak activation when the nervous system can still be guided back toward baseline without pharmacological intervention. That window is measured in seconds, not minutes.',
-      'Nine sequences, each tuned to a different body state: racing heart, hot anger, stuck thoughts, scattered disorientation, shutdown numbness, wired exhaustion, grief heaviness, full overwhelm, or restless agitation.',
+      'Ten sequences, each tuned to a different body state: racing heart, hot anger, stuck thoughts, scattered disorientation, shutdown numbness, wired exhaustion, grief heaviness, full overwhelm, restless agitation, or shame loops that will not quit.',
     ],
   },
   {
@@ -87,7 +87,7 @@ const SCIENCE_FAQ = [
   },
   {
     q: 'How is this different from a breathing app?',
-    a: 'Breathing apps typically offer one paced-breath pattern. Surge maps nine distinct protocols: sigh intercept, thermal freeze, bilateral orienting, hyperspace entrainment, somatic thaw, resonant HRV breathing, pendular grief release, visual decay, sonic entrainment. Each matched to a specific body state.',
+    a: 'Breathing apps typically offer one paced-breath pattern. Surge maps ten distinct protocols across four durations: sigh intercept, thermal freeze, bilateral orienting, hyperspace entrainment, somatic thaw, resonant HRV breathing, pendular grief release, visual decay, sonic entrainment, and extended bilateral integration. Each matched to a specific body state.',
   },
 ];
 
@@ -119,7 +119,7 @@ export default function SciencePage() {
 
             <div className="w-full space-y-3">
               <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.boneDim }}>
-                Nine sequences. Pick by body state
+                Ten sequences. Pick by body state
               </p>
               {VARIANT_LIST.map((variant) => {
                 const active = hoverVariant === variant.id;

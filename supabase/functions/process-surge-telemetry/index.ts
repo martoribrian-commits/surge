@@ -32,6 +32,7 @@ const VALID_VARIANT_IDS = new Set([
   "heavy-tide",
   "vagal-downshift",
   "static-field",
+  "deep-anchor",
 ]);
 
 const UUID_RE =

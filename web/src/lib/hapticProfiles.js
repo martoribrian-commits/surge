@@ -239,6 +239,24 @@ export const HapticProfiles = {
       },
     ],
   },
+
+  /**
+   * 120s Deep Anchor — extended alternating rhythm at 48 BPM.
+   */
+  'deep-anchor': {
+    id: 'deep-anchor',
+    label: 'Deep Anchor — extended bilateral integration',
+    audioCueId: 'deep-anchor-bilateral',
+    phases: [
+      {
+        type: 'rhythm',
+        bpm: 48,
+        intensity: 0.32,
+        panMode: 'alternating-pan',
+        durationMs: 120_000,
+      },
+    ],
+  },
 };
 
 /** @param {string} variantId */

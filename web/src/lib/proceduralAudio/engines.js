@@ -932,6 +932,146 @@ export class HeavyTideAudioEngine {
   }
 }
 
+/** 120s Deep Anchor — slower bilateral bed + deeper panned ticks. */
+export class DeepAnchorAudioEngine {
+  constructor() {
+    this.running = false;
+    this.nodes = null;
+  }
+
+  prime() {
+    getAudioContext();
+  }
+
+  start() {
+    if (this.running) return;
+    unlockAudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    this.stop();
+    const { master, panner } = createMasterChain(ctx);
+    fadeInMaster(master, ctx, 0.92, 0.75);
+
+    const leftOsc = ctx.createOscillator();
+    leftOsc.type = 'sine';
+    leftOsc.frequency.value = 68;
+
+    const rightOsc = ctx.createOscillator();
+    rightOsc.type = 'sine';
+    rightOsc.frequency.value = 71;
+
+    const leftGain = ctx.createGain();
+    const rightGain = ctx.createGain();
+    leftGain.gain.value = 0.04;
+    rightGain.gain.value = 0.04;
+
+    const leftPan = ctx.createStereoPanner();
+    const rightPan = ctx.createStereoPanner();
+    leftPan.pan.value = -0.72;
+    rightPan.pan.value = 0.72;
+
+    leftOsc.connect(leftGain).connect(leftPan).connect(master);
+    rightOsc.connect(rightGain).connect(rightPan).connect(master);
+    leftOsc.start();
+    rightOsc.start();
+
+    const bedNoise = ctx.createBufferSource();
+    bedNoise.buffer = makePinkNoiseBuffer(ctx);
+    bedNoise.loop = true;
+    const bedFilter = ctx.createBiquadFilter();
+    bedFilter.type = 'lowpass';
+    bedFilter.frequency.value = 260;
+    const bedGain = ctx.createGain();
+    bedGain.gain.value = 0.05;
+    bedNoise.connect(bedFilter).connect(bedGain).connect(panner);
+
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = 52;
+    const subGain = ctx.createGain();
+    subGain.gain.value = 0.03;
+    sub.connect(subGain).connect(panner);
+
+    bedNoise.start();
+    sub.start();
+
+    this.nodes = {
+      ctx,
+      master,
+      panner,
+      leftOsc,
+      rightOsc,
+      leftGain,
+      rightGain,
+      bedNoise,
+      bedGain,
+      sub,
+      subGain,
+    };
+    this.running = true;
+  }
+
+  /** @param {number} elapsedSeconds @param {number} progress */
+  sync(elapsedSeconds, progress) {
+    if (!this.running || !this.nodes) return;
+    const { ctx, leftGain, rightGain, bedGain, subGain } = this.nodes;
+    const now = ctx.currentTime;
+    const bpm = 48;
+    const beatPhase = (elapsedSeconds * bpm) / 60;
+    const swell = 0.5 + 0.5 * Math.sin(beatPhase * Math.PI * 2);
+
+    rampGain(leftGain.gain, 0.022 + swell * 0.028, now, 0.14);
+    rampGain(rightGain.gain, 0.022 + (1 - swell) * 0.028, now, 0.14);
+    rampGain(bedGain.gain, 0.025 + progress * 0.035, now, 0.18);
+    rampGain(subGain.gain, 0.025 + progress * 0.06, now, 0.15);
+  }
+
+  /** @param {number} pan -1 to 1 */
+  triggerTick(pan = 0) {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const tickPan = ctx.createStereoPanner();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.38, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+
+    tickPan.pan.value = clamp01((pan + 1) / 2) * 2 - 1;
+
+    osc.connect(gain).connect(tickPan).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.18);
+  }
+
+  complete() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1.6);
+    window.setTimeout(() => this.stop(), 1700);
+  }
+
+  stop() {
+    if (!this.nodes) {
+      this.running = false;
+      return;
+    }
+    const n = this.nodes;
+    stopSource(n.leftOsc);
+    stopSource(n.rightOsc);
+    stopSource(n.bedNoise);
+    stopSource(n.sub);
+    this.nodes = null;
+    this.running = false;
+  }
+}
+
 /** Static field — original pink-noise engine. Starts only on engage (lazy). */
 export class StaticFieldAudioAdapter {
   constructor() {
@@ -985,6 +1125,7 @@ const ENGINE_FACTORIES = {
   'heavy-tide': () => new HeavyTideAudioEngine(),
   'vagal-downshift': () => new VagalDownshiftAudioEngine(),
   'static-field': () => new StaticFieldAudioAdapter(),
+  'deep-anchor': () => new DeepAnchorAudioEngine(),
 };
 
 export function createSequenceAudioEngine(variantId) {

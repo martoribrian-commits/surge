@@ -14,6 +14,7 @@ const HEADLINE_BY_SECONDS = {
   30: 'Thirty seconds\nto bring your body back down.',
   60: 'Sixty seconds\nto bring your body back down.',
   90: 'Ninety seconds\nto bring your body back down.',
+  120: 'Two minutes\nto integrate and release.',
 };
 
 export default function SequenceEntryView() {

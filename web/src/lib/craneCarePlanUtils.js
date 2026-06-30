@@ -22,6 +22,7 @@ export const VARIANT_LABELS = {
   'heavy-tide': 'Heavy Tide',
   'vagal-downshift': 'Vagal Downshift',
   'static-field': 'Static Field',
+  'deep-anchor': 'Deep Anchor',
 };
 
 export function carePlanStorageKey(sessionId) {

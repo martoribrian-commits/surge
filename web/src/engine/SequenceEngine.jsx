@@ -14,6 +14,7 @@ import {
   HeavyTideSequence,
   VagalDownshiftSequence,
   StaticFieldSequence,
+  DeepAnchorSequence,
 } from '../components/sequence';
 
 const SEQUENCE_BY_ID = {
@@ -26,6 +27,7 @@ const SEQUENCE_BY_ID = {
   'heavy-tide': HeavyTideSequence,
   'vagal-downshift': VagalDownshiftSequence,
   'static-field': StaticFieldSequence,
+  'deep-anchor': DeepAnchorSequence,
 };
 
 /**
