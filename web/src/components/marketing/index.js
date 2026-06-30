@@ -1,3 +1,4 @@
+export { default as CaseStudyCarousel } from './CaseStudyCarousel';
 export { default as MarketingShell } from './MarketingShell';
 export { default as MarketingSectionHeader } from './MarketingSectionHeader';
 export { default as SiteFooter } from './SiteFooter';

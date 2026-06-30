@@ -5,6 +5,7 @@ import { BRAND } from '../../brand/tokens';
 const FOOTER_NAV = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/for-providers', label: 'Providers' },
+  { href: '/faq', label: 'FAQ' },
   { href: '/start', label: 'Start' },
   { href: '/support', label: 'Support' },
   { href: '/privacy', label: 'Privacy' },

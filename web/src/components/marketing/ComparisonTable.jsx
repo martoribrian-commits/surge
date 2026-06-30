@@ -3,9 +3,9 @@ import { BRAND } from '../../brand/tokens';
 import { fadeUp } from './marketingMotion';
 
 const ROWS = [
-  { label: 'Time to start', surge: 'One tap — no account', typical: 'Login, mood check, menu' },
-  { label: 'Duration', surge: '30–90 seconds, fixed curve', typical: 'Open-ended, variable length' },
-  { label: 'Interaction', surge: 'Hold, tap, or breathe — one mode', typical: 'Multiple choices under stress' },
+  { label: 'Time to start', surge: 'One tap. No account.', typical: 'Login, mood check, menu' },
+  { label: 'Duration', surge: '30 to 90 seconds, fixed curve', typical: 'Open-ended, variable length' },
+  { label: 'Interaction', surge: 'Hold, tap, or breathe. One mode.', typical: 'Multiple choices under stress' },
   { label: 'Evidence base', surge: 'Named physiological protocols', typical: 'Generic mindfulness' },
   { label: 'Data model', surge: 'Ephemeral, on-device by default', typical: 'Persistent profiles, analytics' },
   { label: 'Clinical path', surge: 'Token-based provider handoff', typical: 'Separate app or none' },

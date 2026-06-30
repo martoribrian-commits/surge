@@ -5,6 +5,7 @@ import { useCraneOptional } from '../../context/CraneProvider';
 const NAV = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/for-providers', label: 'Providers' },
+  { href: '/faq', label: 'FAQ' },
   { href: '/start', label: 'Start' },
 ];
 

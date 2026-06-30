@@ -15,6 +15,7 @@ import {
   ProvidersPage,
   ClinicalTokenPage,
   MarketingHome,
+  FaqPage,
 } from './pages';
 import { resolveVariantId } from './sequences';
 import { CraneProvider } from './context/CraneProvider';
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/engine" element={<Navigate to="/start" replace />} />
         <Route path="/engine/:variantId" element={<EngineRoute />} />
         <Route path="/how-it-works" element={<SciencePage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/for-providers" element={<ProvidersPage />} />
         <Route path="/clinical-token" element={<ClinicalTokenPage />} />
         <Route path="/about" element={<LandingPage />} />

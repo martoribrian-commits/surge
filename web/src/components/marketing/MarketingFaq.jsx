@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BRAND } from '../../brand/tokens';
 
 const EASE = [0.22, 1, 0.36, 1];
 
 /**
- * @param {{ items: Array<{ q: string, a: string }> }} props
+ * @param {{ items: Array<{ q: string, a: string }>, defaultOpen?: number }} props
  */
-export default function MarketingFaq({ items }) {
-  const [openIndex, setOpenIndex] = useState(0);
+export default function MarketingFaq({ items, defaultOpen = 0 }) {
+  const [openIndex, setOpenIndex] = useState(defaultOpen);
+
+  useEffect(() => {
+    setOpenIndex(defaultOpen);
+  }, [items, defaultOpen]);
 
   return (
     <div className="divide-y divide-white/[0.06] rounded-sm border border-white/[0.08]">

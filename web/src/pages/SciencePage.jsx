@@ -328,14 +328,13 @@ export default function SciencePage() {
           <ComparisonTable />
         </section>
 
-        {/* FAQ */}
-        <section className="border-t border-white/[0.06] py-20">
+        {/* FAQ teaser */}
+        <section className="border-t border-white/[0.06] py-16">
           <MarketingSectionHeader kicker="Questions" title="Science and usage FAQ" />
-          <MarketingFaq items={SCIENCE_FAQ} />
+          <MarketingFaq items={SCIENCE_FAQ.slice(0, 3)} />
           <p className="mt-6 text-center font-sans text-[11px]" style={{ color: BRAND.boneDim }}>
-            More help?{' '}
-            <Link to="/support" className="underline underline-offset-2 transition-colors hover:text-[#B6502E]">
-              Visit support
+            <Link to="/faq" className="underline underline-offset-2 transition-colors hover:text-[#B6502E]">
+              Full FAQ + all published studies
             </Link>
           </p>
         </section>

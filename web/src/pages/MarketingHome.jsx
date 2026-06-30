@@ -8,8 +8,10 @@ import {
   MarketingSectionHeader,
   SiteFooter,
   ProtocolCard,
+  CaseStudyCarousel,
   fadeUp,
 } from '../components/marketing';
+import { EVIDENCE_STUDIES } from '../data/evidenceStudies';
 import { BRAND } from '../brand/tokens';
 import { VARIANT_LIST } from '../sequences';
 
@@ -372,6 +374,26 @@ export default function MarketingHome() {
             science page
           </Link>
         </motion.p>
+      </section>
+
+      {/* ── Published research ── */}
+      <section className="border-t border-white/[0.06] bg-black/20">
+        <div className="mx-auto max-w-5xl px-5 py-20">
+          <MarketingSectionHeader
+            kicker="Published research"
+            title="Peer-reviewed outcomes, not testimonials."
+          />
+          <CaseStudyCarousel studies={EVIDENCE_STUDIES.slice(0, 4)} />
+          <motion.p {...fadeUp} className="mt-6 text-center">
+            <Link
+              to="/faq"
+              className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] underline decoration-[#B6502E]/40 underline-offset-4 transition-colors hover:text-[#B6502E]"
+              style={{ color: BRAND.boneMuted }}
+            >
+              All studies + FAQ
+            </Link>
+          </motion.p>
+        </div>
       </section>
 
       {/* ── Clinical path ── */}

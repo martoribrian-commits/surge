@@ -8,9 +8,11 @@ import {
   SiteFooter,
   MarketingFaq,
   WorkflowSteps,
+  CaseStudyCarousel,
   fadeUp,
   stagger,
 } from '../components/marketing';
+import { EVIDENCE_STUDIES } from '../data/evidenceStudies';
 import { BRAND } from '../brand/tokens';
 
 const SECTIONS = [
@@ -218,6 +220,15 @@ export default function ProvidersPage() {
           </div>
         </section>
 
+        {/* Evidence */}
+        <section className="border-t border-white/[0.06] py-16">
+          <MarketingSectionHeader
+            kicker="Evidence base"
+            title="Protocols your patients can feel. Studies you can cite."
+          />
+          <CaseStudyCarousel studies={EVIDENCE_STUDIES} autoAdvanceMs={7000} />
+        </section>
+
         {/* Portal features */}
         <section className="border-t border-white/[0.06] py-16">
           <MarketingSectionHeader
@@ -298,10 +309,15 @@ export default function ProvidersPage() {
           </div>
         </section>
 
-        {/* FAQ */}
+        {/* FAQ teaser */}
         <section className="border-t border-white/[0.06] py-16">
           <MarketingSectionHeader kicker="Clinical FAQ" title="Common questions from providers." />
-          <MarketingFaq items={PROVIDER_FAQ} />
+          <MarketingFaq items={PROVIDER_FAQ.slice(0, 3)} />
+          <p className="mt-6 text-center font-sans text-[11px]" style={{ color: BRAND.boneDim }}>
+            <Link to="/faq" className="underline underline-offset-2 transition-colors hover:text-[#B6502E]">
+              Full FAQ
+            </Link>
+          </p>
         </section>
 
         {/* Contact */}
