@@ -20,9 +20,9 @@ const BUCKETS = [
     title: 'App usage and sequences',
     summary: '30s, 60s, and 90s somatic flows',
     items: [
-      '30s Instant Reset runs automatically once you begin. Breathe with the visual shift at ten seconds.',
-      '60s Orienting Anchor requires alternating left and right taps in rhythm with the pulse.',
-      '90s Coherence Ripple uses press-and-hold. Release to pause. Your progress is preserved.',
+      'Seven sequences across 30s, 60s, and 90s — each mapped to a body state and physiological protocol.',
+      '30s Instant Reset and Flash Freeze: auto or hold. 60s Orienting Anchor: bilateral taps. 60s Nova Gate: auto visual transit.',
+      '90s Coherence Ripple, Vagal Downshift, and Static Field use press-and-hold. Release to pause. Progress is preserved.',
       'After any sequence, aftermath offers quiet next steps. Crane is optional.',
     ],
   },

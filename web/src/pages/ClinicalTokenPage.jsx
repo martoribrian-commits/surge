@@ -14,7 +14,7 @@ export default function ClinicalTokenPage() {
     async (e) => {
       e.preventDefault();
       const result = await validateToken(input);
-      if (result.valid) navigate('/');
+      if (result.valid) navigate('/start');
     },
     [input, validateToken, navigate],
   );
@@ -69,7 +69,7 @@ export default function ClinicalTokenPage() {
           Provided by your clinician. No account required.
         </p>
         <Link
-          to="/"
+          to="/start"
           className="mt-8 inline-block font-sans text-[11px] uppercase tracking-[0.16em] text-white/35 hover:text-[#B6502E]"
         >
           ← Back to sequences

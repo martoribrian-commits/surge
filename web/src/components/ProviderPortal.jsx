@@ -4,6 +4,8 @@ import {
   fetchPortalStats,
   fetchPortalTokens,
   fetchPortalSessions,
+  fetchPortalTeam,
+  exportPortalSessions,
   generatePortalToken,
   revokePortalToken,
 } from '../lib/portalClient';
@@ -12,9 +14,15 @@ import ProviderStatsBar from './portal/ProviderStatsBar';
 import ProviderGenerateForm from './portal/ProviderGenerateForm';
 import ProviderTokenTable from './portal/ProviderTokenTable';
 import ProviderSessionsTable from './portal/ProviderSessionsTable';
+import ProviderVariantBreakdown from './portal/ProviderVariantBreakdown';
+import ProviderOnboardingGuide from './portal/ProviderOnboardingGuide';
+import ProviderSessionFilters, { EMPTY_SESSION_FILTERS } from './portal/ProviderSessionFilters';
+import ProviderTeamStrip from './portal/ProviderTeamStrip';
 import { BRAND } from '../brand/tokens';
+import { Link } from 'react-router-dom';
 
 const REVEAL_MS = 10_000;
+const ONBOARDING_KEY = 'surge.portal.onboardingDismissed';
 
 /**
  * Provider portal — Netlify API + Supabase Auth. Service role only on backend.
@@ -31,9 +39,25 @@ export default function ProviderPortal() {
 
   const [orgName, setOrgName] = useState('');
   const [tier, setTier] = useState('');
-  const [stats, setStats] = useState({ tokensIssued: 0, tokensActivated: 0, sessionsCompleted: 0 });
+  const [teamSize, setTeamSize] = useState(1);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [stats, setStats] = useState({
+    tokensIssued: 0,
+    tokensActivated: 0,
+    sessionsCompleted: 0,
+    variantBreakdown: {},
+  });
   const [tokens, setTokens] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [sessionFilters, setSessionFilters] = useState({ ...EMPTY_SESSION_FILTERS });
+  const [exporting, setExporting] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(ONBOARDING_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [generating, setGenerating] = useState(false);
   const [revealedToken, setRevealedToken] = useState(null);
@@ -57,21 +81,29 @@ export default function ProviderPortal() {
     [clearReveal],
   );
 
-  const loadDashboard = useCallback(async (accessToken) => {
+  const loadDashboard = useCallback(async (accessToken, filters) => {
     if (!accessToken) return;
     setDashboardLoading(true);
     setPortalError('');
     try {
-      const [statsData, tokensData, sessionsData] = await Promise.all([
+      const [statsData, tokensData, sessionsData, teamData] = await Promise.all([
         fetchPortalStats(accessToken),
         fetchPortalTokens(accessToken),
-        fetchPortalSessions(accessToken),
+        fetchPortalSessions(accessToken, filters),
+        fetchPortalTeam(accessToken),
       ]);
       setOrgName(statsData.orgName ?? '');
       setTier(statsData.tier ?? '');
-      setStats(statsData.stats ?? { tokensIssued: 0, tokensActivated: 0, sessionsCompleted: 0 });
+      setTeamSize(statsData.teamSize ?? 1);
+      setStats(statsData.stats ?? {
+        tokensIssued: 0,
+        tokensActivated: 0,
+        sessionsCompleted: 0,
+        variantBreakdown: {},
+      });
       setTokens(tokensData.tokens ?? []);
       setSessions(sessionsData.sessions ?? []);
+      setTeamMembers(teamData.members ?? []);
     } catch (err) {
       if (err.status === 401) {
         setOrgName('');
@@ -93,7 +125,7 @@ export default function ProviderPortal() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session?.access_token) {
-        loadDashboard(data.session.access_token);
+        loadDashboard(data.session.access_token, EMPTY_SESSION_FILTERS);
       }
       setLoading(false);
     });
@@ -101,12 +133,13 @@ export default function ProviderPortal() {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (nextSession?.access_token) {
-        loadDashboard(nextSession.access_token);
+        loadDashboard(nextSession.access_token, EMPTY_SESSION_FILTERS);
       } else {
         setOrgName('');
         setTier('');
         setTokens([]);
         setSessions([]);
+        setTeamMembers([]);
         clearReveal();
       }
     });
@@ -116,6 +149,14 @@ export default function ProviderPortal() {
       clearReveal();
     };
   }, [loadDashboard, clearReveal]);
+
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const timer = window.setTimeout(() => {
+      loadDashboard(session.access_token, sessionFilters);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [sessionFilters, session?.access_token, loadDashboard]);
 
   const handleSignIn = async (event) => {
     event.preventDefault();
@@ -140,7 +181,7 @@ export default function ProviderPortal() {
       if (result?.token?.token) {
         showReveal(result.token.token);
       }
-      await loadDashboard(session.access_token);
+      await loadDashboard(session.access_token, sessionFilters);
     } catch {
       setPortalError('Token generation failed.');
     } finally {
@@ -159,13 +200,43 @@ export default function ProviderPortal() {
     setRevoking(token);
     try {
       await revokePortalToken(session.access_token, token);
-      await loadDashboard(session.access_token);
+      await loadDashboard(session.access_token, sessionFilters);
     } catch {
       setPortalError('Could not revoke token.');
     } finally {
       setRevoking(null);
     }
   };
+
+  const handleExport = async () => {
+    if (!session?.access_token || exporting) return;
+    setExporting(true);
+    setPortalError('');
+    try {
+      const blob = await exportPortalSessions(session.access_token, sessionFilters);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `surge-sessions-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setPortalError('Export failed. Try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDismissOnboarding = () => {
+    setOnboardingDismissed(true);
+    try {
+      localStorage.setItem(ONBOARDING_KEY, 'true');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const showOnboarding = stats.tokensIssued === 0 && !onboardingDismissed;
 
   if (loading) {
     return (
@@ -202,7 +273,10 @@ export default function ProviderPortal() {
         <main className="mx-auto max-w-lg px-8 py-16">
           <p className="font-sans text-sm" style={{ color: BRAND.boneMuted }}>{portalError}</p>
           <p className="mt-4 font-sans text-sm" style={{ color: BRAND.boneDim }}>
-            No provider account linked to this email. Contact Surge to provision access.
+            No provider account linked to this email.{' '}
+            <Link to="/for-providers#contact" className="underline hover:text-[#B6502E]">
+              Request access
+            </Link>
           </p>
         </main>
       </div>
@@ -224,7 +298,7 @@ export default function ProviderPortal() {
           <p className="mt-1 font-sans text-sm font-medium">{orgName || '…'}</p>
           {tier ? (
             <p className="font-sans text-[10px] uppercase tracking-[0.16em]" style={{ color: BRAND.boneDim }}>
-              {tier} tier
+              {tier} tier{teamSize > 1 ? ` · ${teamSize} clinicians` : ''}
             </p>
           ) : null}
         </div>
@@ -243,7 +317,15 @@ export default function ProviderPortal() {
           <p className="mb-6 font-sans text-xs" style={{ color: BRAND.clay }}>{portalError}</p>
         ) : null}
 
+        {showOnboarding ? <ProviderOnboardingGuide onDismiss={handleDismissOnboarding} /> : null}
+
+        <ProviderTeamStrip members={teamMembers} teamSize={teamSize} />
+
         <ProviderStatsBar stats={stats} />
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+          <ProviderVariantBreakdown breakdown={stats.variantBreakdown} />
+        </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2">
@@ -274,6 +356,12 @@ export default function ProviderPortal() {
           <h2 className="mb-4 font-sans text-[10px] font-semibold uppercase tracking-[0.32em]" style={{ color: BRAND.clay }}>
             Recent sessions
           </h2>
+          <ProviderSessionFilters
+            filters={sessionFilters}
+            onChange={setSessionFilters}
+            onExport={handleExport}
+            exporting={exporting}
+          />
           <ProviderSessionsTable sessions={sessions} />
         </section>
       </main>

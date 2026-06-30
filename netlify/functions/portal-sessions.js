@@ -1,4 +1,11 @@
-import { handleOptions, corsJson, verifyPortalRequest } from './lib/portal-auth.js';
+import {
+  handleOptions,
+  corsJson,
+  verifyPortalRequest,
+  resolveOrgTokenCodes,
+  parseSessionFilters,
+  applySessionFilters,
+} from './lib/portal-auth.js';
 
 export default async (request) => {
   const opt = handleOptions(request);
@@ -11,26 +18,40 @@ export default async (request) => {
   const auth = await verifyPortalRequest(request);
   if (auth.error) return auth.error;
 
-  const { supabase, userId } = auth;
+  const { supabase, provider } = auth;
   const url = new URL(request.url);
-  const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 50));
+  const filters = parseSessionFilters(url);
 
-  const { data: tokenRows } = await supabase
-    .from('clinical_tokens')
-    .select('token')
-    .eq('provider_id', userId);
+  if (filters.error) {
+    return corsJson({ error: filters.error }, 400);
+  }
 
-  const tokenCodes = (tokenRows ?? []).map((r) => r.token);
+  let tokenCodes;
+  try {
+    tokenCodes = await resolveOrgTokenCodes(supabase, provider);
+  } catch (err) {
+    console.error('[portal-sessions]', err.message);
+    return corsJson({ error: 'Failed to load sessions' }, 500);
+  }
+
   if (!tokenCodes.length) {
     return corsJson({ sessions: [] });
   }
 
-  const { data: rows, error } = await supabase
+  if (filters.token && !tokenCodes.includes(filters.token)) {
+    return corsJson({ sessions: [] });
+  }
+
+  let query = supabase
     .from('sessions')
-    .select('id, token_used, duration, completion_state, synced_at')
+    .select('id, token_used, duration, completion_state, synced_at, variant_id')
     .in('token_used', tokenCodes)
     .order('synced_at', { ascending: false })
-    .limit(limit);
+    .limit(filters.limit);
+
+  query = applySessionFilters(query, filters);
+
+  const { data: rows, error } = await query;
 
   if (error) {
     console.error('[portal-sessions]', error.message);
@@ -43,6 +64,7 @@ export default async (request) => {
     durationSeconds: row.duration,
     completionState: row.completion_state,
     syncedAt: row.synced_at,
+    variantId: row.variant_id ?? null,
   }));
 
   return corsJson({ sessions });

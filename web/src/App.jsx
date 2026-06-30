@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import SequenceFlow from './views/SequenceFlow';
 import SurgeFlow from './views/SurgeFlow';
 import LandingPage from './components/LandingPage';
@@ -14,6 +14,8 @@ import {
   SciencePage,
   ProvidersPage,
   ClinicalTokenPage,
+  MarketingHome,
+  FaqPage,
 } from './pages';
 import { resolveVariantId } from './sequences';
 import { CraneProvider } from './context/CraneProvider';
@@ -25,9 +27,16 @@ function EngineRoute() {
   return <SequenceFlow initialVariantId={resolveVariantId(variantId)} />;
 }
 
+function StartRoute() {
+  const [search] = useSearchParams();
+  const variant = search.get('variant');
+  return <SequenceFlow initialVariantId={variant ? resolveVariantId(variant) : null} />;
+}
+
 /**
  * Release 1.33 routing:
- *   /                    → SequenceFlow (30/60/90 picker → engine → aftermath)
+ *   /                    → Marketing home (science-backed landing)
+ *   /start               → SequenceFlow (30/60/90 picker → engine → aftermath)
  *   /engine/:variantId   → deep-link a variant
  *   /how-it-works        → Science page
  *   /for-providers       → Provider marketing
@@ -43,17 +52,19 @@ export default function App() {
       <CraneFab />
       <CranePanel />
       <Routes>
-        <Route path="/" element={<SequenceFlow />} />
-        <Route path="/engine" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<MarketingHome />} />
+        <Route path="/start" element={<StartRoute />} />
+        <Route path="/engine" element={<Navigate to="/start" replace />} />
         <Route path="/engine/:variantId" element={<EngineRoute />} />
         <Route path="/how-it-works" element={<SciencePage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/for-providers" element={<ProvidersPage />} />
         <Route path="/clinical-token" element={<ClinicalTokenPage />} />
         <Route path="/about" element={<LandingPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/support" element={<SupportPage />} />
-        <Route path="/surge" element={<Navigate to="/" replace />} />
+        <Route path="/surge" element={<Navigate to="/start" replace />} />
         <Route path="/crane" element={<CraneChat />} />
         <Route path="/heron" element={<Navigate to="/crane" replace />} />
         <Route path="/egret" element={<Navigate to="/crane" replace />} />
@@ -62,7 +73,7 @@ export default function App() {
         <Route path="/dev/surge-flow-legacy" element={<SurgeFlow />} />
         {/* Legacy static HTML paths */}
         <Route path="/index.html" element={<Navigate to="/" replace />} />
-        <Route path="/engine.html" element={<Navigate to="/" replace />} />
+        <Route path="/engine.html" element={<Navigate to="/start" replace />} />
         <Route path="/how-it-works.html" element={<Navigate to="/how-it-works" replace />} />
         <Route path="/for-providers.html" element={<Navigate to="/for-providers" replace />} />
         <Route path="/clinical-token.html" element={<Navigate to="/clinical-token" replace />} />

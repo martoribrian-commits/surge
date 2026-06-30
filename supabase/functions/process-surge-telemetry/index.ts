@@ -249,13 +249,18 @@ export default {
       (payload.completedFullCycle ? "complete" : "interrupted");
 
     if (payload.clinicalToken) {
+      const sessionRow: Record<string, unknown> = {
+        token_used: payload.clinicalToken,
+        duration: payload.durationInSeconds,
+        completion_state: state,
+      };
+      if (payload.variantId) {
+        sessionRow.variant_id = payload.variantId;
+      }
+
       const { error: sessionError } = await ctx.supabaseAdmin
         .from("sessions")
-        .insert({
-          token_used: payload.clinicalToken,
-          duration: payload.durationInSeconds,
-          completion_state: state,
-        });
+        .insert(sessionRow);
 
       if (sessionError) {
         console.warn("[process-surge-telemetry] session insert:", sessionError.message);

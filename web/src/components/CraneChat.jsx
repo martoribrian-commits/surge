@@ -339,7 +339,7 @@ export default function CraneChat() {
 
       <button
         type="button"
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/start')}
         className="absolute right-8 top-8 z-20 font-sans text-[10px] uppercase tracking-[0.28em] text-white/15 transition-colors duration-500 hover:text-white/35"
       >
         Exit
@@ -375,7 +375,7 @@ export default function CraneChat() {
             {mode === 'post-session' && carePlan ? (
               <CraneCarePlan
                 carePlan={carePlan}
-                onStepClick={() => navigate('/')}
+                onStepClick={() => navigate('/start')}
                 onToggleStep={toggleStep}
               />
             ) : null}

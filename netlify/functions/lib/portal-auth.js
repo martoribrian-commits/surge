@@ -48,7 +48,7 @@ export async function verifyPortalRequest(request) {
 
   const { data: provider, error: providerError } = await supabase
     .from('providers')
-    .select('id, name, org_name, tier, active')
+    .select('id, name, org_name, org_id, tier, active')
     .eq('id', userId)
     .maybeSingle();
 
@@ -57,6 +57,78 @@ export async function verifyPortalRequest(request) {
   }
 
   return { supabase, userId, provider };
+}
+
+/** All provider ids in the same organization (falls back to solo provider). */
+export async function resolveOrgProviderIds(supabase, provider) {
+  if (!provider.org_id) {
+    return [provider.id];
+  }
+
+  const { data: rows, error } = await supabase
+    .from('providers')
+    .select('id')
+    .eq('org_id', provider.org_id)
+    .eq('active', true);
+
+  if (error || !rows?.length) {
+    return [provider.id];
+  }
+
+  return rows.map((r) => r.id);
+}
+
+/** Token codes issued by any clinician in the org. */
+export async function resolveOrgTokenCodes(supabase, provider) {
+  const providerIds = await resolveOrgProviderIds(supabase, provider);
+
+  const { data: rows, error } = await supabase
+    .from('clinical_tokens')
+    .select('token')
+    .in('provider_id', providerIds);
+
+  if (error) {
+    throw error;
+  }
+
+  return (rows ?? []).map((r) => r.token);
+}
+
+export function parseSessionFilters(url) {
+  const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit')) || 50));
+  const variant = url.searchParams.get('variant')?.trim() || null;
+  const completion = url.searchParams.get('completion')?.trim() || null;
+  const token = url.searchParams.get('token')?.trim()?.toUpperCase() || null;
+  const from = url.searchParams.get('from')?.trim() || null;
+  const to = url.searchParams.get('to')?.trim() || null;
+
+  if (completion && !['complete', 'interrupted'].includes(completion)) {
+    return { error: 'Invalid completion filter' };
+  }
+
+  return { limit, variant, completion, token, from, to };
+}
+
+export function applySessionFilters(query, filters) {
+  let q = query;
+
+  if (filters.variant) {
+    q = q.eq('variant_id', filters.variant);
+  }
+  if (filters.completion) {
+    q = q.eq('completion_state', filters.completion);
+  }
+  if (filters.token) {
+    q = q.eq('token_used', filters.token);
+  }
+  if (filters.from) {
+    q = q.gte('synced_at', `${filters.from}T00:00:00.000Z`);
+  }
+  if (filters.to) {
+    q = q.lte('synced_at', `${filters.to}T23:59:59.999Z`);
+  }
+
+  return q;
 }
 
 export function tokenStatus(row) {
