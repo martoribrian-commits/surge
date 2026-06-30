@@ -20,7 +20,7 @@ const BUCKETS = [
     title: 'App usage and sequences',
     summary: '30s, 60s, and 90s somatic flows',
     items: [
-      'Seven sequences across 30s, 60s, and 90s — each mapped to a body state and physiological protocol.',
+      'Ten sequences across 30s, 60s, 90s, and 120s — each mapped to a body state and physiological protocol.',
       '30s Instant Reset and Flash Freeze: auto or hold. 60s Orienting Anchor: bilateral taps. 60s Nova Gate: auto visual transit.',
       '90s Coherence Ripple, Vagal Downshift, and Static Field use press-and-hold. Release to pause. Progress is preserved.',
       'After any sequence, aftermath offers quiet next steps. Crane is optional.',

@@ -17,9 +17,12 @@ export const VARIANT_LABELS = {
   'flash-freeze': 'Flash Freeze',
   'orienting-anchor': 'Orienting Anchor',
   'nova-gate': 'Nova Gate',
+  'still-thaw': 'Still Thaw',
   'coherence-ripple': 'Coherence Ripple',
+  'heavy-tide': 'Heavy Tide',
   'vagal-downshift': 'Vagal Downshift',
   'static-field': 'Static Field',
+  'deep-anchor': 'Deep Anchor',
 };
 
 export function carePlanStorageKey(sessionId) {

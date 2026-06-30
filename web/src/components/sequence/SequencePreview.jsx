@@ -44,14 +44,23 @@ export default function SequencePreview({ variantId }) {
           {variantId === 'nova-gate' && (
             <NovaGatePreview palette={variant.palette} />
           )}
+          {variantId === 'still-thaw' && (
+            <StillThawPreview palette={variant.palette} />
+          )}
           {variantId === 'coherence-ripple' && (
             <CoherencePreview palette={variant.palette} />
+          )}
+          {variantId === 'heavy-tide' && (
+            <HeavyTidePreview palette={variant.palette} />
           )}
           {variantId === 'vagal-downshift' && (
             <VagalDownshiftPreview palette={variant.palette} />
           )}
           {variantId === 'static-field' && (
             <StaticFieldPreview palette={variant.palette} />
+          )}
+          {variantId === 'deep-anchor' && (
+            <DeepAnchorPreview palette={variant.palette} />
           )}
         </motion.div>
       </AnimatePresence>
@@ -138,6 +147,47 @@ function FlashFreezePreview({ palette }) {
   );
 }
 
+function StillThawPreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background: [
+            `radial-gradient(circle at 50% 55%, ${palette.accent}44 0%, transparent 50%)`,
+            `radial-gradient(circle at 50% 60%, ${palette.accentCalm}55 0%, transparent 55%)`,
+            `radial-gradient(circle at 50% 55%, ${palette.accent}44 0%, transparent 50%)`,
+          ],
+        }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-sm border"
+          style={{
+            left: `${10 + (i * 17) % 75}%`,
+            top: `${15 + (i * 13) % 65}%`,
+            width: 8 + (i % 3) * 4,
+            height: 8 + (i % 3) * 4,
+            borderColor: palette.accent,
+            opacity: 0.4,
+            transform: `rotate(${i * 30}deg)`,
+          }}
+          animate={{ opacity: [0.5, 0.1, 0.5], scale: [1, 0.6, 1] }}
+          transition={{ duration: 4 + i * 0.5, repeat: Infinity, delay: i * 0.3 }}
+        />
+      ))}
+      <motion.div
+        className="absolute left-1/2 top-[62%] h-3 w-3 -translate-x-1/2 rounded-full"
+        style={{ background: palette.accentCalm, boxShadow: `0 0 20px ${palette.accentCalm}` }}
+        animate={{ scale: [0.8, 1.3, 0.8], opacity: [0.4, 0.9, 0.4] }}
+        transition={{ duration: 3.5, repeat: Infinity }}
+      />
+    </>
+  );
+}
+
 function NovaGatePreview({ palette }) {
   return (
     <>
@@ -209,6 +259,35 @@ function CoherencePreview({ palette }) {
   );
 }
 
+function HeavyTidePreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-x-0 bottom-0 h-1/2"
+        style={{
+          background: `linear-gradient(180deg, transparent 0%, ${palette.accent}33 50%, ${palette.accentCalm}44 100%)`,
+          filter: 'blur(16px)',
+        }}
+        animate={{ y: [8, -12, 8] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 rounded-full border"
+        style={{
+          width: '36%',
+          height: '36%',
+          marginLeft: '-18%',
+          marginTop: '-18%',
+          borderColor: `${palette.accentCalm}88`,
+          boxShadow: `0 0 40px ${palette.accent}33`,
+        }}
+        animate={{ y: [-6, 8, -6], scale: [0.9, 1.05, 0.9] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </>
+  );
+}
+
 function VagalDownshiftPreview({ palette }) {
   return (
     <>
@@ -239,6 +318,40 @@ function VagalDownshiftPreview({ palette }) {
           transition={{ duration: 2.8 + i * 0.3, repeat: Infinity, delay: i * 0.35 }}
         />
       ))}
+    </>
+  );
+}
+
+function DeepAnchorPreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-y-0 left-0 w-1/2"
+        style={{ background: `linear-gradient(90deg, ${palette.accent}55, transparent)` }}
+        animate={{ opacity: [0.2, 0.65, 0.2] }}
+        transition={{ duration: 2.5, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute inset-y-0 right-0 w-1/2"
+        style={{ background: `linear-gradient(-90deg, ${palette.accentCalm}55, transparent)` }}
+        animate={{ opacity: [0.65, 0.2, 0.65] }}
+        transition={{ duration: 2.5, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border"
+        style={{
+          borderColor: `${palette.accentCalm}88`,
+          boxShadow: `0 0 32px ${palette.accentCalm}44`,
+        }}
+        animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.4, 0.85, 0.4] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: palette.copy }}
+        animate={{ x: [-28, 28, -28] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
     </>
   );
 }

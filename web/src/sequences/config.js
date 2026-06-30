@@ -9,7 +9,7 @@ export const InteractionMode = {
   HOLD: 'hold',
 };
 
-/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'coherence-ripple' | 'vagal-downshift' | 'static-field'} SequenceVariantId */
+/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'still-thaw' | 'coherence-ripple' | 'heavy-tide' | 'vagal-downshift' | 'static-field' | 'deep-anchor'} SequenceVariantId */
 
 /**
  * @typedef {Object} SequencePalette
@@ -140,6 +140,31 @@ export const SEQUENCE_VARIANTS = {
       copy: '#FFF8F0',
     },
   },
+  'still-thaw': {
+    id: 'still-thaw',
+    name: 'Still Thaw',
+    modality: 'Progressive somatic re-awakening',
+    tagline: 'When you feel frozen shut — not fired up',
+    tabLabel: '60 · thaw',
+    feelsLike:
+      'Numb, heavy limbs, blank mind, disconnected from your body — the alarm is quiet but you are stuck, shut down, or floating outside yourself.',
+    whatItDoes:
+      'A cold field slowly warms from the edges inward. Frost crystals melt, color returns, and a gentle pulse rebuilds at your center. Sixty seconds of passive thawing — no taps, no hold. Just let sensation return.',
+    whenToUse:
+      'Freeze response, shutdown, emotional numbness, post-crisis collapse, or when every other sequence feels like too much to engage with.',
+    science: 'Progressive interoceptive warming — gradual sensory re-entry from dorsal vagal shutdown without demanding active regulation.',
+    durationSeconds: 60,
+    interactionMode: InteractionMode.AUTO,
+    transitionAtSeconds: 20,
+    palette: {
+      background: '#040810',
+      backgroundEnd: '#1a1420',
+      accent: '#7eb8d8',
+      accentCalm: '#e8a86b',
+      muted: 'rgba(180,210,230,0.4)',
+      copy: '#eef4f8',
+    },
+  },
   'coherence-ripple': {
     id: 'coherence-ripple',
     name: 'Coherence Ripple',
@@ -163,6 +188,31 @@ export const SEQUENCE_VARIANTS = {
       accentCalm: '#4a88b8',
       muted: 'rgba(244,240,235,0.45)',
       copy: '#f4f0eb',
+    },
+  },
+  'heavy-tide': {
+    id: 'heavy-tide',
+    name: 'Heavy Tide',
+    modality: 'Pendular emotional release entrainment',
+    tagline: 'When sadness sits heavy and needs to move through',
+    tabLabel: '90 · tide',
+    feelsLike:
+      'Chest ache, throat tight, tears behind the eyes, slow heaviness — not racing, not angry, just a weight that will not lift on its own.',
+    whatItDoes:
+      'Slow vertical tides rise and fall with a five-second inhale and seven-second exhale. Deep indigo waves carry the weight instead of fighting it. Hold to breathe with the tide. Ninety seconds of permission to feel without fixing.',
+    whenToUse:
+      'Grief, sadness, loneliness, post-cry heaviness, or when you need to move emotion through instead of downshift intensity away from it.',
+    science: 'Pendular breath entrainment at ~5 breaths per minute — slower exhale bias supports parasympathetic engagement without emotional suppression.',
+    durationSeconds: 90,
+    interactionMode: InteractionMode.HOLD,
+    breathCycle: { inhale: 5, exhale: 7 },
+    palette: {
+      background: '#080818',
+      backgroundEnd: '#140828',
+      accent: '#7a6aad',
+      accentCalm: '#c4869a',
+      muted: 'rgba(196,134,154,0.45)',
+      copy: '#f0e8f4',
     },
   },
   'vagal-downshift': {
@@ -210,6 +260,31 @@ export const SEQUENCE_VARIANTS = {
       accent: '#F4F0EB',
       accentCalm: '#B6502E',
       muted: 'rgba(244,240,235,0.4)',
+      copy: '#f4f0eb',
+    },
+  },
+  'deep-anchor': {
+    id: 'deep-anchor',
+    name: 'Deep Anchor',
+    modality: 'Extended bilateral somatic integration',
+    tagline: 'When the loop will not quit — go deeper',
+    tabLabel: '120 · anchor',
+    feelsLike:
+      'Shame spiral, self-criticism on repeat, intrusive "why did I" loops — the kind of mental pattern that keeps running after sixty seconds is not enough.',
+    whatItDoes:
+      'Two full minutes of slow left-right tapping at forty-eight beats per minute. Hemispheres integrate layer by layer until the loop loosens. The longest bilateral protocol — for when Orienting Anchor was close but not quite enough.',
+    whenToUse:
+      'Shame, guilt, self-attack, intractable rumination, or post-conflict mental replay that needs extended bilateral grounding.',
+    science: 'Extended alternating sensory stimulation — slower bilateral cadence over two minutes supports cognitive-emotional integration beyond brief orienting windows.',
+    durationSeconds: 120,
+    interactionMode: InteractionMode.BILATERAL,
+    bilateralBpm: 48,
+    palette: {
+      background: '#1a0e08',
+      backgroundEnd: '#0a1814',
+      accent: '#c49a6c',
+      accentCalm: '#6a9a8a',
+      muted: 'rgba(244,240,235,0.45)',
       copy: '#f4f0eb',
     },
   },

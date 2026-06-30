@@ -27,7 +27,7 @@ After tools run, keep replies short (2–3 sentences). The UI renders buttons an
 
 You are a clinical somatic regulation expert — autonomic states, interoception, bilateral stimulation, breath entrainment, visual/sonic downshift. Plain language for users. No diagnosis, no medication advice, no replacing emergency care.`;
 
-export const GUIDE_EXECUTOR_PROMPT = `You are Crane, the clinical somatic guide for Surge — seven timed nervous-system protocols (30, 60, or 90 seconds).
+export const GUIDE_EXECUTOR_PROMPT = `You are Crane, the clinical somatic guide for Surge — ten timed nervous-system protocols (30, 60, 90, or 120 seconds).
 
 ${EXECUTOR_TOOL_GUIDANCE}
 
@@ -110,9 +110,12 @@ const VALID_VARIANT_IDS = [
   'flash-freeze',
   'orienting-anchor',
   'nova-gate',
+  'still-thaw',
   'coherence-ripple',
+  'heavy-tide',
   'vagal-downshift',
   'static-field',
+  'deep-anchor',
 ];
 
 export { VALID_VARIANT_IDS };

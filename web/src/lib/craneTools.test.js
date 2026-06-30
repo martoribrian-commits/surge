@@ -131,7 +131,7 @@ describe('cranePrompts', () => {
 });
 
 describe('variant ids', () => {
-  it('matches seven sequences', () => {
-    expect(VALID_VARIANT_IDS).toHaveLength(7);
+  it('matches ten sequences', () => {
+    expect(VALID_VARIANT_IDS).toHaveLength(10);
   });
 });

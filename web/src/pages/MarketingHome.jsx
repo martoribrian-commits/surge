@@ -22,7 +22,7 @@ const PILLARS = [
   {
     num: '30 to 90',
     unit: 'Seconds',
-    text: 'Seven evidence-informed sequences. Each runs one fixed downshift curve. Visual, audio, and touch phase-locked until completion.',
+    text: 'Ten evidence-informed sequences. Each runs one fixed downshift curve. Visual, audio, and touch phase-locked until completion.',
   },
   {
     num: '0',
@@ -104,7 +104,7 @@ export default function MarketingHome() {
               transition={{ delay: 0.35 }}
             >
               When your body will not wait for an appointment. Secular. Private. No account.
-              Seven sequences mapped to physiological protocols. Not wellness trends.
+              Ten sequences mapped to physiological protocols. Not wellness trends.
             </motion.p>
 
             <motion.div
@@ -297,7 +297,7 @@ export default function MarketingHome() {
       <section className="border-t border-white/[0.06] bg-white/[0.015]">
         <div className="mx-auto max-w-5xl px-5 py-20">
           <MarketingSectionHeader
-            kicker="Seven sequences"
+            kicker="Ten sequences"
             title="Pick by body state. Not by mood score."
           />
 
@@ -373,7 +373,7 @@ export default function MarketingHome() {
           ))}
         </div>
         <motion.p {...fadeUp} className="mt-6 text-center font-sans text-[11px]" style={{ color: BRAND.boneDim }}>
-          All seven protocols on the{' '}
+          All ten protocols on the{' '}
           <Link to="/how-it-works" className="underline underline-offset-2 transition-colors hover:text-[#B6502E]">
             science page
           </Link>

@@ -7,9 +7,12 @@ const VARIANT_COLORS = {
   'flash-freeze': '#67E8F9',
   'orienting-anchor': '#D4845C',
   'nova-gate': '#FFB347',
+  'still-thaw': '#7EB8D8',
   'coherence-ripple': '#4A9A6A',
+  'heavy-tide': '#7A6AAD',
   'vagal-downshift': '#6B9AAA',
   'static-field': '#F4F0EB',
+  'deep-anchor': '#C49A6C',
   unknown: BRAND.boneDim,
 };
 

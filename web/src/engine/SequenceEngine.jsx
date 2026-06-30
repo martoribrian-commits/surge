@@ -9,9 +9,12 @@ import {
   FlashFreezeSequence,
   OrientingAnchorSequence,
   NovaGateSequence,
+  StillThawSequence,
   CoherenceRippleSequence,
+  HeavyTideSequence,
   VagalDownshiftSequence,
   StaticFieldSequence,
+  DeepAnchorSequence,
 } from '../components/sequence';
 
 const SEQUENCE_BY_ID = {
@@ -19,9 +22,12 @@ const SEQUENCE_BY_ID = {
   'flash-freeze': FlashFreezeSequence,
   'orienting-anchor': OrientingAnchorSequence,
   'nova-gate': NovaGateSequence,
+  'still-thaw': StillThawSequence,
   'coherence-ripple': CoherenceRippleSequence,
+  'heavy-tide': HeavyTideSequence,
   'vagal-downshift': VagalDownshiftSequence,
   'static-field': StaticFieldSequence,
+  'deep-anchor': DeepAnchorSequence,
 };
 
 /**

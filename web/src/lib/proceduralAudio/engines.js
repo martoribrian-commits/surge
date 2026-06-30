@@ -720,6 +720,358 @@ export class NovaGateAudioEngine {
   }
 }
 
+/** 60s Still Thaw — cold drone thaws into warm sub heartbeat. */
+export class StillThawAudioEngine {
+  constructor() {
+    this.running = false;
+    this.nodes = null;
+  }
+
+  prime() {
+    getAudioContext();
+  }
+
+  start() {
+    if (this.running) return;
+    unlockAudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    this.stop();
+    const { master, panner } = createMasterChain(ctx);
+    fadeInMaster(master, ctx, 0.85, 0.7);
+
+    const cold = ctx.createOscillator();
+    cold.type = 'sine';
+    cold.frequency.value = 110;
+
+    const coldGain = ctx.createGain();
+    coldGain.gain.value = 0.04;
+
+    const warm = ctx.createOscillator();
+    warm.type = 'sine';
+    warm.frequency.value = 55;
+
+    const warmGain = ctx.createGain();
+    warmGain.gain.value = 0;
+
+    const bed = ctx.createBufferSource();
+    bed.buffer = makePinkNoiseBuffer(ctx);
+    bed.loop = true;
+    const bedFilter = ctx.createBiquadFilter();
+    bedFilter.type = 'lowpass';
+    bedFilter.frequency.value = 280;
+    const bedGain = ctx.createGain();
+    bedGain.gain.value = 0.05;
+
+    cold.connect(coldGain).connect(panner);
+    warm.connect(warmGain).connect(panner);
+    bed.connect(bedFilter).connect(bedGain).connect(panner);
+
+    cold.start();
+    warm.start();
+    bed.start();
+
+    this.nodes = { ctx, master, panner, cold, coldGain, warm, warmGain, bed, bedFilter, bedGain };
+    this.running = true;
+  }
+
+  /** @param {number} elapsed @param {number} progress */
+  sync(elapsed, progress) {
+    if (!this.running || !this.nodes) return;
+    const { ctx, cold, coldGain, warm, warmGain, bedFilter, bedGain } = this.nodes;
+    const now = ctx.currentTime;
+    const thaw = Math.min(1, progress * 1.1 + elapsed / 60);
+    const transitionAt = 20;
+
+    rampGain(coldGain.gain, 0.05 * (1 - thaw * 0.92), now, 0.15);
+    cold.frequency.setTargetAtTime(110 - thaw * 40, now, 0.2);
+
+    const warmAmt = elapsed >= transitionAt ? clamp01((elapsed - transitionAt) / 25) : 0;
+    rampGain(warmGain.gain, warmAmt * 0.14, now, 0.12);
+    const pulse = 0.5 + 0.5 * Math.sin(elapsed * Math.PI * 2 * (0.35 + warmAmt * 0.2));
+    rampGain(warmGain.gain, warmAmt * (0.08 + pulse * 0.1), now, 0.08);
+
+    rampGain(bedGain.gain, 0.04 + thaw * 0.03, now, 0.12);
+    bedFilter.frequency.setTargetAtTime(280 + thaw * 420, now, 0.18);
+  }
+
+  complete() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1.5);
+    window.setTimeout(() => this.stop(), 1600);
+  }
+
+  stop() {
+    if (!this.nodes) {
+      this.running = false;
+      return;
+    }
+    const n = this.nodes;
+    stopSource(n.cold);
+    stopSource(n.warm);
+    stopSource(n.bed);
+    this.nodes = null;
+    this.running = false;
+  }
+}
+
+/** 90s Heavy Tide — slow tide wash with 5/7 breath-linked hum. */
+export class HeavyTideAudioEngine {
+  constructor() {
+    this.running = false;
+    this.nodes = null;
+  }
+
+  prime() {
+    getAudioContext();
+  }
+
+  start() {
+    if (this.running) return;
+    unlockAudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    this.stop();
+    const { master, panner } = createMasterChain(ctx);
+    fadeInMaster(master, ctx, 0.9, 0.55);
+
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = 52;
+
+    const subGain = ctx.createGain();
+    subGain.gain.value = 0.05;
+
+    const tide = ctx.createOscillator();
+    tide.type = 'triangle';
+    tide.frequency.value = 196;
+
+    const tideGain = ctx.createGain();
+    tideGain.gain.value = 0;
+
+    const wash = ctx.createBufferSource();
+    wash.buffer = makePinkNoiseBuffer(ctx, 1);
+    wash.loop = true;
+    const washFilter = ctx.createBiquadFilter();
+    washFilter.type = 'bandpass';
+    washFilter.frequency.value = 360;
+    washFilter.Q.value = 1.4;
+    const washGain = ctx.createGain();
+    washGain.gain.value = 0.012;
+
+    sub.connect(subGain).connect(panner);
+    tide.connect(tideGain).connect(panner);
+    wash.connect(washFilter).connect(washGain).connect(panner);
+
+    sub.start();
+    tide.start();
+    wash.start();
+
+    this.nodes = { ctx, master, panner, sub, subGain, tide, tideGain, washGain };
+    this.running = true;
+  }
+
+  pause() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 0.4);
+  }
+
+  resume() {
+    if (!this.nodes) {
+      this.start();
+      return;
+    }
+    fadeInMaster(this.nodes.master, this.nodes.ctx, 0.85, 0.4);
+  }
+
+  /**
+   * @param {number} elapsedSeconds
+   * @param {{ inhale: number, exhale: number }} breathCycle
+   */
+  sync(elapsedSeconds, breathCycle = { inhale: 5, exhale: 7 }) {
+    if (!this.running || !this.nodes) return;
+    const { ctx, sub, subGain, tide, tideGain, washGain } = this.nodes;
+    const now = ctx.currentTime;
+    const cycle = breathCycle.inhale + breathCycle.exhale;
+    const t = elapsedSeconds % cycle;
+
+    let breathAmount;
+    if (t < breathCycle.inhale) {
+      breathAmount = 0.5 - 0.5 * Math.cos((Math.PI * t) / breathCycle.inhale);
+    } else {
+      const exhaleT = t - breathCycle.inhale;
+      breathAmount = 1 - (0.5 - 0.5 * Math.cos((Math.PI * exhaleT) / breathCycle.exhale));
+    }
+
+    rampGain(subGain.gain, 0.08 + breathAmount * 0.38, now, 0.12);
+    rampGain(tideGain.gain, breathAmount * 0.1, now, 0.14);
+    rampGain(washGain.gain, 0.008 + (1 - breathAmount) * 0.025, now, 0.1);
+    sub.frequency.setTargetAtTime(48 + breathAmount * 12, now, 0.14);
+    tide.frequency.setTargetAtTime(174 + breathAmount * 36, now, 0.16);
+  }
+
+  complete() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1.8);
+    window.setTimeout(() => this.stop(), 1900);
+  }
+
+  stop() {
+    if (!this.nodes) {
+      this.running = false;
+      return;
+    }
+    const n = this.nodes;
+    stopSource(n.sub);
+    stopSource(n.tide);
+    stopSource(n.wash);
+    this.nodes = null;
+    this.running = false;
+  }
+}
+
+/** 120s Deep Anchor — slower bilateral bed + deeper panned ticks. */
+export class DeepAnchorAudioEngine {
+  constructor() {
+    this.running = false;
+    this.nodes = null;
+  }
+
+  prime() {
+    getAudioContext();
+  }
+
+  start() {
+    if (this.running) return;
+    unlockAudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    this.stop();
+    const { master, panner } = createMasterChain(ctx);
+    fadeInMaster(master, ctx, 0.92, 0.75);
+
+    const leftOsc = ctx.createOscillator();
+    leftOsc.type = 'sine';
+    leftOsc.frequency.value = 68;
+
+    const rightOsc = ctx.createOscillator();
+    rightOsc.type = 'sine';
+    rightOsc.frequency.value = 71;
+
+    const leftGain = ctx.createGain();
+    const rightGain = ctx.createGain();
+    leftGain.gain.value = 0.04;
+    rightGain.gain.value = 0.04;
+
+    const leftPan = ctx.createStereoPanner();
+    const rightPan = ctx.createStereoPanner();
+    leftPan.pan.value = -0.72;
+    rightPan.pan.value = 0.72;
+
+    leftOsc.connect(leftGain).connect(leftPan).connect(master);
+    rightOsc.connect(rightGain).connect(rightPan).connect(master);
+    leftOsc.start();
+    rightOsc.start();
+
+    const bedNoise = ctx.createBufferSource();
+    bedNoise.buffer = makePinkNoiseBuffer(ctx);
+    bedNoise.loop = true;
+    const bedFilter = ctx.createBiquadFilter();
+    bedFilter.type = 'lowpass';
+    bedFilter.frequency.value = 260;
+    const bedGain = ctx.createGain();
+    bedGain.gain.value = 0.05;
+    bedNoise.connect(bedFilter).connect(bedGain).connect(panner);
+
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = 52;
+    const subGain = ctx.createGain();
+    subGain.gain.value = 0.03;
+    sub.connect(subGain).connect(panner);
+
+    bedNoise.start();
+    sub.start();
+
+    this.nodes = {
+      ctx,
+      master,
+      panner,
+      leftOsc,
+      rightOsc,
+      leftGain,
+      rightGain,
+      bedNoise,
+      bedGain,
+      sub,
+      subGain,
+    };
+    this.running = true;
+  }
+
+  /** @param {number} elapsedSeconds @param {number} progress */
+  sync(elapsedSeconds, progress) {
+    if (!this.running || !this.nodes) return;
+    const { ctx, leftGain, rightGain, bedGain, subGain } = this.nodes;
+    const now = ctx.currentTime;
+    const bpm = 48;
+    const beatPhase = (elapsedSeconds * bpm) / 60;
+    const swell = 0.5 + 0.5 * Math.sin(beatPhase * Math.PI * 2);
+
+    rampGain(leftGain.gain, 0.022 + swell * 0.028, now, 0.14);
+    rampGain(rightGain.gain, 0.022 + (1 - swell) * 0.028, now, 0.14);
+    rampGain(bedGain.gain, 0.025 + progress * 0.035, now, 0.18);
+    rampGain(subGain.gain, 0.025 + progress * 0.06, now, 0.15);
+  }
+
+  /** @param {number} pan -1 to 1 */
+  triggerTick(pan = 0) {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const tickPan = ctx.createStereoPanner();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.38, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+
+    tickPan.pan.value = clamp01((pan + 1) / 2) * 2 - 1;
+
+    osc.connect(gain).connect(tickPan).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.18);
+  }
+
+  complete() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1.6);
+    window.setTimeout(() => this.stop(), 1700);
+  }
+
+  stop() {
+    if (!this.nodes) {
+      this.running = false;
+      return;
+    }
+    const n = this.nodes;
+    stopSource(n.leftOsc);
+    stopSource(n.rightOsc);
+    stopSource(n.bedNoise);
+    stopSource(n.sub);
+    this.nodes = null;
+    this.running = false;
+  }
+}
+
 /** Static field — original pink-noise engine. Starts only on engage (lazy). */
 export class StaticFieldAudioAdapter {
   constructor() {
@@ -768,9 +1120,12 @@ const ENGINE_FACTORIES = {
   'flash-freeze': () => new FlashFreezeAudioEngine(),
   'orienting-anchor': () => new OrientingAnchorAudioEngine(),
   'nova-gate': () => new NovaGateAudioEngine(),
+  'still-thaw': () => new StillThawAudioEngine(),
   'coherence-ripple': () => new CoherenceRippleAudioEngine(),
+  'heavy-tide': () => new HeavyTideAudioEngine(),
   'vagal-downshift': () => new VagalDownshiftAudioEngine(),
   'static-field': () => new StaticFieldAudioAdapter(),
+  'deep-anchor': () => new DeepAnchorAudioEngine(),
 };
 
 export function createSequenceAudioEngine(variantId) {
