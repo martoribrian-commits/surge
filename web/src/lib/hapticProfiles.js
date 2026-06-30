@@ -193,6 +193,52 @@ export const HapticProfiles = {
       },
     ],
   },
+
+  /**
+   * 60s Still Thaw — barely perceptible warmth building to gentle heartbeat.
+   */
+  'still-thaw': {
+    id: 'still-thaw',
+    label: 'Still Thaw — somatic re-awakening',
+    audioCueId: 'still-thaw-warmth',
+    phases: [
+      {
+        type: 'continuous',
+        id: 'still-thaw-dormant',
+        intensity: 0.18,
+        durationMs: 20_000,
+        decay: 'none',
+        delayMs: 0,
+      },
+      {
+        type: 'continuous',
+        id: 'still-thaw-warm',
+        intensity: 0.42,
+        durationMs: 40_000,
+        decay: 'linear',
+        delayMs: 20_000,
+      },
+    ],
+  },
+
+  /**
+   * 90s Heavy Tide — slow 5s swell / 7s ebb for grief-weighted breath.
+   */
+  'heavy-tide': {
+    id: 'heavy-tide',
+    label: 'Heavy Tide — pendular release',
+    audioCueId: 'heavy-tide-wash',
+    phases: [
+      {
+        type: 'breath',
+        id: 'heavy-tide-breath',
+        swellMs: 5_000,
+        ebbMs: 7_000,
+        minIntensity: 0.1,
+        maxIntensity: 0.65,
+      },
+    ],
+  },
 };
 
 /** @param {string} variantId */

@@ -27,7 +27,9 @@ const VALID_VARIANT_IDS = new Set([
   "flash-freeze",
   "orienting-anchor",
   "nova-gate",
+  "still-thaw",
   "coherence-ripple",
+  "heavy-tide",
   "vagal-downshift",
   "static-field",
 ]);

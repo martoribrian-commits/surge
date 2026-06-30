@@ -39,6 +39,15 @@
       headline: 'Sixty seconds\nthrough the gate.',
       sub: 'Watch the warp tunnel accelerate, peak, and settle — fully automatic.',
     },
+    'still-thaw': {
+      tabLabel: '60 · thaw',
+      seconds: 60,
+      name: 'Still Thaw',
+      tagline: 'Somatic re-awakening',
+      href: '/engine/still-thaw',
+      headline: 'Sixty seconds\nto thaw from shutdown.',
+      sub: 'A cold field warms from the edges inward — fully automatic, no taps or hold.',
+    },
     'coherence-ripple': {
       tabLabel: '90 · breath',
       seconds: 90,
@@ -47,6 +56,15 @@
       href: '/engine/coherence-ripple',
       headline: 'Ninety seconds\nto reset your nervous system.',
       sub: 'Resonant 4/6 breath — press and hold. Release to pause.',
+    },
+    'heavy-tide': {
+      tabLabel: '90 · tide',
+      seconds: 90,
+      name: 'Heavy Tide',
+      tagline: 'Pendular grief release',
+      href: '/engine/heavy-tide',
+      headline: 'Ninety seconds\nto move sadness through.',
+      sub: 'Slow vertical tides with 5-in / 7-out breath — press and hold. Release to pause.',
     },
     'vagal-downshift': {
       tabLabel: '90 · decay',

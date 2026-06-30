@@ -2,7 +2,7 @@ export const PAGE_META = {
   home: {
     title: 'Surge · Somatic Circuit Breaker',
     description:
-      'Evidence-informed nervous system regulation in 30 to 90 seconds. Seven sequences. No account. Secular and private.',
+      'Evidence-informed nervous system regulation in 30 to 90 seconds. Nine sequences. No account. Secular and private.',
   },
   science: {
     title: 'How It Works · Surge',

@@ -131,8 +131,12 @@ export function useSequenceAudio({
         engine.sync?.(c.elapsedSeconds, c.progress);
       } else if (variantId === 'nova-gate') {
         engine.sync?.(c.elapsedSeconds, c.progress);
+      } else if (variantId === 'still-thaw') {
+        engine.sync?.(c.elapsedSeconds, c.progress);
       } else if (variantId === 'coherence-ripple') {
         engine.sync?.(c.elapsedSeconds, breathCycle ?? { inhale: 4, exhale: 6 });
+      } else if (variantId === 'heavy-tide') {
+        engine.sync?.(c.elapsedSeconds, breathCycle ?? { inhale: 5, exhale: 7 });
       } else if (variantId === 'vagal-downshift' || variantId === 'static-field') {
         engine.sync?.(c.elapsedMs);
       }

@@ -42,7 +42,9 @@ export function matchGuideFallback(userMessage) {
       '• Flash Freeze (30s) — hot anger, adrenaline, need to stop intensity.\n' +
       '• Orienting Anchor (60s) — stuck thoughts, replaying, not present.\n' +
       '• Nova Gate (60s) — scattered, disoriented, need cinematic transit.\n' +
+      '• Still Thaw (60s) — numb, shut down, frozen, cannot engage.\n' +
       '• Coherence Ripple (90s) — wired-but-tired, uneven breathing.\n' +
+      '• Heavy Tide (90s) — grief, sadness, heaviness in the chest.\n' +
       '• Vagal Downshift (90s) — flooded, overwhelmed, too loud inside.\n' +
       '• Static Field (90s) — restless, agitated, sound helps you settle.\n\n' +
       'Tell me what your body feels like right now and I will narrow it down.'
@@ -65,7 +67,7 @@ export function matchGuideFallback(userMessage) {
   }
 
   if (/hold|press/.test(q)) {
-    return 'Hold sequences (Coherence Ripple, Vagal Downshift, Static Field): press anywhere below the top bar and keep holding. Sound and visuals advance while you hold. Let go to pause. Exit is always in the header.';
+    return 'Hold sequences (Coherence Ripple, Heavy Tide, Vagal Downshift, Static Field): press anywhere below the top bar and keep holding. Sound and visuals advance while you hold. Let go to pause. Exit is always in the header.';
   }
 
   if (/breath|sigh|inhale|exhale/.test(q)) {
@@ -82,6 +84,14 @@ export function matchGuideFallback(userMessage) {
     return 'Sounds like Nova Gate — sixty seconds, fully automatic. A warp tunnel accelerates then settles to a still point. For scattered or disoriented states.';
   }
 
+  if (/numb|shutdown|frozen|shut down|can't feel|cant feel|blank|collapse/.test(q)) {
+    return 'Sounds like Still Thaw — sixty seconds, fully automatic. A cold field slowly warms from the edges inward. For freeze response, emotional numbness, or when you have no energy to tap or hold.';
+  }
+
+  if (/grief|sad|sorrow|cry|tears|heavy|lonely|loneliness|ache/.test(q)) {
+    return 'Sounds like Heavy Tide — ninety seconds, press and hold. Slow vertical tides rise and fall with a five-in / seven-out breath. For sadness, grief, or heaviness that needs to move through instead of away.';
+  }
+
   if (/panic|racing|heart|can't breathe|cant breathe/.test(q)) {
     return 'Sounds like Instant Reset — thirty seconds, runs on its own. Two quick inhales, one long exhale. That long exhale is what tells your body the alarm can stand down.';
   }
@@ -95,7 +105,7 @@ export function matchGuideFallback(userMessage) {
   }
 
   return (
-    'Surge has seven sequences — 30, 60, or 90 seconds — each built for a different body state. ' +
-    'Tell me what you feel right now (racing heart, stuck thoughts, overwhelmed, restless) and I will point you to the right one.'
+    'Surge has nine sequences — 30, 60, or 90 seconds — each built for a different body state. ' +
+    'Tell me what you feel right now (racing heart, stuck thoughts, numb, sad, overwhelmed, restless) and I will point you to the right one.'
   );
 }

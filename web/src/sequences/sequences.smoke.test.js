@@ -16,14 +16,16 @@ describe('sequence ground styles', () => {
 });
 
 describe('sequence variant registry', () => {
-  it('includes all seven release sequences', () => {
+  it('includes all nine release sequences', () => {
     expect(Object.keys(SEQUENCE_VARIANTS).sort()).toEqual([
       'coherence-ripple',
       'flash-freeze',
+      'heavy-tide',
       'instant-reset',
       'nova-gate',
       'orienting-anchor',
       'static-field',
+      'still-thaw',
       'vagal-downshift',
     ]);
   });
