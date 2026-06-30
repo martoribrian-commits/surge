@@ -14,12 +14,17 @@ export function buildSessionPayload(
   durationInSeconds,
   completedFullCycle,
   sessionId = crypto.randomUUID(),
+  variantId = null,
 ) {
-  return {
+  const payload = {
     sessionId,
     durationInSeconds: Math.round(durationInSeconds),
     completedFullCycle: Boolean(completedFullCycle),
   };
+  if (variantId) {
+    payload.variantId = variantId;
+  }
+  return payload;
 }
 
 /**

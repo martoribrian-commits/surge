@@ -9,7 +9,7 @@ const EPHEMERAL_PREFIX = 'surge.crane.ephemeral.';
 const PERSISTENT_PREFIX = 'surge.crane.saved.';
 const PREFERENCE_PREFIX = 'surge.crane.pref.';
 
-/** @typedef {{ id: string, role: 'user' | 'crane', content: string, createdAt: number }} CraneMessage */
+/** @typedef {{ id: string, role: 'user' | 'crane', content: string, createdAt: number, actions?: object[], bodyInsight?: object, carePlan?: object }} CraneMessage */
 
 /**
  * @typedef {Object} CraneThread
@@ -194,12 +194,16 @@ export function clearCraneThread(sessionId) {
   }
 }
 
-/** @param {string} role @param {string} content */
-export function createCraneMessage(role, content) {
-  return {
+/** @param {string} role @param {string} content @param {{ actions?: unknown[], bodyInsight?: object, carePlan?: object }} [extras] */
+export function createCraneMessage(role, content, extras = {}) {
+  const msg = {
     id: crypto.randomUUID(),
     role,
     content,
     createdAt: Date.now(),
   };
+  if (extras.actions?.length) msg.actions = extras.actions;
+  if (extras.bodyInsight) msg.bodyInsight = extras.bodyInsight;
+  if (extras.carePlan) msg.carePlan = extras.carePlan;
+  return msg;
 }

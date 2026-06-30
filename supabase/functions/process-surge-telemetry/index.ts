@@ -7,12 +7,28 @@ interface SurgeTelemetryPayload {
   completedFullCycle: boolean;
   clinicalToken?: string;
   completionState?: "complete" | "interrupted";
+  variantId?: string;
 }
 
 interface FetchContextBody {
   action: "fetchContext";
   sessionId: string;
 }
+
+interface WriteVectorSnapshotBody {
+  action: "writeVectorSnapshot";
+  sessionId: string;
+  summary: string;
+  metadata?: Record<string, unknown>;
+}
+
+const VALID_VARIANT_IDS = new Set([
+  "instant-reset",
+  "orienting-anchor",
+  "coherence-ripple",
+  "vagal-downshift",
+  "static-field",
+]);
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -33,7 +49,7 @@ function jsonResponse(body: unknown, status = 200) {
 function validatePayload(body: unknown): SurgeTelemetryPayload | null {
   if (!body || typeof body !== "object") return null;
 
-  const { sessionId, durationInSeconds, completedFullCycle, clinicalToken, completionState } =
+  const { sessionId, durationInSeconds, completedFullCycle, clinicalToken, completionState, variantId } =
     body as Record<string, unknown>;
 
   if (typeof sessionId !== "string" || !UUID_RE.test(sessionId)) return null;
@@ -58,6 +74,9 @@ function validatePayload(body: unknown): SurgeTelemetryPayload | null {
   if (completionState === "complete" || completionState === "interrupted") {
     result.completionState = completionState;
   }
+  if (typeof variantId === "string" && VALID_VARIANT_IDS.has(variantId)) {
+    result.variantId = variantId;
+  }
 
   return result;
 }
@@ -67,6 +86,19 @@ function isFetchContextBody(body: unknown): body is FetchContextBody {
   const { action, sessionId } = body as Record<string, unknown>;
   return action === "fetchContext" && typeof sessionId === "string" &&
     UUID_RE.test(sessionId);
+}
+
+function isWriteVectorSnapshotBody(body: unknown): body is WriteVectorSnapshotBody {
+  if (!body || typeof body !== "object") return false;
+  const { action, sessionId, summary } = body as Record<string, unknown>;
+  return (
+    action === "writeVectorSnapshot" &&
+    typeof sessionId === "string" &&
+    UUID_RE.test(sessionId) &&
+    typeof summary === "string" &&
+    summary.trim().length > 0 &&
+    summary.length <= 600
+  );
 }
 
 async function assembleSupabaseContext(
@@ -90,7 +122,7 @@ async function assembleSupabaseContext(
   const { data: telemetry, error: telemetryError } = await admin
     .from("surge_telemetry")
     .select(
-      "session_id, duration_in_seconds, completed_full_cycle, created_at",
+      "session_id, duration_in_seconds, completed_full_cycle, variant_id, created_at",
     )
     .eq("session_id", sessionId)
     .maybeSingle();
@@ -111,8 +143,17 @@ async function assembleSupabaseContext(
     console.warn("[process-surge-telemetry] vector fetch:", vectorError);
   }
 
+  const telemetryRow = telemetry as {
+    session_id?: string;
+    duration_in_seconds?: number;
+    completed_full_cycle?: boolean;
+    variant_id?: string | null;
+    created_at?: string;
+  } | null;
+
   return {
     sessionId,
+    variantId: telemetryRow?.variant_id ?? null,
     telemetry: telemetry ?? null,
     vectorHistory: vectorHistory ?? [],
     compiledAt: new Date().toISOString(),
@@ -139,7 +180,30 @@ export default {
       return jsonResponse({ error: "Invalid JSON" }, 400);
     }
 
-    // ── Fetch compiled context for Heron inference ──
+    // ── Write anonymized somatic vector snapshot ──
+    if (isWriteVectorSnapshotBody(body)) {
+      const metadata =
+        body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
+          ? body.metadata
+          : {};
+
+      const { error: insertError } = await ctx.supabaseAdmin
+        .from("crane_vector_snapshots")
+        .insert({
+          session_id: body.sessionId,
+          summary: body.summary.trim(),
+          metadata,
+        });
+
+      if (insertError) {
+        console.error("[process-surge-telemetry] vector insert:", insertError.message);
+        return jsonResponse({ error: "Failed to store vector snapshot" }, 500);
+      }
+
+      return jsonResponse({ ok: true, sessionId: body.sessionId });
+    }
+
+    // ── Fetch compiled context for Crane inference ──
     if (isFetchContextBody(body)) {
       try {
         const supabaseContext = await assembleSupabaseContext(
@@ -159,16 +223,18 @@ export default {
       return jsonResponse({ error: "Invalid telemetry payload" }, 400);
     }
 
+    const upsertRow: Record<string, unknown> = {
+      session_id: payload.sessionId,
+      duration_in_seconds: payload.durationInSeconds,
+      completed_full_cycle: payload.completedFullCycle,
+    };
+    if (payload.variantId) {
+      upsertRow.variant_id = payload.variantId;
+    }
+
     const { data, error } = await ctx.supabaseAdmin
       .from("surge_telemetry")
-      .upsert(
-        {
-          session_id: payload.sessionId,
-          duration_in_seconds: payload.durationInSeconds,
-          completed_full_cycle: payload.completedFullCycle,
-        },
-        { onConflict: "session_id" },
-      )
+      .upsert(upsertRow, { onConflict: "session_id" })
       .select("session_id")
       .single();
 

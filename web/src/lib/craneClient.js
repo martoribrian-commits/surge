@@ -79,6 +79,37 @@ export async function fetchCraneContext(sessionId) {
 }
 
 /**
+ * Write anonymized somatic vector snapshot — no raw user messages.
+ */
+export async function submitVectorSnapshot({ sessionId, summary, metadata = {} }) {
+  if (!sessionId || !summary?.trim()) {
+    return { ok: false };
+  }
+
+  if (!supabase) {
+    return { ok: false, offline: true };
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke(TELEMETRY_FUNCTION, {
+      body: {
+        action: 'writeVectorSnapshot',
+        sessionId,
+        summary: summary.trim().slice(0, 600),
+        metadata,
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
  * Crane inference — guide mode (no session) or post-session mode.
  */
 export async function requestCraneInference({

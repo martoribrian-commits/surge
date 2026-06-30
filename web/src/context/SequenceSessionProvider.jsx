@@ -144,10 +144,12 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
       ? Math.round((performance.now() - sessionStartRef.current) / 1000)
       : variant.durationSeconds;
 
-    const payload = {
-      ...buildSessionPayload(Math.max(1, elapsed), true, state.sessionId),
-      variantId: variant.id,
-    };
+    const payload = buildSessionPayload(
+      Math.max(1, elapsed),
+      true,
+      state.sessionId,
+      variant.id,
+    );
     cacheSessionPayload(payload);
     submitSessionTelemetry(payload);
 
