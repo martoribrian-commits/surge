@@ -9,6 +9,7 @@ export function buildSequenceGuideCatalog() {
     name: v.name,
     durationSeconds: v.durationSeconds,
     tagline: v.tagline,
+    modality: v.modality,
     feelsLike: v.feelsLike,
     whatItDoes: v.whatItDoes,
     whenToUse: v.whenToUse,
@@ -22,7 +23,7 @@ export function buildSequenceGuideCatalog() {
 }
 
 export const CRANE_GUIDE_OPENER =
-  'I can explain what each Surge sequence does for your body — in plain language, no jargon. Ask which one to pick, what a sequence feels like, or what "bilateral" actually means for you.';
+  'I am your clinical somatic guide for Surge. I can explain what each sequence does for your body, recommend the right protocol, and start one for you when you are ready. What does your body feel like right now?';
 
 export const CRANE_POST_SESSION_OPENER =
   'The sequence is behind you. I am here if something surfaced or you want to talk through what happened.';

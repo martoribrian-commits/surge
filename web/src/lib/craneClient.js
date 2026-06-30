@@ -86,6 +86,9 @@ export async function requestCraneInference({
   supabaseContext = null,
   conversationHistory = [],
   mode = null,
+  sessionMeta = null,
+  proactiveCarePlan = false,
+  clinicalAccess = false,
 }) {
   const resolvedMode =
     mode ?? (supabaseContext?.telemetry ? 'post-session' : 'guide');
@@ -99,6 +102,9 @@ export async function requestCraneInference({
       conversationHistory,
       sequenceCatalog: SEQUENCE_GUIDE_CATALOG,
       mode: resolvedMode,
+      sessionMeta,
+      proactiveCarePlan,
+      clinicalAccess,
     }),
   });
 
@@ -112,26 +118,99 @@ export async function requestCraneInference({
 }
 
 /**
+ * Proactively generate a post-session care plan (silent — not shown as user message).
+ */
+export async function requestPostSessionCarePlan({
+  supabaseContext,
+  sessionMeta = {},
+  clinicalAccess = false,
+}) {
+  if (!clinicalAccess) {
+    return { requiresClinicalToken: true, carePlan: null, bodyInsight: null };
+  }
+  return requestCraneInference({
+    userMessage: '',
+    supabaseContext,
+    mode: 'post-session',
+    sessionMeta,
+    proactiveCarePlan: true,
+    clinicalAccess: true,
+  });
+}
+
+/**
  * Guide-mode inference with static fallback when API unavailable.
  */
 export async function requestCraneGuideInference({
   userMessage,
   conversationHistory = [],
+  sessionMeta = null,
 }) {
   try {
     return await requestCraneInference({
       userMessage,
       conversationHistory,
       mode: 'guide',
+      sessionMeta,
     });
   } catch {
     const fallback = matchGuideFallback(userMessage);
+    const actions = inferFallbackActions(userMessage);
+    const urgent = /panic|racing|help now|right now/i.test(userMessage);
+    const primary = actions[0];
     return {
-      text: fallback ?? 'I can help you pick a sequence. Tell me what your body feels like right now.',
+      text:
+        fallback ??
+        'I can help you pick a sequence. Tell me what your body feels like right now.',
+      actions,
+      autoLaunch:
+        urgent && primary
+          ? {
+              path: primary.path,
+              variantId: primary.variantId,
+              label: primary.label,
+              countdownMs: 3000,
+              urgency: 'immediate',
+            }
+          : null,
+      advisorUsed: false,
       model: 'fallback',
       mode: 'guide',
     };
   }
+}
+
+/**
+ * Build navigate actions from keyword fallback when API is down.
+ */
+function inferFallbackActions(userMessage) {
+  const q = userMessage.toLowerCase().trim();
+  if (/panic|racing|heart|can't breathe|cant breathe/.test(q)) {
+    return [buildFallbackAction('instant-reset', 'Start Instant Reset')];
+  }
+  if (/stuck|loop|replay|dissoci|intrusive/.test(q)) {
+    return [buildFallbackAction('orienting-anchor', 'Start Orienting Anchor')];
+  }
+  if (/overwhelm|flood|too much/.test(q)) {
+    return [buildFallbackAction('vagal-downshift', 'Start Vagal Downshift')];
+  }
+  if (/restless|agitat|static/.test(q)) {
+    return [buildFallbackAction('static-field', 'Start Static Field')];
+  }
+  if (/wired|tired|breath/.test(q)) {
+    return [buildFallbackAction('coherence-ripple', 'Start Coherence Ripple')];
+  }
+  return [];
+}
+
+function buildFallbackAction(variantId, label) {
+  return {
+    type: 'navigate',
+    path: `/engine/${variantId}`,
+    label,
+    variantId,
+    primary: true,
+  };
 }
 
 /**
@@ -151,6 +230,11 @@ export async function initiateCraneContact(userMessage = CRANE_INITIAL_MESSAGE) 
   return {
     supabaseContext,
     reply: inference.text,
+    actions: inference.actions ?? [],
+    autoLaunch: inference.autoLaunch ?? null,
+    carePlan: inference.carePlan ?? null,
+    bodyInsight: inference.bodyInsight ?? null,
     model: inference.model,
+    advisorUsed: inference.advisorUsed ?? false,
   };
 }
