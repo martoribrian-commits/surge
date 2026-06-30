@@ -9,22 +9,25 @@ import {
   MarketingFaq,
   WorkflowSteps,
   CaseStudyCarousel,
+  MarketingCtaBand,
   fadeUp,
   stagger,
 } from '../components/marketing';
 import { EVIDENCE_STUDIES } from '../data/evidenceStudies';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_META } from '../data/pageMeta';
 import { BRAND } from '../brand/tokens';
 
 const SECTIONS = [
   {
     label: 'The clinical gap',
     title: 'Recovery should not cost another session.',
-    body: 'Patients arrive dysregulated, or dysregulate between visits. Surge gives them a deterministic somatic tool for the parking lot, the bathroom, or 2 a.m. — without another account or relationship to manage.',
+    body: 'Patients arrive dysregulated, or dysregulate between visits. Surge gives them a deterministic somatic tool for the parking lot, the bathroom, or 2 a.m., without another account or relationship to manage.',
   },
   {
     label: 'How it works',
     title: 'Tokens, not logins.',
-    body: 'Provision Clinical Tokens through the provider portal. Six-character codes with expiry and use count. Patients enter once. No password. No PHI at the point of access. You see activation, completion, and sequence usage — not session content unless the patient brings it into your room.',
+    body: 'Provision Clinical Tokens through the provider portal. Six-character codes with expiry and use count. Patients enter once. No password. No PHI at the point of access. You see activation, completion, and sequence usage. Not session content unless the patient brings it into your room.',
   },
   {
     label: 'What patients experience',
@@ -34,7 +37,7 @@ const SECTIONS = [
   {
     label: 'Privacy architecture',
     title: 'Sovereignty by default.',
-    body: 'The somatic engine runs in the browser. Session records stay on-device. Token validation returns only valid or invalid — no patient name, no provider name, no transcript unless the patient initiates Crane.',
+    body: 'The somatic engine runs in the browser. Session records stay on-device. Token validation returns only valid or invalid. No patient name, no provider name, no transcript unless the patient initiates Crane.',
   },
 ];
 
@@ -49,11 +52,11 @@ const WORKFLOW = [
   },
   {
     title: 'Regulate',
-    body: 'Patient picks a sequence matched to body state. 30–90 seconds. Visual, audio, and touch phase-locked to one downshift curve.',
+    body: 'Patient picks a sequence matched to body state. 30 to 90 seconds. Visual, audio, and touch phase-locked to one downshift curve.',
   },
   {
     title: 'Review',
-    body: 'Portal shows activation, completion, sequence variant, and duration — aggregated across your clinical team.',
+    body: 'Portal shows activation, completion, sequence variant, and duration, aggregated across your clinical team.',
   },
 ];
 
@@ -92,7 +95,7 @@ const PROVIDER_FAQ = [
   },
   {
     q: 'Is this HIPAA-compliant?',
-    a: 'Surge is designed with a minimal-data architecture — no patient accounts, no PHI at token validation, on-device session storage by default. Enterprise tier includes compliance documentation for your legal review.',
+    a: 'Surge is designed with a minimal-data architecture: no patient accounts, no PHI at token validation, on-device session storage by default. Enterprise tier includes compliance documentation for your legal review.',
   },
   {
     q: 'Can multiple clinicians share one portal?',
@@ -128,6 +131,7 @@ const TIERS = [
 ];
 
 export default function ProvidersPage() {
+  usePageMeta(PAGE_META.providers);
   return (
     <MarketingShell glow="ember">
       <div className="mx-auto max-w-5xl px-5 py-[max(1.5rem,env(safe-area-inset-top))]">
@@ -142,7 +146,7 @@ export default function ProvidersPage() {
             Extend regulation beyond the session room
           </h1>
           <p className="mt-4 max-w-xl font-sans text-base leading-relaxed" style={{ color: BRAND.boneMuted }}>
-            Surge is a somatic circuit breaker your patients can reach in seconds — secular,
+            Surge is a somatic circuit breaker your patients can reach in seconds. Secular,
             privacy-first, and built on named physiological protocols your clinical team will recognize.
           </p>
 
@@ -170,7 +174,7 @@ export default function ProvidersPage() {
           >
             {[
               { num: '7', label: 'Evidence-informed sequences' },
-              { num: '30–90s', label: 'Fixed downshift curves' },
+              { num: '30-90s', label: 'Fixed downshift curves' },
               { num: '0', label: 'Patient accounts required' },
               { num: 'CSV', label: 'Session export' },
             ].map((stat, i) => (
@@ -233,7 +237,7 @@ export default function ProvidersPage() {
         <section className="border-t border-white/[0.06] py-16">
           <MarketingSectionHeader
             kicker="Provider portal"
-            title="Everything you need to provision and monitor — nothing you should not see."
+            title="Everything you need to provision and monitor. Nothing you should not see."
           />
           <div className="grid gap-4 sm:grid-cols-2">
             {PORTAL_FEATURES.map((feature, i) => (
@@ -356,6 +360,7 @@ export default function ProvidersPage() {
         </div>
       </div>
 
+      <MarketingCtaBand primaryHref="/portal" primaryLabel="Provider portal" secondaryHref="/faq" secondaryLabel="FAQ" />
       <SiteFooter />
     </MarketingShell>
   );

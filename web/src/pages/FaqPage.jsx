@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import SiteHeader from '../components/layout/SiteHeader';
-import { MarketingShell, MarketingSectionHeader, SiteFooter, MarketingFaq } from '../components/marketing';
+import { MarketingShell, MarketingSectionHeader, SiteFooter, MarketingFaq, MarketingCtaBand } from '../components/marketing';
 import CaseStudyCarousel from '../components/marketing/CaseStudyCarousel';
 import { FAQ_CATEGORIES, FAQ_BY_CATEGORY, FAQ_QUICK } from '../data/faqContent';
 import { EVIDENCE_STUDIES } from '../data/evidenceStudies';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { PAGE_META } from '../data/pageMeta';
 import { BRAND } from '../brand/tokens';
 
 export default function FaqPage() {
+  usePageMeta(PAGE_META.faq);
   const [category, setCategory] = useState('general');
   const items = FAQ_BY_CATEGORY[category] ?? [];
 
@@ -102,25 +104,9 @@ export default function FaqPage() {
           />
           <CaseStudyCarousel studies={EVIDENCE_STUDIES} />
         </section>
-
-        <div className="flex flex-wrap gap-4 pb-8">
-          <Link
-            to="/start"
-            className="inline-flex border px-6 py-3 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] transition-colors hover:border-[#B6502E]/40"
-            style={{ borderColor: `${BRAND.clay}55`, color: BRAND.bone }}
-          >
-            Start a sequence
-          </Link>
-          <Link
-            to="/support"
-            className="inline-flex px-2 py-3 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors hover:text-[#B6502E]"
-            style={{ color: BRAND.boneDim }}
-          >
-            Contact support →
-          </Link>
-        </div>
       </div>
 
+      <MarketingCtaBand />
       <SiteFooter />
     </MarketingShell>
   );

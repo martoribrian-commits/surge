@@ -1,3 +1,5 @@
+export { default as MarketingCtaBand } from './MarketingCtaBand';
+export { default as TokenSlotInput } from './TokenSlotInput';
 export { default as CaseStudyCarousel } from './CaseStudyCarousel';
 export { default as MarketingShell } from './MarketingShell';
 export { default as MarketingSectionHeader } from './MarketingSectionHeader';
