@@ -72,6 +72,64 @@ export const HapticProfiles = {
   },
 
   /**
+   * 30s Flash Freeze — sharp heat pulse on engage, continuous freeze decay while holding.
+   */
+  'flash-freeze': {
+    id: 'flash-freeze',
+    label: 'Flash Freeze — thermal time-stop',
+    audioCueId: 'flash-freeze-crackle',
+    phases: [
+      {
+        type: 'transient',
+        intensity: 0.95,
+        sharpness: 0.9,
+        pattern: [55, 40, 55],
+        delayMs: 0,
+      },
+      {
+        type: 'continuous',
+        id: 'flash-freeze-decay',
+        intensity: 0.78,
+        durationMs: 28_000,
+        decay: 'linear',
+        delayMs: 180,
+      },
+    ],
+  },
+
+  /**
+   * 60s Nova Gate — building warp rhythm then settling hum.
+   */
+  'nova-gate': {
+    id: 'nova-gate',
+    label: 'Nova Gate — hyperspace transit',
+    audioCueId: 'nova-gate-warp',
+    phases: [
+      {
+        type: 'transient',
+        intensity: 0.5,
+        sharpness: 0.55,
+        pattern: [80, 60, 80],
+        delayMs: 0,
+      },
+      {
+        type: 'rhythm',
+        bpm: 72,
+        intensity: 0.28,
+        durationMs: 42_000,
+      },
+      {
+        type: 'continuous',
+        id: 'nova-gate-settle',
+        intensity: 0.45,
+        durationMs: 18_000,
+        decay: 'linear',
+        delayMs: 42_000,
+      },
+    ],
+  },
+
+  /**
    * 60s Orienting Anchor
    * Rhythm-linked alternating gentle thuds panning left-to-right for bilateral grounding.
    */

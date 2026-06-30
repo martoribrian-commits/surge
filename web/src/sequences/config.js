@@ -9,7 +9,7 @@ export const InteractionMode = {
   HOLD: 'hold',
 };
 
-/** @typedef {'instant-reset' | 'orienting-anchor' | 'coherence-ripple' | 'vagal-downshift' | 'static-field'} SequenceVariantId */
+/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'coherence-ripple' | 'vagal-downshift' | 'static-field'} SequenceVariantId */
 
 /**
  * @typedef {Object} SequencePalette
@@ -47,7 +47,7 @@ export const SEQUENCE_VARIANTS = {
     name: 'Instant Reset',
     modality: 'Physiological sigh intercept',
     tagline: 'When you need to breathe out the panic fast',
-    tabLabel: '30',
+    tabLabel: '30 · sigh',
     feelsLike:
       'Chest tight, breathing shallow, heart racing — like your body hit the gas and forgot how to stop.',
     whatItDoes:
@@ -67,12 +67,36 @@ export const SEQUENCE_VARIANTS = {
       copy: '#f4f0eb',
     },
   },
+  'flash-freeze': {
+    id: 'flash-freeze',
+    name: 'Flash Freeze',
+    modality: 'Thermal time-stop intercept',
+    tagline: 'When heat needs to halt mid-air',
+    tabLabel: '30 · freeze',
+    feelsLike:
+      'White-hot overwhelm — anger, adrenaline, or a spike so fast your body feels like it is burning through something.',
+    whatItDoes:
+      'Press and hold to stop time on a field of embers. Chaos slows, color inverts, particles crystallize into ice. Thirty seconds of visible thermal downshift — hold to freeze, release to pause.',
+    whenToUse:
+      'Anger spike, hot flush, adrenaline surge, or when you need to see intensity physically stop instead of breathe through it.',
+    science: 'Interoceptive downshift via sustained tactile anchor paired with visual time-deceleration — thermal metaphor for sympathetic offload.',
+    durationSeconds: 30,
+    interactionMode: InteractionMode.HOLD,
+    palette: {
+      background: '#0a0200',
+      backgroundEnd: '#020818',
+      accent: '#FF4D00',
+      accentCalm: '#67E8F9',
+      muted: 'rgba(255,255,255,0.4)',
+      copy: '#F0F9FF',
+    },
+  },
   'orienting-anchor': {
     id: 'orienting-anchor',
     name: 'Orienting Anchor',
     modality: 'Bilateral sensory orienting',
     tagline: 'When your thoughts are stuck on repeat',
-    tabLabel: '60',
+    tabLabel: '60 · tap',
     feelsLike:
       'Mind racing in circles, replaying the same scene, unable to land in the present — like you are watching yourself from outside your body.',
     whatItDoes:
@@ -90,6 +114,30 @@ export const SEQUENCE_VARIANTS = {
       accentCalm: '#8fb596',
       muted: 'rgba(244,240,235,0.5)',
       copy: '#f4f0eb',
+    },
+  },
+  'nova-gate': {
+    id: 'nova-gate',
+    name: 'Nova Gate',
+    modality: 'Hyperspace entrainment tunnel',
+    tagline: 'When you need to ride through and come out still',
+    tabLabel: '60 · gate',
+    feelsLike:
+      'Disoriented, untethered, spinning — like your mind is scattered across too many places at once and cannot find a center.',
+    whatItDoes:
+      'A cosmic gate opens and pulls you through a starfield tunnel that accelerates, peaks, then decelerates to a single still point. Sixty seconds of pure visual transit — no taps, no hold. Just watch the warp settle.',
+    whenToUse:
+      'Dissociation, scattered attention, post-stress disorientation, or when bilateral tapping feels too manual and you want cinematic immersion.',
+    science: 'Visuospatial entrainment — accelerating then decelerating optic flow recruits orienting networks and resolves into a fixed focal anchor.',
+    durationSeconds: 60,
+    interactionMode: InteractionMode.AUTO,
+    palette: {
+      background: '#030108',
+      backgroundEnd: '#120828',
+      accent: '#FFB347',
+      accentCalm: '#9D4EDD',
+      muted: 'rgba(255,220,180,0.45)',
+      copy: '#FFF8F0',
     },
   },
   'coherence-ripple': {

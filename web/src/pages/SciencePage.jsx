@@ -23,7 +23,7 @@ const SECTIONS = [
     summary: 'Your body can still come down — if you give it a path.',
     body: [
       'There is a short window after a spike when your nervous system can still be guided back without medication. Surge is built for that window.',
-      'Five sequences, each tuned to a different body state: racing heart, stuck thoughts, wired exhaustion, full overwhelm, or restless agitation. Pick the one that matches what you feel.',
+      'Seven sequences, each tuned to a different body state: racing heart, hot anger, stuck thoughts, scattered disorientation, wired exhaustion, full overwhelm, or restless agitation. Pick the one that matches what you feel.',
     ],
   },
   {
@@ -81,7 +81,7 @@ export default function SciencePage() {
 
             <div className="w-full space-y-3">
               <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">
-                Five sequences — pick by body state
+                Seven sequences — pick by body state
               </p>
               {VARIANT_LIST.map((variant) => {
                 const active = hoverVariant === variant.id;

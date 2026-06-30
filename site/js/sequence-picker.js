@@ -4,7 +4,7 @@
 (function () {
   var VARIANTS = {
     'instant-reset': {
-      tabLabel: '30',
+      tabLabel: '30 · sigh',
       seconds: 30,
       name: 'Instant Reset',
       tagline: 'Physiological sigh',
@@ -12,14 +12,32 @@
       headline: 'Thirty seconds\nto reset your nervous system.',
       sub: 'Double inhale, long exhale — runs automatically once you begin.',
     },
+    'flash-freeze': {
+      tabLabel: '30 · freeze',
+      seconds: 30,
+      name: 'Flash Freeze',
+      tagline: 'Thermal time-stop',
+      href: '/engine/flash-freeze',
+      headline: 'Thirty seconds\nto freeze the heat.',
+      sub: 'Press and hold — embers slow, crystallize, and stop mid-air.',
+    },
     'orienting-anchor': {
-      tabLabel: '60',
+      tabLabel: '60 · tap',
       seconds: 60,
       name: 'Orienting Anchor',
       tagline: 'Bilateral grounding',
       href: '/engine/orienting-anchor',
       headline: 'Sixty seconds\nto reset your nervous system.',
       sub: 'Alternate left and right taps to integrate hemispheres.',
+    },
+    'nova-gate': {
+      tabLabel: '60 · gate',
+      seconds: 60,
+      name: 'Nova Gate',
+      tagline: 'Hyperspace tunnel',
+      href: '/engine/nova-gate',
+      headline: 'Sixty seconds\nthrough the gate.',
+      sub: 'Watch the warp tunnel accelerate, peak, and settle — fully automatic.',
     },
     'coherence-ripple': {
       tabLabel: '90 · breath',

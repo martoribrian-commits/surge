@@ -24,7 +24,9 @@ interface WriteVectorSnapshotBody {
 
 const VALID_VARIANT_IDS = new Set([
   "instant-reset",
+  "flash-freeze",
   "orienting-anchor",
+  "nova-gate",
   "coherence-ripple",
   "vagal-downshift",
   "static-field",

@@ -524,6 +524,202 @@ export class VagalDownshiftAudioEngine {
   }
 }
 
+/** 30s Flash Freeze — crackle heat bed crystallizes to glass tone on hold. */
+export class FlashFreezeAudioEngine {
+  constructor() {
+    this.running = false;
+    this.nodes = null;
+  }
+
+  prime() {
+    getAudioContext();
+  }
+
+  start() {
+    if (this.running) return;
+    unlockAudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    this.stop();
+    const { master, panner } = createMasterChain(ctx);
+    fadeInMaster(master, ctx, 0.9, 0.4);
+
+    const crackle = ctx.createBufferSource();
+    crackle.buffer = makePinkNoiseBuffer(ctx);
+    crackle.loop = true;
+    const crackleFilter = ctx.createBiquadFilter();
+    crackleFilter.type = 'highpass';
+    crackleFilter.frequency.value = 800;
+    const crackleGain = ctx.createGain();
+    crackleGain.gain.value = 0.12;
+
+    const glass = ctx.createOscillator();
+    glass.type = 'sine';
+    glass.frequency.value = 880;
+    const glassGain = ctx.createGain();
+    glassGain.gain.value = 0;
+
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = 48;
+    const subGain = ctx.createGain();
+    subGain.gain.value = 0.04;
+
+    crackle.connect(crackleFilter).connect(crackleGain).connect(panner);
+    glass.connect(glassGain).connect(panner);
+    sub.connect(subGain).connect(panner);
+
+    crackle.start();
+    glass.start();
+    sub.start();
+
+    this.nodes = { ctx, master, panner, crackle, crackleFilter, crackleGain, glass, glassGain, sub, subGain };
+    this.running = true;
+  }
+
+  pause() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 0.35);
+  }
+
+  resume() {
+    if (!this.nodes) {
+      this.start();
+      return;
+    }
+    fadeInMaster(this.nodes.master, this.nodes.ctx, 0.85, 0.35);
+  }
+
+  /** @param {number} elapsed @param {number} progress @param {boolean} [engaged] */
+  sync(elapsed, progress, engaged = true) {
+    if (!this.running || !this.nodes) return;
+    const { ctx, crackleFilter, crackleGain, glass, glassGain, subGain } = this.nodes;
+    const now = ctx.currentTime;
+    const freeze = engaged ? Math.min(1, progress * 1.1 + elapsed / 30) : Math.max(0, progress * 0.3);
+
+    rampGain(crackleGain.gain, 0.14 * (1 - freeze * 0.92), now, 0.08);
+    crackleFilter.frequency.setTargetAtTime(800 + freeze * 4200, now, 0.12);
+    rampGain(glassGain.gain, freeze * 0.1, now, 0.1);
+    glass.frequency.setTargetAtTime(880 - freeze * 320, now, 0.15);
+    rampGain(subGain.gain, 0.04 + freeze * 0.06, now, 0.1);
+  }
+
+  complete() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1);
+    window.setTimeout(() => this.stop(), 1100);
+  }
+
+  stop() {
+    if (!this.nodes) {
+      this.running = false;
+      return;
+    }
+    const n = this.nodes;
+    stopSource(n.crackle);
+    stopSource(n.glass);
+    stopSource(n.sub);
+    this.nodes = null;
+    this.running = false;
+  }
+}
+
+/** 60s Nova Gate — warp whoosh builds, peaks, settles to hum. */
+export class NovaGateAudioEngine {
+  constructor() {
+    this.running = false;
+    this.nodes = null;
+  }
+
+  prime() {
+    getAudioContext();
+  }
+
+  start() {
+    if (this.running) return;
+    unlockAudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    this.stop();
+    const { master, panner } = createMasterChain(ctx);
+    fadeInMaster(master, ctx, 1, 0.55);
+
+    const sweep = ctx.createBufferSource();
+    sweep.buffer = makePinkNoiseBuffer(ctx);
+    sweep.loop = true;
+    const sweepFilter = ctx.createBiquadFilter();
+    sweepFilter.type = 'bandpass';
+    sweepFilter.frequency.value = 200;
+    sweepFilter.Q.value = 1.2;
+    const sweepGain = ctx.createGain();
+    sweepGain.gain.value = 0.02;
+
+    const hum = ctx.createOscillator();
+    hum.type = 'sine';
+    hum.frequency.value = 72;
+    const humGain = ctx.createGain();
+    humGain.gain.value = 0.03;
+
+    const shimmer = ctx.createOscillator();
+    shimmer.type = 'triangle';
+    shimmer.frequency.value = 144;
+    const shimmerGain = ctx.createGain();
+    shimmerGain.gain.value = 0;
+
+    sweep.connect(sweepFilter).connect(sweepGain).connect(panner);
+    hum.connect(humGain).connect(panner);
+    shimmer.connect(shimmerGain).connect(panner);
+
+    sweep.start();
+    hum.start();
+    shimmer.start();
+
+    this.nodes = { ctx, master, panner, sweep, sweepFilter, sweepGain, hum, humGain, shimmer, shimmerGain };
+    this.running = true;
+  }
+
+  /** @param {number} elapsed @param {number} progress */
+  sync(elapsed, progress) {
+    if (!this.running || !this.nodes) return;
+    const { ctx, sweepFilter, sweepGain, hum, humGain, shimmerGain, panner } = this.nodes;
+    const now = ctx.currentTime;
+
+    let warp = 0;
+    if (elapsed < 12) warp = elapsed / 12;
+    else if (elapsed < 42) warp = 1;
+    else warp = Math.max(0, 1 - (elapsed - 42) / 18);
+
+    rampGain(sweepGain.gain, 0.02 + warp * 0.16, now, 0.06);
+    sweepFilter.frequency.setTargetAtTime(180 + warp * 2400, now, 0.08);
+    sweepFilter.Q.value = 1.2 + warp * 2;
+    rampGain(humGain.gain, 0.03 + (1 - warp) * 0.05 + progress * 0.04, now, 0.08);
+    hum.frequency.setTargetAtTime(72 - warp * 12, now, 0.1);
+    rampGain(shimmerGain.gain, warp * 0.06 * (1 - progress * 0.5), now, 0.06);
+    panner.pan.setTargetAtTime(Math.sin(elapsed * 0.9) * warp * 0.35, now, 0.05);
+  }
+
+  complete() {
+    if (!this.nodes) return;
+    fadeOutMaster(this.nodes.master, this.nodes.ctx, 1.3);
+    window.setTimeout(() => this.stop(), 1400);
+  }
+
+  stop() {
+    if (!this.nodes) {
+      this.running = false;
+      return;
+    }
+    const n = this.nodes;
+    stopSource(n.sweep);
+    stopSource(n.hum);
+    stopSource(n.shimmer);
+    this.nodes = null;
+    this.running = false;
+  }
+}
+
 /** Static field — original pink-noise engine. Starts only on engage (lazy). */
 export class StaticFieldAudioAdapter {
   constructor() {
@@ -569,7 +765,9 @@ export class StaticFieldAudioAdapter {
 
 const ENGINE_FACTORIES = {
   'instant-reset': () => new InstantResetAudioEngine(),
+  'flash-freeze': () => new FlashFreezeAudioEngine(),
   'orienting-anchor': () => new OrientingAnchorAudioEngine(),
+  'nova-gate': () => new NovaGateAudioEngine(),
   'coherence-ripple': () => new CoherenceRippleAudioEngine(),
   'vagal-downshift': () => new VagalDownshiftAudioEngine(),
   'static-field': () => new StaticFieldAudioAdapter(),
