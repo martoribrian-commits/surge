@@ -10,8 +10,6 @@ import { fetchCraneContext, requestCraneInference, requestPostSessionCarePlan } 
 import { loadBodyInsight, loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
 import { useCarePlan } from '../hooks/useCarePlan';
 import CraneAutoLaunchBanner from '../components/crane/CraneAutoLaunch';
-import CraneBodyInsight from '../components/crane/CraneBodyInsight';
-import CraneCarePlan from '../components/crane/CraneCarePlan';
 import CraneClinicalGate from '../components/crane/CraneClinicalGate';
 import CraneLineInput from '../components/decompression/CraneLineInput';
 import CraneThread from '../components/decompression/CraneThread';
@@ -20,11 +18,10 @@ import SaveInsightsToggle from '../components/decompression/SaveInsightsToggle';
 const EASE = [0.25, 0.1, 0.25, 1];
 
 /**
- * Post-sequence decompression — ephemeral Crane interface with hybrid local retention.
- * Client-only storage. No remote database sync.
+ * Post-sequence decompression — rich Crane thread with inline actions and insights.
  */
 export default function DecompressionView() {
-  const { sessionId, exitDecompression, reset, consumeBrainDumpSeed } = useSequenceSession();
+  const { sessionId, variant, exitDecompression, reset, consumeBrainDumpSeed } = useSequenceSession();
   const { isCraneUnlocked } = useTokenManager();
   const {
     messages,
@@ -37,7 +34,6 @@ export default function DecompressionView() {
 
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [bodyInsight, setBodyInsight] = useState(null);
   const { carePlan, setPlan, toggleStep } = useCarePlan(sessionId);
   const inferenceLockRef = useRef(false);
   const scrollRef = useRef(null);
@@ -64,7 +60,9 @@ export default function DecompressionView() {
       setPlan(cached);
       carePlanFetchedRef.current = true;
     }
-    if (cachedInsight) setBodyInsight(cachedInsight);
+    if (cachedInsight && cached?.steps?.length && messages.length === 0) {
+      appendMessage('crane', '', { bodyInsight: cachedInsight, carePlan: cached });
+    }
     if (cached && cachedInsight) return;
 
     if (!isCraneUnlocked) return;
@@ -78,14 +76,37 @@ export default function DecompressionView() {
           sessionMeta: { advisorCallsTotal: 0, turnCount: 0 },
           clinicalAccess: true,
         });
-        processCraneInferenceResult(inference, { sessionId, recordMeta: recordInferenceMeta });
-        if (inference.carePlan) setPlan(inference.carePlan);
-        if (inference.bodyInsight) setBodyInsight(inference.bodyInsight);
+        const processed = processCraneInferenceResult(inference, {
+          sessionId,
+          variantId: variant.id,
+          recordMeta: recordInferenceMeta,
+        });
+        if (processed.carePlan) setPlan(processed.carePlan);
+        if (messages.length === 0 && (processed.text || processed.bodyInsight || processed.carePlan)) {
+          appendMessage('crane', processed.text ?? '', {
+            actions: processed.actions,
+            bodyInsight: processed.bodyInsight,
+            carePlan: processed.carePlan,
+          });
+        }
       } catch {
         /* optional */
       }
     })();
-  }, [hydrated, sessionId, isCraneUnlocked, recordInferenceMeta, setPlan]);
+  }, [
+    hydrated,
+    sessionId,
+    isCraneUnlocked,
+    recordInferenceMeta,
+    setPlan,
+    variant.id,
+    appendMessage,
+    messages.length,
+  ]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, submitting]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = draft.trim();
@@ -111,13 +132,17 @@ export default function DecompressionView() {
         }),
         {
           sessionId,
+          variantId: variant.id,
           scheduleAutoLaunch: autoLaunch.schedule,
           recordMeta: recordInferenceMeta,
         },
       );
       if (inference.carePlan) setPlan(inference.carePlan);
-      if (inference.bodyInsight) setBodyInsight(inference.bodyInsight);
-      appendMessage('crane', inference.text);
+      appendMessage('crane', inference.text ?? '', {
+        actions: inference.actions,
+        bodyInsight: inference.bodyInsight,
+        carePlan: inference.carePlan,
+      });
     } catch {
       appendMessage('crane', 'Held locally. No response sent.');
     } finally {
@@ -136,6 +161,7 @@ export default function DecompressionView() {
     autoLaunch.schedule,
     recordInferenceMeta,
     setPlan,
+    variant.id,
   ]);
 
   if (!hydrated) {
@@ -215,22 +241,14 @@ export default function DecompressionView() {
             />
           </div>
         ) : null}
-        {bodyInsight ? (
-          <div className="mb-6 w-full max-w-lg">
-            <CraneBodyInsight insight={bodyInsight} compact />
-          </div>
-        ) : null}
-        {carePlan ? (
-          <div className="mb-8 w-full max-w-lg">
-            <CraneCarePlan carePlan={carePlan} compact onToggleStep={toggleStep} />
-          </div>
-        ) : null}
-        {!isCraneUnlocked && !carePlan ? (
+
+        {!isCraneUnlocked && messages.length === 0 ? (
           <div className="mb-8 w-full max-w-lg">
             <CraneClinicalGate compact />
           </div>
         ) : null}
-        <CraneThread messages={messages} />
+
+        <CraneThread messages={messages} onToggleStep={toggleStep} carePlanProgress={carePlan} />
       </div>
 
       <footer className="relative z-20 flex shrink-0 flex-col items-center gap-8 px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
@@ -247,12 +265,6 @@ export default function DecompressionView() {
           onToggle={toggleSavePersistently}
           retentionLabel={retentionLabel}
         />
-
-        {!isCraneUnlocked && (
-          <p className="max-w-sm text-center font-sans text-[10px] leading-relaxed text-white/22">
-            Responses require a clinical token. Your words stay on this device only.
-          </p>
-        )}
       </footer>
     </motion.div>
   );

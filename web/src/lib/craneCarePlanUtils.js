@@ -1,3 +1,6 @@
+import { buildVectorSnapshotPayload } from './vectorSnapshot';
+import { submitVectorSnapshot } from './craneClient';
+
 /** Auto-launch countdown durations (mirrors server — ms). */
 export const CRANE_COUNTDOWN_MS = {
   immediate: 3000,
@@ -115,11 +118,11 @@ export function clearCarePlan(sessionId) {
 }
 
 /**
- * Apply inference side effects: session meta, care plan, body insight, auto-launch.
+ * Apply inference side effects: session meta, care plan, body insight, auto-launch, vector snapshot.
  */
 export function processCraneInferenceResult(
   inference,
-  { sessionId, scheduleAutoLaunch, recordMeta },
+  { sessionId, variantId, scheduleAutoLaunch, recordMeta, writeVector = true },
 ) {
   recordMeta?.(inference);
 
@@ -137,6 +140,13 @@ export function processCraneInferenceResult(
 
   if (inference?.autoLaunch) {
     scheduleAutoLaunch?.(inference.autoLaunch);
+  }
+
+  if (writeVector && sessionId) {
+    const snapshot = buildVectorSnapshotPayload(inference, { sessionId, variantId });
+    if (snapshot) {
+      submitVectorSnapshot(snapshot);
+    }
   }
 
   return inference;

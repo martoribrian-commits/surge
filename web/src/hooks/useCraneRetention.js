@@ -113,8 +113,8 @@ export function useCraneRetention(sessionId) {
     return () => window.clearTimeout(timer);
   }, [hydrated, sessionId, persist]);
 
-  const appendMessage = useCallback((role, content) => {
-    const msg = createCraneMessage(role, content);
+  const appendMessage = useCallback((role, content, extras = {}) => {
+    const msg = createCraneMessage(role, content, extras);
     setMessages((prev) => [...prev, msg]);
     return msg;
   }, []);
