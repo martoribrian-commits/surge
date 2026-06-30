@@ -23,6 +23,7 @@ export function SurgeSessionProvider({ children }) {
   const engine = useSurgeEngine(SESSION_DURATION_S);
   const sessionStartRef = useRef(null);
   const completionTimerRef = useRef(null);
+  const completionHandledRef = useRef(false);
 
   const engage = useCallback(() => {
     if (state.phase !== SurgePhase.ENTRY && state.phase !== SurgePhase.PAUSED) return;
@@ -51,12 +52,16 @@ export function SurgeSessionProvider({ children }) {
       clearTimeout(completionTimerRef.current);
       completionTimerRef.current = null;
     }
+    completionHandledRef.current = false;
     sessionStartRef.current = null;
     dispatch({ type: SurgeEvent.RESET });
   }, []);
 
   useEffect(() => {
-    if (!engine.isComplete || state.phase !== SurgePhase.REGULATION) return;
+    if (!engine.isComplete || state.phase !== SurgePhase.REGULATION || completionHandledRef.current) {
+      return;
+    }
+    completionHandledRef.current = true;
 
     const elapsed = sessionStartRef.current
       ? Math.round((performance.now() - sessionStartRef.current) / 1000)
@@ -77,17 +82,23 @@ export function SurgeSessionProvider({ children }) {
         durationSeconds: Math.max(1, elapsed),
       },
     });
+  }, [engine.isComplete, state.phase, state.sessionId]);
+
+  useEffect(() => {
+    if (state.phase !== SurgePhase.COMPLETING) return;
 
     completionTimerRef.current = setTimeout(() => {
       dispatch({ type: SurgeEvent.ENTER_AFTERMATH });
+      completionTimerRef.current = null;
     }, COMPLETION_HOLD_MS);
 
     return () => {
       if (completionTimerRef.current) {
         clearTimeout(completionTimerRef.current);
+        completionTimerRef.current = null;
       }
     };
-  }, [engine.isComplete, state.phase, state.sessionId]);
+  }, [state.phase]);
 
   const progress = useMemo(() => {
     return Math.max(0, Math.min(1, 1 - engine.intensity));
