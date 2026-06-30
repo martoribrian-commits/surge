@@ -216,6 +216,12 @@ export async function requestCraneGuideInference({
  */
 function inferFallbackActions(userMessage) {
   const q = userMessage.toLowerCase().trim();
+  if (/anger|rage|hot flush|furious/.test(q)) {
+    return [buildFallbackAction('flash-freeze', 'Start Flash Freeze')];
+  }
+  if (/scatter|disorient|untether|spinning/.test(q)) {
+    return [buildFallbackAction('nova-gate', 'Start Nova Gate')];
+  }
   if (/panic|racing|heart|can't breathe|cant breathe/.test(q)) {
     return [buildFallbackAction('instant-reset', 'Start Instant Reset')];
   }

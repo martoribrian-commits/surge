@@ -1,6 +1,8 @@
 const VALID_VARIANTS = new Set([
   'instant-reset',
+  'flash-freeze',
   'orienting-anchor',
+  'nova-gate',
   'coherence-ripple',
   'vagal-downshift',
   'static-field',

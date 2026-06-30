@@ -6,7 +6,9 @@ import { InteractionMode } from '../sequences';
 import { markTactileAnchorReady } from '../lib/performanceMetrics';
 import {
   InstantResetSequence,
+  FlashFreezeSequence,
   OrientingAnchorSequence,
+  NovaGateSequence,
   CoherenceRippleSequence,
   VagalDownshiftSequence,
   StaticFieldSequence,
@@ -14,7 +16,9 @@ import {
 
 const SEQUENCE_BY_ID = {
   'instant-reset': InstantResetSequence,
+  'flash-freeze': FlashFreezeSequence,
   'orienting-anchor': OrientingAnchorSequence,
+  'nova-gate': NovaGateSequence,
   'coherence-ripple': CoherenceRippleSequence,
   'vagal-downshift': VagalDownshiftSequence,
   'static-field': StaticFieldSequence,

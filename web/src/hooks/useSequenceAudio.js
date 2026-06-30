@@ -125,7 +125,11 @@ export function useSequenceAudio({
 
       if (variantId === 'instant-reset') {
         engine.sync?.(c.elapsedSeconds, c.progress);
+      } else if (variantId === 'flash-freeze') {
+        engine.sync?.(c.elapsedSeconds, c.progress, isEngaged);
       } else if (variantId === 'orienting-anchor') {
+        engine.sync?.(c.elapsedSeconds, c.progress);
+      } else if (variantId === 'nova-gate') {
         engine.sync?.(c.elapsedSeconds, c.progress);
       } else if (variantId === 'coherence-ripple') {
         engine.sync?.(c.elapsedSeconds, breathCycle ?? { inhale: 4, exhale: 6 });

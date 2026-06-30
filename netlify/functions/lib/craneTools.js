@@ -2,7 +2,9 @@ import { VALID_VARIANT_IDS } from './cranePrompts.js';
 
 const VARIANT_LABELS = {
   'instant-reset': 'Instant Reset',
+  'flash-freeze': 'Flash Freeze',
   'orienting-anchor': 'Orienting Anchor',
+  'nova-gate': 'Nova Gate',
   'coherence-ripple': 'Coherence Ripple',
   'vagal-downshift': 'Vagal Downshift',
   'static-field': 'Static Field',
@@ -10,7 +12,9 @@ const VARIANT_LABELS = {
 
 const VARIANT_PREP = {
   'instant-reset': 'Find a quiet spot. The sequence runs on its own for 30 seconds.',
+  'flash-freeze': 'Press and hold to freeze the ember field. Release to pause.',
   'orienting-anchor': 'Tap left, then right, in rhythm. Follow the visuals for 60 seconds.',
+  'nova-gate': 'Sit back and watch. The gate opens automatically for 60 seconds.',
   'coherence-ripple': 'Press and hold anywhere below the header. Release to pause.',
   'vagal-downshift': 'Press and hold. Watch the fog descend — no headphones required.',
   'static-field': 'Use headphones. Press and hold. The static field is intentionally intense.',

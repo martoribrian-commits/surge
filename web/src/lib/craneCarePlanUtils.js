@@ -14,7 +14,9 @@ const BODY_INSIGHT_PREFIX = 'surge.crane.bodyinsight.';
 /** Shared variant labels for care plan UI (mirrors server catalog). */
 export const VARIANT_LABELS = {
   'instant-reset': 'Instant Reset',
+  'flash-freeze': 'Flash Freeze',
   'orienting-anchor': 'Orienting Anchor',
+  'nova-gate': 'Nova Gate',
   'coherence-ripple': 'Coherence Ripple',
   'vagal-downshift': 'Vagal Downshift',
   'static-field': 'Static Field',

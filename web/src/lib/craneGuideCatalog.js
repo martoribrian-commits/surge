@@ -39,7 +39,9 @@ export function matchGuideFallback(userMessage) {
     return (
       'Quick guide:\n\n' +
       '• Instant Reset (30s) — panic spike, racing heart, need speed.\n' +
+      '• Flash Freeze (30s) — hot anger, adrenaline, need to stop intensity.\n' +
       '• Orienting Anchor (60s) — stuck thoughts, replaying, not present.\n' +
+      '• Nova Gate (60s) — scattered, disoriented, need cinematic transit.\n' +
       '• Coherence Ripple (90s) — wired-but-tired, uneven breathing.\n' +
       '• Vagal Downshift (90s) — flooded, overwhelmed, too loud inside.\n' +
       '• Static Field (90s) — restless, agitated, sound helps you settle.\n\n' +
@@ -72,6 +74,14 @@ export function matchGuideFallback(userMessage) {
     return `Instant Reset uses a physiological sigh — two quick inhales, one long exhale — to slow a racing heart fast (${ir.durationSeconds}s).\n\nCoherence Ripple paces a slower 4-in / 6-out breath for ninety seconds when you need a gentler full reset.`;
   }
 
+  if (/anger|rage|hot|furious|adrenaline/.test(q)) {
+    return 'Sounds like Flash Freeze — thirty seconds, press and hold. Ember chaos slows and crystallizes. For when intensity needs to visibly stop.';
+  }
+
+  if (/scatter|disorient|untether|spinning|floating/.test(q)) {
+    return 'Sounds like Nova Gate — sixty seconds, fully automatic. A warp tunnel accelerates then settles to a still point. For scattered or disoriented states.';
+  }
+
   if (/panic|racing|heart|can't breathe|cant breathe/.test(q)) {
     return 'Sounds like Instant Reset — thirty seconds, runs on its own. Two quick inhales, one long exhale. That long exhale is what tells your body the alarm can stand down.';
   }
@@ -85,7 +95,7 @@ export function matchGuideFallback(userMessage) {
   }
 
   return (
-    'Surge has five sequences — 30, 60, or 90 seconds — each built for a different body state. ' +
+    'Surge has seven sequences — 30, 60, or 90 seconds — each built for a different body state. ' +
     'Tell me what you feel right now (racing heart, stuck thoughts, overwhelmed, restless) and I will point you to the right one.'
   );
 }

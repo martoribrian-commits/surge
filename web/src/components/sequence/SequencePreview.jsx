@@ -35,8 +35,14 @@ export default function SequencePreview({ variantId }) {
           {variantId === 'instant-reset' && (
             <InstantResetPreview palette={variant.palette} />
           )}
+          {variantId === 'flash-freeze' && (
+            <FlashFreezePreview palette={variant.palette} />
+          )}
           {variantId === 'orienting-anchor' && (
             <OrientingPreview palette={variant.palette} />
+          )}
+          {variantId === 'nova-gate' && (
+            <NovaGatePreview palette={variant.palette} />
           )}
           {variantId === 'coherence-ripple' && (
             <CoherencePreview palette={variant.palette} />
@@ -94,6 +100,68 @@ function InstantResetPreview({ palette }) {
           transition={{ duration: 2.5 + i * 0.4, repeat: Infinity, delay: i * 0.2 }}
         />
       ))}
+    </>
+  );
+}
+
+function FlashFreezePreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background: [
+            `radial-gradient(circle at 50% 50%, ${palette.accent}66 0%, transparent 50%)`,
+            `radial-gradient(circle at 50% 50%, ${palette.accentCalm}55 0%, transparent 55%)`,
+            `radial-gradient(circle at 50% 50%, ${palette.accent}66 0%, transparent 50%)`,
+          ],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      {[0, 1, 2, 3].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            left: `${20 + i * 18}%`,
+            top: `${25 + (i % 2) * 30}%`,
+            width: 6,
+            height: 6,
+            background: i < 2 ? palette.accent : palette.accentCalm,
+            boxShadow: `0 0 12px ${i < 2 ? palette.accent : palette.accentCalm}`,
+          }}
+          animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.4, 0.8] }}
+          transition={{ duration: 1.2 + i * 0.2, repeat: Infinity, delay: i * 0.15 }}
+        />
+      ))}
+    </>
+  );
+}
+
+function NovaGatePreview({ palette }) {
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute left-1/2 top-1/2 rounded-full border"
+          style={{
+            borderColor: i % 2 === 0 ? palette.accent : palette.accentCalm,
+            width: `${24 + i * 22}%`,
+            height: `${24 + i * 22}%`,
+            marginLeft: `-${12 + i * 11}%`,
+            marginTop: `-${12 + i * 11}%`,
+          }}
+          animate={{ scale: [0.7, 1.15, 0.75], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 2.2 + i * 0.4, repeat: Infinity, delay: i * 0.3 }}
+        />
+      ))}
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: palette.copy, boxShadow: `0 0 24px ${palette.accent}` }}
+        animate={{ scale: [1, 1.35, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      />
     </>
   );
 }
