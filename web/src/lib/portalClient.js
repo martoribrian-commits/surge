@@ -17,6 +17,17 @@ async function parseJson(res) {
   return data;
 }
 
+function buildQuery(params) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null && value !== '') {
+      search.set(key, String(value));
+    }
+  }
+  const qs = search.toString();
+  return qs ? `?${qs}` : '';
+}
+
 export async function fetchPortalStats(accessToken) {
   const res = await fetch(`${PORTAL_BASE}/portal-stats`, {
     headers: authHeaders(accessToken),
@@ -31,11 +42,41 @@ export async function fetchPortalTokens(accessToken) {
   return parseJson(res);
 }
 
-export async function fetchPortalSessions(accessToken, { limit = 50 } = {}) {
-  const res = await fetch(`${PORTAL_BASE}/portal-sessions?limit=${limit}`, {
+export async function fetchPortalTeam(accessToken) {
+  const res = await fetch(`${PORTAL_BASE}/portal-team`, {
     headers: authHeaders(accessToken),
   });
   return parseJson(res);
+}
+
+/**
+ * @param {string} accessToken
+ * @param {{ limit?: number, variant?: string, completion?: string, from?: string, to?: string, token?: string }} filters
+ */
+export async function fetchPortalSessions(accessToken, filters = {}) {
+  const res = await fetch(
+    `${PORTAL_BASE}/portal-sessions${buildQuery({ limit: 50, ...filters })}`,
+    { headers: authHeaders(accessToken) },
+  );
+  return parseJson(res);
+}
+
+/**
+ * @param {string} accessToken
+ * @param {{ limit?: number, variant?: string, completion?: string, from?: string, to?: string, token?: string }} filters
+ */
+export async function exportPortalSessions(accessToken, filters = {}) {
+  const res = await fetch(
+    `${PORTAL_BASE}/portal-export${buildQuery({ limit: 5000, ...filters })}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const err = new Error(data?.error ?? 'Export failed');
+    err.status = res.status;
+    throw err;
+  }
+  return res.blob();
 }
 
 /**
@@ -78,3 +119,20 @@ export function statusLabel(status) {
 
 export const EXPIRY_PRESETS = ['7 days', '30 days', '90 days', 'No expiry'];
 export const USES_PRESETS = ['1', '3', 'unlimited'];
+
+export const COMPLETION_FILTERS = [
+  { value: '', label: 'All outcomes' },
+  { value: 'complete', label: 'Complete' },
+  { value: 'interrupted', label: 'Interrupted' },
+];
+
+export const VARIANT_FILTER_OPTIONS = [
+  { value: '', label: 'All sequences' },
+  { value: 'instant-reset', label: 'Instant Reset' },
+  { value: 'flash-freeze', label: 'Flash Freeze' },
+  { value: 'orienting-anchor', label: 'Orienting Anchor' },
+  { value: 'nova-gate', label: 'Nova Gate' },
+  { value: 'coherence-ripple', label: 'Coherence Ripple' },
+  { value: 'vagal-downshift', label: 'Vagal Downshift' },
+  { value: 'static-field', label: 'Static Field' },
+];

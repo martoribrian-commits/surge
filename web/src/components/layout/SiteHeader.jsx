@@ -5,6 +5,7 @@ import { useCraneOptional } from '../../context/CraneProvider';
 const NAV = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/for-providers', label: 'Providers' },
+  { href: '/start', label: 'Start' },
 ];
 
 export default function SiteHeader({ theme = 'dark' }) {
@@ -23,7 +24,7 @@ export default function SiteHeader({ theme = 'dark' }) {
           <Link
             key={item.href}
             to={item.href}
-            className={`${linkClass} ${pathname === item.href ? 'text-[#B6502E]' : ''}`}
+            className={`${linkClass} ${pathname === item.href || (item.href === '/start' && pathname.startsWith('/engine')) ? 'text-[#B6502E]' : ''}`}
           >
             {item.label}
           </Link>

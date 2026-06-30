@@ -178,7 +178,7 @@ export default function SciencePage() {
 
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
-                to="/"
+                to="/start"
                 className="inline-flex border border-[#B6502E]/50 bg-[#B6502E]/10 px-6 py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] text-[#F4F0EB] transition-colors hover:bg-[#B6502E]/20"
               >
                 Choose your sequence

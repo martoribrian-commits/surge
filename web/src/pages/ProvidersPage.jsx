@@ -137,7 +137,7 @@ export default function ProvidersPage() {
             Provider portal
           </Link>
           <Link
-            to="/"
+            to="/start"
             className="inline-flex px-2 py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors hover:text-[#B6502E]"
             style={{ color: BRAND.boneDim }}
           >

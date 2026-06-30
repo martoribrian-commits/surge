@@ -1,4 +1,10 @@
-import { handleOptions, corsJson, verifyPortalRequest } from './lib/portal-auth.js';
+import {
+  handleOptions,
+  corsJson,
+  verifyPortalRequest,
+  resolveOrgProviderIds,
+  resolveOrgTokenCodes,
+} from './lib/portal-auth.js';
 
 export default async (request) => {
   const opt = handleOptions(request);
@@ -11,12 +17,13 @@ export default async (request) => {
   const auth = await verifyPortalRequest(request);
   if (auth.error) return auth.error;
 
-  const { supabase, userId, provider } = auth;
+  const { supabase, provider } = auth;
+  const providerIds = await resolveOrgProviderIds(supabase, provider);
 
   const { count: issued, error: issuedError } = await supabase
     .from('clinical_tokens')
     .select('*', { count: 'exact', head: true })
-    .eq('provider_id', userId);
+    .in('provider_id', providerIds);
 
   if (issuedError) {
     console.error('[portal-stats]', issuedError.message);
@@ -26,7 +33,7 @@ export default async (request) => {
   const { count: activated, error: activatedError } = await supabase
     .from('clinical_tokens')
     .select('*', { count: 'exact', head: true })
-    .eq('provider_id', userId)
+    .in('provider_id', providerIds)
     .not('activated_at', 'is', null);
 
   if (activatedError) {
@@ -34,15 +41,16 @@ export default async (request) => {
     return corsJson({ error: 'Failed to load stats' }, 500);
   }
 
-  const { data: tokenRows } = await supabase
-    .from('clinical_tokens')
-    .select('token')
-    .eq('provider_id', userId);
-
-  const tokenCodes = (tokenRows ?? []).map((r) => r.token);
+  let tokenCodes;
+  try {
+    tokenCodes = await resolveOrgTokenCodes(supabase, provider);
+  } catch (err) {
+    console.error('[portal-stats]', err.message);
+    return corsJson({ error: 'Failed to load stats' }, 500);
+  }
 
   let sessionsCompleted = 0;
-  const variantBreakdown: Record<string, number> = {};
+  const variantBreakdown = {};
 
   if (tokenCodes.length > 0) {
     const { data: sessionRows, error: sessionsError } = await supabase
@@ -67,6 +75,7 @@ export default async (request) => {
     orgName: provider.org_name,
     providerName: provider.name,
     tier: provider.tier,
+    teamSize: providerIds.length,
     stats: {
       tokensIssued: issued ?? 0,
       tokensActivated: activated ?? 0,

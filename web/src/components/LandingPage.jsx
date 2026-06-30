@@ -37,7 +37,7 @@ export default function LandingPage() {
 
         <motion.button
           type="button"
-          onClick={() => navigate('/surge')}
+          onClick={() => navigate('/start')}
           className="group relative mt-16 overflow-hidden rounded-full px-12 py-4 font-sans text-xs uppercase tracking-[0.35em] text-gray-300"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

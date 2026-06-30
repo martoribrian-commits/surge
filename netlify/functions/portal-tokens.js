@@ -3,6 +3,7 @@ import {
   corsJson,
   verifyPortalRequest,
   tokenStatus,
+  resolveOrgProviderIds,
 } from './lib/portal-auth.js';
 
 export default async (request) => {
@@ -16,12 +17,13 @@ export default async (request) => {
   const auth = await verifyPortalRequest(request);
   if (auth.error) return auth.error;
 
-  const { supabase, userId } = auth;
+  const { supabase, provider } = auth;
+  const providerIds = await resolveOrgProviderIds(supabase, provider);
 
   const { data: rows, error } = await supabase
     .from('clinical_tokens')
-    .select('token, patient_alias, issued_at, expires_at, uses_remaining, activated_at')
-    .eq('provider_id', userId)
+    .select('token, patient_alias, issued_at, expires_at, uses_remaining, activated_at, provider_id')
+    .in('provider_id', providerIds)
     .order('issued_at', { ascending: false });
 
   if (error) {

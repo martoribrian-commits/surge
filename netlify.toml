@@ -56,6 +56,18 @@
   force = true
 
 [[redirects]]
+  from = "/api/portal-export"
+  to = "/.netlify/functions/portal-export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-team"
+  to = "/.netlify/functions/portal-team"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/crane-inference"
   to = "/.netlify/functions/crane-inference"
   status = 200
@@ -69,12 +81,12 @@
 # Legacy static HTML → React routes
 [[redirects]]
   from = "/engine"
-  to = "/"
+  to = "/start"
   status = 301
 
 [[redirects]]
   from = "/engine.html"
-  to = "/"
+  to = "/start"
   status = 301
 
 [[redirects]]
