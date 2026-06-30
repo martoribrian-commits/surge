@@ -141,7 +141,13 @@ export function useTokenManager() {
       if (cachedToken && TOKEN_PATTERN.test(cachedToken)) {
         setToken(cachedToken);
         setIsCraneUnlocked(cachedUnlock);
-        validateToken(cachedToken);
+        if (cachedUnlock) {
+          validateClinicalToken(cachedToken, { check: true }).then((r) => {
+            if (!r.valid) wipeCachedToken();
+          }).catch(() => {
+            /* offline — keep cached unlock */
+          });
+        }
       }
     } catch {
       // Private browsing

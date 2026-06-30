@@ -58,6 +58,8 @@ export default async (request) => {
 
   return corsJson({
     orgName: provider.org_name,
+    providerName: provider.name,
+    tier: provider.tier,
     stats: {
       tokensIssued: issued ?? 0,
       tokensActivated: activated ?? 0,

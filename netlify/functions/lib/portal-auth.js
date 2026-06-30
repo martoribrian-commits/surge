@@ -60,6 +60,9 @@ export async function verifyPortalRequest(request) {
 }
 
 export function tokenStatus(row) {
+  if (row.uses_remaining <= 0) {
+    return 'revoked';
+  }
   if (row.expires_at && new Date(row.expires_at) < new Date()) {
     return 'expired';
   }

@@ -39,6 +39,8 @@ export default async (request) => {
 
   const expiresIn = body?.expiresIn;
   const uses = body?.uses;
+  const patientAlias =
+    typeof body?.patientAlias === 'string' ? body.patientAlias.trim().slice(0, 64) : null;
 
   if (!(expiresIn in EXPIRY_MAP) || !(uses in USES_MAP)) {
     return corsJson({ error: 'Invalid parameters' }, 400);
@@ -63,10 +65,11 @@ export default async (request) => {
       .insert({
         token,
         provider_id: userId,
+        patient_alias: patientAlias || null,
         expires_at,
         uses_remaining,
       })
-      .select('token, issued_at, expires_at, uses_remaining, activated_at')
+      .select('token, patient_alias, issued_at, expires_at, uses_remaining, activated_at')
       .single();
 
     if (!error && data) {
