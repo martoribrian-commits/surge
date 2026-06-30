@@ -14,7 +14,8 @@ export function CraneProvider({ children }) {
 
   const hideFab =
     sequencePhase === SurgePhase.DECOMPRESSION ||
-    location.pathname === '/crane';
+    location.pathname === '/crane' ||
+    location.pathname === '/support';
 
   const openCrane = useCallback(() => setIsOpen(true), []);
   const closeCrane = useCallback(() => setIsOpen(false), []);

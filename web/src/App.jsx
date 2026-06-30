@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import SequenceFlow from './views/SequenceFlow';
 import SurgeFlow from './views/SurgeFlow';
-import LandingPage from './components/LandingPage';
 import SurgeInterface from './components/SurgeInterface';
 import CraneChat from './components/CraneChat';
 import ProviderPortal from './components/ProviderPortal';
@@ -60,7 +59,7 @@ export default function App() {
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/for-providers" element={<ProvidersPage />} />
         <Route path="/clinical-token" element={<ClinicalTokenPage />} />
-        <Route path="/about" element={<LandingPage />} />
+        <Route path="/about" element={<Navigate to="/" replace />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/support" element={<SupportPage />} />

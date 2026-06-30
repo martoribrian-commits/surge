@@ -5,7 +5,6 @@ import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
 import {
   MarketingShell,
-  MarketingCtaBand,
   SiteFooter,
   TokenSlotInput,
   fadeUp,
@@ -21,19 +20,35 @@ const STEPS = [
   { n: '3', label: 'Start sequence' },
 ];
 
+function stepState(index, unlocked) {
+  if (unlocked) {
+    if (index < 2) return 'complete';
+    return 'active';
+  }
+  if (index === 0) return 'active';
+  return 'pending';
+}
+
 export default function ClinicalTokenPage() {
   usePageMeta(PAGE_META.token);
   const navigate = useNavigate();
   const { validateToken, isLoading, error, isCraneUnlocked } = useTokenManager();
   const [input, setInput] = useState('');
+  const [justUnlocked, setJustUnlocked] = useState(false);
+
+  const unlocked = isCraneUnlocked || justUnlocked;
 
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
+      if (unlocked) {
+        navigate('/start');
+        return;
+      }
       const result = await validateToken(input);
-      if (result.valid) navigate('/start');
+      if (result.valid) setJustUnlocked(true);
     },
-    [input, validateToken, navigate],
+    [input, validateToken, navigate, unlocked],
   );
 
   return (
@@ -45,71 +60,110 @@ export default function ClinicalTokenPage() {
           <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: BRAND.clay }}>
             Clinical access
           </p>
-          <h1 className="mt-3 font-sans text-2xl font-extrabold tracking-tight">Enter your token</h1>
+          <h1 className="mt-3 font-sans text-2xl font-extrabold tracking-tight">
+            {unlocked ? 'Crane unlocked' : 'Enter your token'}
+          </h1>
         </motion.div>
 
-        {/* Step strip */}
         <motion.div {...fadeUp} className="mb-10 flex justify-center gap-2">
-          {STEPS.map((step, i) => (
-            <div key={step.n} className="flex items-center gap-2">
-              <span
-                className="flex h-7 w-7 items-center justify-center rounded-full font-sans text-[10px] font-bold"
-                style={{
-                  background: i === 0 ? `${BRAND.clay}22` : 'rgba(255,255,255,0.04)',
-                  color: i === 0 ? BRAND.clay : BRAND.boneDim,
-                }}
-              >
-                {step.n}
-              </span>
-              <span className="hidden font-sans text-[9px] uppercase tracking-[0.14em] sm:inline" style={{ color: BRAND.boneDim }}>
-                {step.label}
-              </span>
-              {i < STEPS.length - 1 ? (
-                <span className="mx-1 hidden h-px w-6 bg-white/10 sm:block" aria-hidden />
-              ) : null}
-            </div>
-          ))}
+          {STEPS.map((step, i) => {
+            const state = stepState(i, unlocked);
+            return (
+              <div key={step.n} className="flex items-center gap-2">
+                <span
+                  className="flex h-7 w-7 items-center justify-center rounded-full font-sans text-[10px] font-bold"
+                  style={{
+                    background:
+                      state === 'complete'
+                        ? `${BRAND.clay}33`
+                        : state === 'active'
+                          ? `${BRAND.clay}22`
+                          : 'rgba(255,255,255,0.04)',
+                    color: state === 'pending' ? BRAND.boneDim : BRAND.clay,
+                  }}
+                >
+                  {state === 'complete' ? '✓' : step.n}
+                </span>
+                <span
+                  className="hidden font-sans text-[9px] uppercase tracking-[0.14em] sm:inline"
+                  style={{ color: state === 'pending' ? BRAND.boneDim : BRAND.boneMuted }}
+                >
+                  {step.label}
+                </span>
+                {i < STEPS.length - 1 ? (
+                  <span className="mx-1 hidden h-px w-6 bg-white/10 sm:block" aria-hidden />
+                ) : null}
+              </div>
+            );
+          })}
         </motion.div>
 
         <DecayHero compact className="mx-auto mb-8 max-w-xs py-2" />
 
-        <motion.form {...fadeUp} onSubmit={handleSubmit} className="space-y-6">
-          <TokenSlotInput value={input} onChange={setInput} disabled={isLoading} />
-
-          {error ? (
-            <motion.p
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center font-sans text-sm"
-              style={{ color: BRAND.clay }}
-              role="alert"
-            >
-              {error}
-            </motion.p>
-          ) : null}
-
-          {isCraneUnlocked ? (
-            <p className="text-center font-sans text-sm" style={{ color: BRAND.boneMuted }}>
-              Crane unlocked on this device.
+        {unlocked ? (
+          <motion.div {...fadeUp} className="space-y-6 text-center">
+            <p className="font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
+              Post-session Crane is ready on this device. Start a sequence when you need it.
             </p>
-          ) : null}
+            <button
+              type="button"
+              onClick={() => navigate('/start')}
+              className="w-full border py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] transition-all hover:brightness-110"
+              style={{
+                borderColor: `${BRAND.clay}66`,
+                background: `${BRAND.clay}15`,
+                color: BRAND.bone,
+              }}
+            >
+              Continue to sequences
+            </button>
+            {!isCraneUnlocked ? (
+              <button
+                type="button"
+                onClick={() => setJustUnlocked(false)}
+                className="font-sans text-[11px] uppercase tracking-[0.14em] transition-colors hover:text-[#B6502E]"
+                style={{ color: BRAND.boneDim }}
+              >
+                Enter a different token
+              </button>
+            ) : null}
+          </motion.div>
+        ) : (
+          <motion.form {...fadeUp} onSubmit={handleSubmit} className="space-y-6">
+            <TokenSlotInput value={input} onChange={setInput} disabled={isLoading} />
 
-          <button
-            type="submit"
-            disabled={isLoading || input.length !== 6}
-            className="w-full border py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] transition-all hover:brightness-110 disabled:opacity-40"
-            style={{
-              borderColor: `${BRAND.clay}66`,
-              background: `${BRAND.clay}15`,
-              color: BRAND.bone,
-            }}
-          >
-            {isLoading ? 'Validating…' : 'Unlock Crane'}
-          </button>
-        </motion.form>
+            {error ? (
+              <motion.p
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center font-sans text-sm"
+                style={{ color: BRAND.clay }}
+                role="alert"
+              >
+                {error}
+              </motion.p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={isLoading || input.length !== 6}
+              className="w-full border py-4 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] transition-all hover:brightness-110 disabled:opacity-40"
+              style={{
+                borderColor: `${BRAND.clay}66`,
+                background: `${BRAND.clay}15`,
+                color: BRAND.bone,
+              }}
+            >
+              {isLoading ? 'Validating…' : 'Unlock Crane'}
+            </button>
+          </motion.form>
+        )}
 
         <p className="mt-6 text-center font-sans text-[11px]" style={{ color: BRAND.boneDim }}>
-          From your clinician. No account required.
+          From your clinician.{' '}
+          <Link to="/for-providers" className="underline underline-offset-2 hover:text-[#B6502E]">
+            Request access
+          </Link>
         </p>
 
         <div className="mt-8 flex justify-center gap-6 pb-12">
@@ -130,7 +184,6 @@ export default function ClinicalTokenPage() {
         </div>
       </div>
 
-      <MarketingCtaBand primaryHref="/start" primaryLabel="Try without a token" secondaryHref="/for-providers" secondaryLabel="For providers" />
       <SiteFooter />
     </MarketingShell>
   );

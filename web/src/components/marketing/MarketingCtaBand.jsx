@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { BRAND } from '../../brand/tokens';
 import { fadeUp } from './marketingMotion';
 
@@ -12,6 +12,8 @@ export default function MarketingCtaBand({
   secondaryHref = '/faq',
   secondaryLabel = 'FAQ',
 }) {
+  const reducedMotion = useReducedMotion();
+
   return (
     <motion.section
       {...fadeUp}
@@ -20,12 +22,19 @@ export default function MarketingCtaBand({
         background: `linear-gradient(90deg, ${BRAND.clay}12 0%, rgba(10,10,10,0.95) 45%, rgba(75,136,184,0.08) 100%)`,
       }}
     >
-      <motion.div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${BRAND.clay}66, transparent)` }}
-        animate={{ opacity: [0.3, 0.8, 0.3], scaleX: [0.6, 1, 0.6] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      {!reducedMotion ? (
+        <motion.div
+          className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{ background: `linear-gradient(90deg, transparent, ${BRAND.clay}66, transparent)` }}
+          animate={{ opacity: [0.3, 0.8, 0.3], scaleX: [0.6, 1, 0.6] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ) : (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-50"
+          style={{ background: `linear-gradient(90deg, transparent, ${BRAND.clay}66, transparent)` }}
+        />
+      )}
 
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-5 px-5 py-12 sm:flex-row sm:justify-between">
         <p className="text-center font-sans text-lg font-bold tracking-tight sm:text-left">

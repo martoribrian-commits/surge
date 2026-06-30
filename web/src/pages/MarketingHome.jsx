@@ -179,7 +179,7 @@ export default function MarketingHome() {
       <section className="mx-auto max-w-5xl px-5 py-20">
         <MarketingSectionHeader
           kicker="Built for the acute window"
-          title=""
+          title="Three commitments"
           align="center"
           className="mb-10"
         />

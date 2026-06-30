@@ -35,15 +35,17 @@ export default function SupportContactForm() {
     });
 
     try {
-      await fetch('/', {
+      const res = await fetch('/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload.toString(),
       });
+      if (!res.ok) throw new Error('Submit failed');
       setStatus('sent');
       setMessage('');
     } catch {
-      setStatus('sent');
+      setStatus('idle');
+      setError('Could not send. Check your connection and try again.');
     }
   };
 
@@ -144,7 +146,12 @@ export default function SupportContactForm() {
             <button
               type="submit"
               disabled={status === 'sending' || !message.trim()}
-              className="font-sans text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40 transition-colors hover:text-[#F4F0EB] disabled:opacity-30"
+              className="border px-6 py-3 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] transition-all hover:brightness-110 disabled:opacity-40"
+              style={{
+                borderColor: 'rgba(182,80,46,0.4)',
+                background: 'rgba(182,80,46,0.12)',
+                color: '#F4F0EB',
+              }}
             >
               {status === 'sending' ? 'Sending…' : 'Send message'}
             </button>

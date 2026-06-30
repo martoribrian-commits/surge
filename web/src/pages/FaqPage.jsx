@@ -51,13 +51,21 @@ export default function FaqPage() {
         <div className="grid gap-10 pb-20 lg:grid-cols-[220px_1fr]">
           {/* Category tabs */}
           <LayoutGroup>
-            <nav className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1" aria-label="FAQ categories">
+            <nav
+              className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1"
+              aria-label="FAQ categories"
+              role="tablist"
+            >
               {FAQ_CATEGORIES.map((cat) => {
                 const active = category === cat.id;
                 return (
                   <button
                     key={cat.id}
+                    id={`faq-tab-${cat.id}`}
                     type="button"
+                    role="tab"
+                    aria-selected={active}
+                    aria-controls={`faq-panel-${cat.id}`}
                     onClick={() => setCategory(cat.id)}
                     className="relative rounded-sm px-4 py-3 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors"
                     style={{ color: active ? BRAND.bone : BRAND.boneDim }}
@@ -85,6 +93,9 @@ export default function FaqPage() {
           <AnimatePresence mode="wait">
             <motion.div
               key={category}
+              id={`faq-panel-${category}`}
+              role="tabpanel"
+              aria-labelledby={`faq-tab-${category}`}
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
