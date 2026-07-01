@@ -15,6 +15,7 @@ export default function TvStaticCanvas({ elapsedSeconds, isEngaged, isPaused }) 
     if (!canvas) return undefined;
 
     const ctx = canvas.getContext('2d');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let imageData = null;
     let raf = null;
 
@@ -70,8 +71,8 @@ export default function TvStaticCanvas({ elapsedSeconds, isEngaged, isPaused }) 
         ctx.fillRect(0, y, w, 1);
       }
 
-      // Peak strobe flash
-      if (chaos > 0.55 && Math.random() > 0.92) {
+      // Peak strobe flash — disabled under prefers-reduced-motion
+      if (!reducedMotion && chaos > 0.55 && Math.random() > 0.92) {
         ctx.fillStyle = `rgba(255,255,255,${0.04 + chaos * 0.08})`;
         ctx.fillRect(0, 0, w, h);
       }

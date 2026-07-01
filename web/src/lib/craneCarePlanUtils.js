@@ -22,6 +22,7 @@ export const VARIANT_LABELS = {
   'heavy-tide': 'Heavy Tide',
   'vagal-downshift': 'Vagal Downshift',
   'static-field': 'Static Field',
+  'dead-mans-switch': "Dead-Man's Switch",
   'deep-anchor': 'Deep Anchor',
 };
 

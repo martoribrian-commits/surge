@@ -47,6 +47,7 @@ export function matchGuideFallback(userMessage) {
       '• Heavy Tide (90s) — grief, sadness, heaviness in the chest.\n' +
       '• Vagal Downshift (90s) — flooded, overwhelmed, too loud inside.\n' +
       '• Static Field (90s) — restless, agitated, sound helps you settle.\n' +
+      '• Dead-Man\'s Switch (90s) — need physical hold anchor, classic Surge curve.\n' +
       '• Deep Anchor (120s) — shame loop, self-attack, intractable rumination.\n\n' +
       'Tell me what your body feels like right now and I will narrow it down.'
     );
@@ -110,7 +111,7 @@ export function matchGuideFallback(userMessage) {
   }
 
   return (
-    'Surge has ten sequences — 30, 60, 90, or 120 seconds — each built for a different body state. ' +
+    'Surge has eleven sequences — 30, 60, 90, or 120 seconds — each built for a different body state. ' +
     'Tell me what you feel right now (racing heart, stuck thoughts, numb, sad, shame loop, overwhelmed, restless) and I will point you to the right one.'
   );
 }

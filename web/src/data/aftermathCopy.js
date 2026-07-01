@@ -10,6 +10,8 @@ export const AFTERMATH_INTEGRATION = {
   'heavy-tide': 'The pendulum moved grief and activation together. Heaviness after release is normal. You do not have to make meaning of it yet.',
   'vagal-downshift': 'Extended hold gave your vagus nerve time to respond. Softening may arrive quietly — watch for it in the next few minutes.',
   'static-field': 'Sonic entrainment works best with repetition. If your mind wandered, your body still heard the downshift curve.',
+  'dead-mans-switch':
+    'You held the curve through. No badge, no streak — notice if your body feels even slightly quieter before you move on.',
   'deep-anchor': 'Two minutes of bilateral integration is a longer landing. Stay with whatever surfaced — integration is the point.',
 };
 

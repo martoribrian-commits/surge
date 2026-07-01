@@ -37,7 +37,7 @@ const SECTIONS = [
     summary: 'Your body can still come down if you give it a path.',
     body: [
       'Somatic regulation research identifies a narrow window after peak activation when the nervous system can still be guided back toward baseline without pharmacological intervention. That window is measured in seconds, not minutes.',
-      'Ten sequences, each tuned to a different body state: racing heart, hot anger, stuck thoughts, scattered disorientation, shutdown numbness, wired exhaustion, grief heaviness, full overwhelm, restless agitation, or shame loops that will not quit.',
+      'Eleven sequences, each tuned to a different body state: racing heart, hot anger, stuck thoughts, scattered disorientation, shutdown numbness, wired exhaustion, grief heaviness, full overwhelm, restless agitation, physical anchoring, or shame loops that will not quit.',
     ],
   },
   {
@@ -70,6 +70,7 @@ const BODY_STATE_GUIDE = [
   { state: 'Grief heaviness, pendulum swing', sequence: 'Heavy Tide', duration: '90s', variantId: 'heavy-tide' },
   { state: 'Flooded, overwhelmed', sequence: 'Vagal Downshift', duration: '90s', variantId: 'vagal-downshift' },
   { state: 'Restless, agitated', sequence: 'Static Field', duration: '90s', variantId: 'static-field' },
+  { state: 'Need physical hold anchor', sequence: "Dead-Man's Switch", duration: '90s', variantId: 'dead-mans-switch' },
   { state: 'Shame loops, need integration', sequence: 'Deep Anchor', duration: '120s', variantId: 'deep-anchor' },
 ];
 
@@ -92,7 +93,7 @@ const SCIENCE_FAQ = [
   },
   {
     q: 'How is this different from a breathing app?',
-    a: 'Breathing apps typically offer one paced-breath pattern. Surge maps ten distinct protocols across four durations: sigh intercept, thermal freeze, bilateral orienting, hyperspace entrainment, somatic thaw, resonant HRV breathing, pendular grief release, visual decay, sonic entrainment, and extended bilateral integration. Each matched to a specific body state.',
+    a: 'Breathing apps typically offer one paced-breath pattern. Surge maps eleven distinct protocols across four durations: sigh intercept, thermal freeze, bilateral orienting, hyperspace entrainment, somatic thaw, resonant HRV breathing, pendular grief release, visual decay, sonic entrainment, dead-man switch anchoring, and extended bilateral integration. Each matched to a specific body state.',
   },
 ];
 
@@ -124,7 +125,7 @@ export default function SciencePage() {
 
             <div className="w-full space-y-3">
               <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.boneDim }}>
-                Ten sequences. Pick by body state
+                Eleven sequences. Pick by body state
               </p>
               {VARIANT_LIST.map((variant) => {
                 const active = hoverVariant === variant.id;

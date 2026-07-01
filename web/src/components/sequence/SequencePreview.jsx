@@ -63,6 +63,9 @@ export default function SequencePreview({ variantId, customVariant = null }) {
           {variantId === 'static-field' && (
             <StaticFieldPreview palette={variant.palette} />
           )}
+          {variantId === 'dead-mans-switch' && (
+            <DeadMansSwitchPreview palette={variant.palette} />
+          )}
           {variantId === 'deep-anchor' && (
             <DeepAnchorPreview palette={variant.palette} />
           )}
@@ -415,6 +418,38 @@ function StaticFieldPreview({ palette }) {
         className="absolute left-1/2 top-1/2 h-[38%] w-[38%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30"
         animate={{ scale: [0.9, 1.15, 0.92], opacity: [0.5, 0.9, 0.5] }}
         transition={{ duration: 1.8, repeat: Infinity }}
+      />
+    </>
+  );
+}
+
+function DeadMansSwitchPreview({ palette }) {
+  return (
+    <>
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background: [
+            `radial-gradient(circle at 50% 50%, rgba(255,248,232,0.35) 0%, transparent 45%)`,
+            `radial-gradient(circle at 50% 50%, rgba(255,179,71,0.22) 0%, transparent 52%)`,
+            `radial-gradient(circle at 50% 50%, rgba(255,248,232,0.35) 0%, transparent 45%)`,
+          ],
+        }}
+        transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          background: `radial-gradient(circle, ${palette.accent}55 0%, ${palette.accentCalm}22 40%, transparent 70%)`,
+          boxShadow: `0 0 40px ${palette.accentCalm}44`,
+        }}
+        animate={{ scale: [0.88, 1.08, 0.9], opacity: [0.65, 1, 0.7] }}
+        transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/90"
+        animate={{ opacity: [0.7, 1, 0.75] }}
+        transition={{ duration: 1, repeat: Infinity }}
       />
     </>
   );

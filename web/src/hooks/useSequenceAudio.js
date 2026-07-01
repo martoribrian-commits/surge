@@ -96,12 +96,12 @@ export function useSequenceAudio({
         return;
       }
 
-      const isStaticField = variantId === 'static-field';
+      const isCurveHold = variantId === 'static-field' || variantId === 'dead-mans-switch';
 
       if (isHold) {
         if (!isEngaged) {
           // Static field: no pre-start — original engine starts on first engage only
-          if (!isStaticField) {
+          if (!isCurveHold) {
             if (!startedRef.current) {
               engine.start?.();
               startedRef.current = true;
@@ -143,7 +143,7 @@ export function useSequenceAudio({
         engine.sync?.(c.elapsedSeconds, breathCycle ?? { inhale: 4, exhale: 6 });
       } else if (variantId === 'heavy-tide') {
         engine.sync?.(c.elapsedSeconds, breathCycle ?? { inhale: 5, exhale: 7 });
-      } else if (variantId === 'vagal-downshift' || variantId === 'static-field') {
+      } else if (variantId === 'vagal-downshift' || variantId === 'static-field' || variantId === 'dead-mans-switch') {
         engine.sync?.(c.elapsedMs);
       } else if (isCustomVariantId(variantId)) {
         engine.sync?.(c.elapsedSeconds, c.progress, isEngaged, breathCycle ?? null);

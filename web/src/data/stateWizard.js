@@ -19,7 +19,7 @@ export const WIZARD_DURATION = [
 ];
 
 const RECOMMENDATIONS = {
-  surge: { 30: 'instant-reset', 60: 'orienting-anchor', 90: 'static-field', 120: 'deep-anchor' },
+  surge: { 30: 'instant-reset', 60: 'orienting-anchor', 90: 'dead-mans-switch', 120: 'deep-anchor' },
   flood: { 30: 'flash-freeze', 60: 'nova-gate', 90: 'vagal-downshift', 120: 'deep-anchor' },
   stuck: { 30: 'instant-reset', 60: 'orienting-anchor', 90: 'coherence-ripple', 120: 'deep-anchor' },
   scattered: { 30: 'flash-freeze', 60: 'nova-gate', 90: 'static-field', 120: 'deep-anchor' },
