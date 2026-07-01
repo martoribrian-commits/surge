@@ -22,6 +22,10 @@ import ProviderSessionFilters, { EMPTY_SESSION_FILTERS } from './portal/Provider
 import ProviderTeamStrip from './portal/ProviderTeamStrip';
 import ProviderSessionDetail from './portal/ProviderSessionDetail';
 import ProviderInvitePanel from './portal/ProviderInvitePanel';
+import ProviderPortalNav from './portal/ProviderPortalNav';
+import ProviderCaseloadPanel from './portal/ProviderCaseloadPanel';
+import ProviderAnalyticsChart from './portal/ProviderAnalyticsChart';
+import ProviderSettingsPanel from './portal/ProviderSettingsPanel';
 import { BRAND } from '../brand/tokens';
 import { Link } from 'react-router-dom';
 
@@ -49,6 +53,7 @@ export default function ProviderPortal() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({
     tokensIssued: 0,
     tokensActivated: 0,
@@ -383,13 +388,23 @@ export default function ProviderPortal() {
           <p className="mb-6 font-sans text-xs" style={{ color: BRAND.clay }}>{portalError}</p>
         ) : null}
 
-        {showOnboarding ? <ProviderOnboardingGuide onDismiss={handleDismissOnboarding} /> : null}
+        {showOnboarding && activeTab === 'dashboard' ? (
+          <ProviderOnboardingGuide onDismiss={handleDismissOnboarding} />
+        ) : null}
 
+        <ProviderPortalNav activeTab={activeTab} onChange={setActiveTab} />
+
+        {activeTab === 'dashboard' ? (
+          <>
         <ProviderTeamStrip members={teamMembers} teamSize={teamSize} isAdmin={isAdmin} />
 
         <ProviderInvitePanel accessToken={session?.access_token} isAdmin={isAdmin} />
 
         <ProviderStatsBar stats={stats} />
+
+        <div className="mt-8">
+          <ProviderAnalyticsChart accessToken={session?.access_token} days={30} />
+        </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
           <ProviderVariantBreakdown breakdown={stats.variantBreakdown} />
@@ -457,6 +472,28 @@ export default function ProviderPortal() {
             </div>
           ) : null}
         </section>
+          </>
+        ) : null}
+
+        {activeTab === 'caseload' ? (
+          <ProviderCaseloadPanel
+            accessToken={session?.access_token}
+            onFilterToken={(token) => {
+              setSessionFilters((prev) => ({ ...prev, token, offset: 0 }));
+              setActiveTab('dashboard');
+            }}
+          />
+        ) : null}
+
+        {activeTab === 'settings' ? (
+          <ProviderSettingsPanel
+            accessToken={session?.access_token}
+            onProfileUpdated={(profile) => {
+              setOrgName(profile.orgName ?? orgName);
+              loadDashboard(session.access_token, sessionFilters);
+            }}
+          />
+        ) : null}
 
         <ProviderSessionDetail
           sessionId={selectedSessionId}

@@ -86,6 +86,24 @@
   force = true
 
 [[redirects]]
+  from = "/api/portal-caseload"
+  to = "/.netlify/functions/portal-caseload"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-analytics"
+  to = "/.netlify/functions/portal-analytics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-settings"
+  to = "/.netlify/functions/portal-settings"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/crane-inference"
   to = "/.netlify/functions/crane-inference"
   status = 200

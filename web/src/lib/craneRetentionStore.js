@@ -205,5 +205,6 @@ export function createCraneMessage(role, content, extras = {}) {
   if (extras.actions?.length) msg.actions = extras.actions;
   if (extras.bodyInsight) msg.bodyInsight = extras.bodyInsight;
   if (extras.carePlan) msg.carePlan = extras.carePlan;
+  if (extras.reveal) msg.reveal = true;
   return msg;
 }
