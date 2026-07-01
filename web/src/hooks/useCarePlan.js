@@ -6,6 +6,7 @@ import {
   saveCarePlan,
   toggleCarePlanStep,
 } from '../lib/craneCarePlanUtils';
+import { refreshRecoveryHistoryForSession } from '../lib/recoveryHistoryStore';
 
 /**
  * Care plan state with step completion checkboxes (persisted per session).
@@ -59,7 +60,10 @@ export function useCarePlan(sessionId, initialPlan = null) {
         return;
       }
       const updated = toggleCarePlanStep(sessionId, stepOrder);
-      if (updated) setCarePlan(updated);
+      if (updated) {
+        setCarePlan(updated);
+        refreshRecoveryHistoryForSession(sessionId);
+      }
     },
     [sessionId],
   );

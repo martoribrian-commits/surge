@@ -57,7 +57,12 @@ export async function validateClinicalToken(token, { check = false } = {}) {
   });
 
   const data = await response.json();
-  return { valid: Boolean(data?.valid), tier: data?.tier ?? null };
+  return {
+    valid: Boolean(data?.valid),
+    tier: data?.tier ?? null,
+    usesRemaining: data?.usesRemaining ?? null,
+    expiresAt: data?.expiresAt ?? null,
+  };
 }
 
 /**

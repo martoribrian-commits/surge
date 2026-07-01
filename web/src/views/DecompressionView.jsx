@@ -7,7 +7,9 @@ import { useCraneAutoLaunch } from '../hooks/useCraneAutoLaunch';
 import { useCraneSessionMeta } from '../hooks/useCraneSessionMeta';
 import { useTokenManager } from '../hooks/useTokenManager';
 import { usePostSessionCarePlan } from '../hooks/usePostSessionCarePlan';
-import { fetchCraneContext, requestCraneInference } from '../lib/craneClient';
+import { fetchCraneContext, requestCraneInference, buildCraneTelemetryOpener } from '../lib/craneClient';
+import { DECOMPRESSION_PROMPTS } from '../lib/craneQuickPrompts';
+import { BRAND } from '../brand/tokens';
 import { loadBodyInsight, loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
 import { useCarePlan } from '../hooks/useCarePlan';
 import CraneAutoLaunchBanner from '../components/crane/CraneAutoLaunch';
@@ -48,32 +50,63 @@ export default function DecompressionView() {
   const scrollRef = useRef(null);
   const seededRef = useRef(false);
   const carePlanSeededRef = useRef(false);
+  const openerSeededRef = useRef(false);
 
   const { getSessionMeta, nextTurn, recordInferenceMeta } = useCraneSessionMeta();
   const autoLaunch = useCraneAutoLaunch({});
 
   useEffect(() => {
     if (!hydrated || seededRef.current) return;
+    seededRef.current = true;
+
     const seed = consumeBrainDumpSeed();
-    if (seed && messages.length === 0) {
+    if (seed) {
       appendMessage('user', seed);
     }
-    seededRef.current = true;
-  }, [hydrated, messages.length, consumeBrainDumpSeed, appendMessage]);
 
-  useEffect(() => {
-    if (!hydrated || !sessionId || carePlanSeededRef.current) return;
+    if (!sessionId) return;
+
     const cached = loadCarePlan(sessionId);
     const cachedInsight = loadBodyInsight(sessionId);
     if (cached?.steps?.length) setPlan(cached);
-    if (cachedInsight && cached?.steps?.length && messages.length === 0) {
+
+    if (cachedInsight && cached?.steps?.length && !seed) {
       appendMessage('crane', '', { bodyInsight: cachedInsight, carePlan: cached });
       carePlanSeededRef.current = true;
-    } else if (bodyInsight && carePlan && messages.length === 0) {
+      openerSeededRef.current = true;
+      return;
+    }
+
+    if (bodyInsight && carePlan && !seed) {
       appendMessage('crane', '', { bodyInsight, carePlan });
       carePlanSeededRef.current = true;
+      openerSeededRef.current = true;
+      return;
     }
-  }, [hydrated, sessionId, bodyInsight, carePlan, messages.length, appendMessage, setPlan]);
+
+    if (!openerSeededRef.current) {
+      fetchCraneContext(sessionId)
+        .then((context) => {
+          if (openerSeededRef.current) return;
+          appendMessage('crane', buildCraneTelemetryOpener(context));
+          openerSeededRef.current = true;
+        })
+        .catch(() => {
+          if (!openerSeededRef.current) {
+            appendMessage('crane', 'You finished the sequence. If something came up, you can say it here.');
+            openerSeededRef.current = true;
+          }
+        });
+    }
+  }, [
+    hydrated,
+    sessionId,
+    bodyInsight,
+    carePlan,
+    consumeBrainDumpSeed,
+    appendMessage,
+    setPlan,
+  ]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -224,7 +257,7 @@ export default function DecompressionView() {
           </div>
         ) : null}
 
-        {!isCraneUnlocked && (messages.length === 0 || tokenGateHint) ? (
+        {!isCraneUnlocked && (messages.length <= 1 || tokenGateHint) ? (
           <div className="mb-8 w-full max-w-lg">
             <CraneClinicalGate compact onRequestUnlock={() => setTokenModalOpen(true)} />
             {tokenGateHint ? (
@@ -236,6 +269,24 @@ export default function DecompressionView() {
         ) : null}
 
         <CraneThread messages={messages} onToggleStep={toggleStep} carePlanProgress={carePlan} />
+
+        {messages.length <= 2 && !submitting ? (
+          <div className="mb-6 flex w-full max-w-lg flex-wrap justify-center gap-2">
+            {DECOMPRESSION_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => {
+                  setDraft(prompt);
+                }}
+                className="rounded-sm border border-white/[0.1] px-3 py-1.5 font-sans text-[10px] transition-colors hover:border-[#B6502E]/40"
+                style={{ color: BRAND.boneDim }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <footer className="relative z-20 flex shrink-0 flex-col items-center gap-8 px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">

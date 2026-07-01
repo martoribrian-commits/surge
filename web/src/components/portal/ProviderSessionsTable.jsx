@@ -18,6 +18,7 @@ export default function ProviderSessionsTable({ sessions, filtered = false, onSe
         <thead>
           <tr className="border-b border-white/[0.08] font-sans text-[9px] uppercase tracking-[0.18em]" style={{ color: BRAND.boneDim }}>
             <th className="px-3 py-3 font-normal">When</th>
+            <th className="px-3 py-3 font-normal">Alias</th>
             <th className="px-3 py-3 font-normal">Sequence</th>
             <th className="px-3 py-3 font-normal">Token</th>
             <th className="px-3 py-3 font-normal">Duration</th>
@@ -51,6 +52,7 @@ export default function ProviderSessionsTable({ sessions, filtered = false, onSe
                   minute: '2-digit',
                 })}
               </td>
+              <td className="px-3 py-3 text-white/45">{row.patientAlias ?? '—'}</td>
               <td className="px-3 py-3 text-white/55">
                 {row.variantId
                   ? (VARIANT_LABELS[row.variantId] ?? (row.variantId.startsWith('custom-') ? 'Custom' : row.variantId))

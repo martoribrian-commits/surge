@@ -173,8 +173,8 @@ export default function ProvidersPage() {
             className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4"
           >
             {[
-              { num: '7', label: 'Evidence-informed sequences' },
-              { num: '30-90s', label: 'Fixed downshift curves' },
+              { num: '10', label: 'Evidence-informed sequences' },
+              { num: '30-120s', label: 'Fixed downshift curves' },
               { num: '0', label: 'Patient accounts required' },
               { num: 'CSV', label: 'Session export' },
             ].map((stat, i) => (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BRAND } from '../../brand/tokens';
-import { listRecoveryHistory } from '../../lib/recoveryHistoryStore';
+import { listRecoveryHistory, recoveryHistoryCount } from '../../lib/recoveryHistoryStore';
 
 function formatWhen(ts) {
   if (!ts) return '';
@@ -16,12 +16,25 @@ function formatWhen(ts) {
 export default function RecoveryHistoryPanel({ compact = false, refreshKey = 0 }) {
   const [entries, setEntries] = useState([]);
   const [expanded, setExpanded] = useState(!compact);
+  const count = recoveryHistoryCount();
 
   useEffect(() => {
     setEntries(listRecoveryHistory(compact ? 3 : 8));
   }, [compact, refreshKey]);
 
-  if (!entries.length) {
+  if (!count) {
+    if (compact) {
+      return (
+        <section className="rounded-sm border border-dashed border-white/[0.08] bg-white/[0.01] p-4 text-center">
+          <p className="font-sans text-[10px] uppercase tracking-[0.18em]" style={{ color: BRAND.boneDim }}>
+            Recovery history
+          </p>
+          <p className="mt-2 font-sans text-xs leading-relaxed" style={{ color: BRAND.boneDim }}>
+            Completed sequences appear here on this device.
+          </p>
+        </section>
+      );
+    }
     return null;
   }
 

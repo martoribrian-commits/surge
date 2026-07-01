@@ -74,13 +74,13 @@ export default function SequenceEngine() {
   const handleChangeSequence = useCallback(() => {
     haptics.killAll();
     audio.killAll();
-    reset();
+    reset({ recordInterrupted: true });
   }, [haptics, audio, reset]);
 
   const handleExit = useCallback(() => {
     haptics.killAll();
     audio.killAll();
-    reset();
+    reset({ recordInterrupted: true });
   }, [haptics, audio, reset]);
 
   const handleRelease = useCallback(() => {
