@@ -50,8 +50,11 @@ export default async (request) => {
       mode: 'post-session',
     });
   }
-  const mode =
-    body?.mode === 'guide' || (!body?.supabaseContext && !proactiveCarePlan)
+
+  const sequenceCreator = Boolean(body?.sequenceCreator) || body?.mode === 'creator';
+  const mode = sequenceCreator
+    ? 'creator'
+    : body?.mode === 'guide' || (!body?.supabaseContext && !proactiveCarePlan)
       ? 'guide'
       : 'post-session';
 
@@ -106,12 +109,16 @@ export default async (request) => {
     const advisorCallsTotal =
       Number(sessionMeta.advisorCallsTotal ?? 0) + (result.advisorCallsThisRequest ?? 0);
 
+    const customSequence =
+      result.actions?.find((a) => a.type === 'custom_sequence')?.customSpec ?? null;
+
     return json({
       text: result.text,
       actions: result.actions ?? [],
       autoLaunch: result.autoLaunch ?? null,
       carePlan: result.carePlan ?? null,
       bodyInsight: result.bodyInsight ?? null,
+      customSequence,
       advisorUsed: result.advisorUsed ?? false,
       advisorCallsThisRequest: result.advisorCallsThisRequest ?? 0,
       advisorCallsTotal,

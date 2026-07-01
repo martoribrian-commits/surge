@@ -257,6 +257,23 @@ export const HapticProfiles = {
       },
     ],
   },
+
+  /** AI-generated custom sequences — gentle adaptive profile */
+  'custom-sequence': {
+    id: 'custom-sequence',
+    label: 'Custom — attuned field',
+    audioCueId: 'custom-sequence-bed',
+    phases: [
+      {
+        type: 'continuous',
+        id: 'custom-bed',
+        intensity: 0.38,
+        durationMs: 120_000,
+        decay: 'linear',
+        delayMs: 0,
+      },
+    ],
+  },
 };
 
 /** @param {string} variantId */

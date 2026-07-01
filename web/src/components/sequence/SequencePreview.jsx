@@ -6,13 +6,14 @@ import { EASE_IN_OUT } from './shared/motionPresets';
 /**
  * Live cinematic preview for the selected variant on the entry screen.
  */
-export default function SequencePreview({ variantId }) {
-  const variant = getVariant(variantId);
+export default function SequencePreview({ variantId, customVariant = null }) {
+  const variant = customVariant ?? getVariant(variantId);
+  const previewKey = customVariant?.id ?? variantId;
 
   return (
     <div className="relative mx-auto aspect-[4/3] w-full max-w-xl overflow-hidden rounded-sm border border-white/[0.08]">
       <motion.div
-        key={variantId}
+        key={previewKey}
         className="absolute inset-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -25,14 +26,17 @@ export default function SequencePreview({ variantId }) {
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={variantId}
+          key={previewKey}
           className="absolute inset-0"
           initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.55, ease: EASE_IN_OUT }}
         >
-          {variantId === 'instant-reset' && (
+          {customVariant ? (
+            <CustomPreview palette={variant.palette} visualType={customVariant.visualType} />
+          ) : null}
+          {!customVariant && variantId === 'instant-reset' && (
             <InstantResetPreview palette={variant.palette} />
           )}
           {variantId === 'flash-freeze' && (
@@ -75,8 +79,35 @@ export default function SequencePreview({ variantId }) {
           {variant.name}
         </p>
         <p className="mt-1 font-sans text-sm text-white/50">{variant.tagline}</p>
+        {customVariant ? (
+          <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.16em] text-[#B6502E]/80">
+            Custom · procedural audio enabled
+          </p>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+function CustomPreview({ palette, visualType = 'pulse' }) {
+  const accent = palette?.accent ?? '#B6502E';
+  return (
+    <>
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+        style={{ borderColor: `${accent}66` }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.85, 0.5] }}
+        transition={{ duration: visualType === 'gate' ? 2.4 : 3.2, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      {visualType === 'ripple' || visualType === 'thaw' ? (
+        <motion.div
+          className="absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ background: `radial-gradient(circle, ${accent}33 0%, transparent 70%)` }}
+          animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ) : null}
+    </>
   );
 }
 

@@ -108,6 +108,18 @@ export function resolveAdvisorPolicy({
 
   const maxUses = Math.min(budget.perRequestMax, remainingConversation);
 
+  if (mode === 'creator') {
+    return {
+      includeAdvisor: false,
+      maxUsesThisRequest: 0,
+      enableCaching: false,
+      intent,
+      promptAddendum:
+        'Creator mode: call generate_custom_sequence immediately with a complete spec. Procedural audio required.',
+      reason: 'creator',
+    };
+  }
+
   if (mode === 'post-session') {
     return {
       includeAdvisor: maxUses > 0 || forceAdvisor,

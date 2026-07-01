@@ -27,7 +27,31 @@ describe('craneTools', () => {
   it('defines guide tools including interpret_body_state', () => {
     const tools = buildCraneClientTools('guide');
     expect(tools.some((t) => t.name === 'interpret_body_state')).toBe(true);
-    expect(tools.length).toBeGreaterThanOrEqual(4);
+    expect(tools.some((t) => t.name === 'generate_custom_sequence')).toBe(true);
+    expect(tools.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('creator mode exposes only generate_custom_sequence', () => {
+    const tools = buildCraneClientTools('creator');
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('generate_custom_sequence');
+  });
+
+  it('generate_custom_sequence returns custom action', () => {
+    const { result, action } = executeCraneTool('generate_custom_sequence', {
+      reportedState: 'numb and shut down',
+      rationale: 'Shutdown needs gentle auto thaw',
+      name: 'Warm Return',
+      feelsLike: 'Slow warmth',
+      whatItDoes: 'Procedural thaw field',
+      durationSeconds: 60,
+      interactionMode: 'auto',
+      visualType: 'thaw',
+      audioProfile: { baseFreq: 88, noiseLevel: 0.3, tempo: 'slow', warmth: 'warm' },
+    });
+    expect(result.ok).toBe(true);
+    expect(action.type).toBe('custom_sequence');
+    expect(action.customSpec.name).toBe('Warm Return');
   });
 
   it('post-session adds care plan and body debrief tools', () => {
