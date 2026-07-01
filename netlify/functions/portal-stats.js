@@ -50,26 +50,41 @@ export default async (request) => {
   }
 
   let sessionsCompleted = 0;
+  let sessionsInterrupted = 0;
+  let sessionsLast7Days = 0;
   const variantBreakdown = {};
 
   if (tokenCodes.length > 0) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
     const { data: sessionRows, error: sessionsError } = await supabase
       .from('sessions')
-      .select('variant_id, completion_state')
-      .in('token_used', tokenCodes)
-      .eq('completion_state', 'complete');
+      .select('variant_id, completion_state, synced_at')
+      .in('token_used', tokenCodes);
 
     if (sessionsError) {
       console.error('[portal-stats]', sessionsError.message);
       return corsJson({ error: 'Failed to load stats' }, 500);
     }
 
-    sessionsCompleted = sessionRows?.length ?? 0;
     for (const row of sessionRows ?? []) {
-      const key = row.variant_id ?? 'unknown';
-      variantBreakdown[key] = (variantBreakdown[key] ?? 0) + 1;
+      if (row.completion_state === 'complete') {
+        sessionsCompleted += 1;
+        const key = row.variant_id ?? 'unknown';
+        variantBreakdown[key] = (variantBreakdown[key] ?? 0) + 1;
+      } else if (row.completion_state === 'interrupted') {
+        sessionsInterrupted += 1;
+      }
+      if (row.synced_at && row.synced_at >= sevenDaysAgo) {
+        sessionsLast7Days += 1;
+      }
     }
   }
+
+  const sessionsTotal = sessionsCompleted + sessionsInterrupted;
+  const completionRate = sessionsTotal > 0
+    ? Math.round((sessionsCompleted / sessionsTotal) * 100)
+    : null;
 
   return corsJson({
     orgName: provider.org_name,
@@ -81,6 +96,9 @@ export default async (request) => {
       tokensIssued: issued ?? 0,
       tokensActivated: activated ?? 0,
       sessionsCompleted,
+      sessionsInterrupted,
+      sessionsLast7Days,
+      completionRate,
       variantBreakdown,
     },
   });

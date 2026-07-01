@@ -84,6 +84,6 @@ export const FAQ_BY_CATEGORY = {
 
 export const FAQ_QUICK = [
   { label: 'No account', value: '0' },
-  { label: 'Seconds per cycle', value: '30-90' },
-  { label: 'Sequences', value: '7' },
+  { label: 'Seconds per cycle', value: '30-120' },
+  { label: 'Sequences', value: '10' },
 ];

@@ -10,6 +10,7 @@ import {
   MarketingFaq,
   ComparisonTable,
   ProtocolCard,
+  CaseStudyCarousel,
   MarketingCtaBand,
   fadeUp,
 } from '../components/marketing';
@@ -18,6 +19,7 @@ import { VARIANT_LIST } from '../sequences';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PAGE_META } from '../data/pageMeta';
 import { BRAND } from '../brand/tokens';
+import { EVIDENCE_STUDIES } from '../data/evidenceStudies';
 
 const SECTIONS = [
   {
@@ -59,13 +61,16 @@ const SECTIONS = [
 ];
 
 const BODY_STATE_GUIDE = [
-  { state: 'Heart racing, shallow breath', sequence: 'Instant Reset', duration: '30s' },
-  { state: 'Hot anger, adrenaline spike', sequence: 'Flash Freeze', duration: '30s' },
-  { state: 'Stuck thoughts, rumination', sequence: 'Orienting Anchor', duration: '60s' },
-  { state: 'Scattered, disoriented', sequence: 'Nova Gate', duration: '60s' },
-  { state: 'Wired but exhausted', sequence: 'Coherence Ripple', duration: '90s' },
-  { state: 'Flooded, overwhelmed', sequence: 'Vagal Downshift', duration: '90s' },
-  { state: 'Restless, agitated', sequence: 'Static Field', duration: '90s' },
+  { state: 'Heart racing, shallow breath', sequence: 'Instant Reset', duration: '30s', variantId: 'instant-reset' },
+  { state: 'Hot anger, adrenaline spike', sequence: 'Flash Freeze', duration: '30s', variantId: 'flash-freeze' },
+  { state: 'Stuck thoughts, rumination', sequence: 'Orienting Anchor', duration: '60s', variantId: 'orienting-anchor' },
+  { state: 'Scattered, disoriented', sequence: 'Nova Gate', duration: '60s', variantId: 'nova-gate' },
+  { state: 'Frozen shut, numb', sequence: 'Still Thaw', duration: '60s', variantId: 'still-thaw' },
+  { state: 'Wired but exhausted', sequence: 'Coherence Ripple', duration: '90s', variantId: 'coherence-ripple' },
+  { state: 'Grief heaviness, pendulum swing', sequence: 'Heavy Tide', duration: '90s', variantId: 'heavy-tide' },
+  { state: 'Flooded, overwhelmed', sequence: 'Vagal Downshift', duration: '90s', variantId: 'vagal-downshift' },
+  { state: 'Restless, agitated', sequence: 'Static Field', duration: '90s', variantId: 'static-field' },
+  { state: 'Shame loops, need integration', sequence: 'Deep Anchor', duration: '120s', variantId: 'deep-anchor' },
 ];
 
 const SCIENCE_FAQ = [
@@ -321,6 +326,16 @@ export default function SciencePage() {
               <ProtocolCard key={variant.id} variant={variant} index={i} />
             ))}
           </div>
+        </section>
+
+        {/* Published research */}
+        <section className="border-t border-white/[0.06] py-20">
+          <MarketingSectionHeader
+            kicker="Published research"
+            title="Peer-reviewed protocols behind the sequences."
+            description="Not testimonials. Citations mapped to Surge protocols where evidence exists."
+          />
+          <CaseStudyCarousel studies={EVIDENCE_STUDIES.slice(0, 6)} autoAdvanceMs={8000} />
         </section>
 
         {/* Comparison */}

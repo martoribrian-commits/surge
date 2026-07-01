@@ -53,6 +53,9 @@ export default function ProviderPortal() {
     tokensIssued: 0,
     tokensActivated: 0,
     sessionsCompleted: 0,
+    sessionsInterrupted: 0,
+    sessionsLast7Days: 0,
+    completionRate: null,
     variantBreakdown: {},
   });
   const [tokens, setTokens] = useState([]);
@@ -110,6 +113,9 @@ export default function ProviderPortal() {
         tokensIssued: 0,
         tokensActivated: 0,
         sessionsCompleted: 0,
+        sessionsInterrupted: 0,
+        sessionsLast7Days: 0,
+        completionRate: null,
         variantBreakdown: {},
       });
       setTokens(tokensData.tokens ?? []);
@@ -415,6 +421,9 @@ export default function ProviderPortal() {
               revoking={revoking}
               onRevoke={handleRevoke}
               showIssuer={teamSize > 1}
+              onFilterSessions={(token) =>
+                setSessionFilters((prev) => ({ ...prev, token, offset: 0 }))
+              }
             />
           </section>
         </div>

@@ -35,8 +35,18 @@ export default function ClinicalTokenPage() {
   const { validateToken, isLoading, error, isCraneUnlocked } = useTokenManager();
   const [input, setInput] = useState('');
   const [justUnlocked, setJustUnlocked] = useState(false);
+  const [tokenMeta, setTokenMeta] = useState(null);
 
   const unlocked = isCraneUnlocked || justUnlocked;
+
+  const formatExpiry = (iso) => {
+    if (!iso) return 'No expiry set';
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -46,7 +56,13 @@ export default function ClinicalTokenPage() {
         return;
       }
       const result = await validateToken(input);
-      if (result.valid) setJustUnlocked(true);
+      if (result.valid) {
+        setJustUnlocked(true);
+        setTokenMeta({
+          usesRemaining: result.usesRemaining,
+          expiresAt: result.expiresAt,
+        });
+      }
     },
     [input, validateToken, navigate, unlocked],
   );
@@ -103,8 +119,19 @@ export default function ClinicalTokenPage() {
         {unlocked ? (
           <motion.div {...fadeUp} className="space-y-6 text-center">
             <p className="font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
-              Post-session Crane is ready on this device. Start a sequence when you need it.
+              Post-session Crane is ready on this device. Your token unlocks care plans, body insights,
+              and guided decompression after sequences.
             </p>
+            {tokenMeta ? (
+              <div className="rounded-sm border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-left font-sans text-xs" style={{ color: BRAND.boneDim }}>
+                {tokenMeta.usesRemaining != null ? (
+                  <p>Uses remaining on this device: {tokenMeta.usesRemaining}</p>
+                ) : null}
+                <p className={tokenMeta.usesRemaining != null ? 'mt-1' : ''}>
+                  Expires: {formatExpiry(tokenMeta.expiresAt)}
+                </p>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => navigate('/start')}
@@ -130,6 +157,9 @@ export default function ClinicalTokenPage() {
           </motion.div>
         ) : (
           <motion.form {...fadeUp} onSubmit={handleSubmit} className="space-y-6">
+            <p className="text-center font-sans text-xs leading-relaxed" style={{ color: BRAND.boneDim }}>
+              Six characters from your clinician. Unlocks Crane after sequences on this device only.
+            </p>
             <TokenSlotInput value={input} onChange={setInput} disabled={isLoading} />
 
             {error ? (

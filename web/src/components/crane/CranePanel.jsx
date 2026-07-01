@@ -13,6 +13,7 @@ import {
   requestCraneInference,
   requestPostSessionCarePlan,
 } from '../../lib/craneClient';
+import { CRANE_QUICK_PROMPTS } from '../../lib/craneQuickPrompts';
 import { useCarePlan } from '../../hooks/useCarePlan';
 import { useTokenManager } from '../../hooks/useTokenManager';
 import {
@@ -30,13 +31,7 @@ import CraneClinicalGate from './CraneClinicalGate';
 
 const EASE = [0.25, 0.1, 0.25, 1];
 
-const QUICK_PROMPTS = [
-  'Which sequence should I pick?',
-  'Nothing here fits how I feel',
-  'My heart is racing',
-  'I feel stuck in my head',
-  'What should I do next?',
-];
+const QUICK_PROMPTS = CRANE_QUICK_PROMPTS;
 
 function createMessage(role, content, { actions = [], carePlan = null, bodyInsight = null } = {}) {
   return { id: crypto.randomUUID(), role, content, actions, carePlan, bodyInsight };

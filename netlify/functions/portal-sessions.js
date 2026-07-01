@@ -44,7 +44,7 @@ export default async (request) => {
 
   let query = supabase
     .from('sessions')
-    .select('id, token_used, duration, completion_state, synced_at, variant_id, client_session_id')
+    .select('id, token_used, duration, completion_state, synced_at, variant_id, client_session_id, clinical_tokens(patient_alias)')
     .in('token_used', tokenCodes)
     .order('synced_at', { ascending: false })
     .range(filters.offset, filters.offset + filters.limit - 1);
@@ -61,6 +61,7 @@ export default async (request) => {
   const sessions = (rows ?? []).map((row) => ({
     id: row.id,
     token: row.token_used,
+    patientAlias: row.clinical_tokens?.patient_alias ?? null,
     durationSeconds: row.duration,
     completionState: row.completion_state,
     syncedAt: row.synced_at,

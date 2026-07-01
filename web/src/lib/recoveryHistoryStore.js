@@ -47,26 +47,49 @@ function labelForVariant(variantId, customTitle) {
 export function recordRecoveryHistory(entry) {
   if (!entry?.sessionId) return;
 
-  const completedAt = Date.now();
+  const existing = readIndex().find((row) => row.sessionId === entry.sessionId);
+  const completedAt = entry.completedAt ?? existing?.completedAt ?? Date.now();
   const carePlan = loadCarePlan(entry.sessionId);
 
   const record = {
     sessionId: entry.sessionId,
-    variantId: entry.variantId ?? null,
-    variantLabel: labelForVariant(entry.variantId, entry.variantLabel),
-    durationSeconds: Math.max(0, Math.round(entry.durationSeconds ?? 0)),
-    completionState: entry.completionState ?? 'complete',
+    variantId: entry.variantId ?? existing?.variantId ?? null,
+    variantLabel: labelForVariant(
+      entry.variantId ?? existing?.variantId,
+      entry.variantLabel ?? existing?.variantLabel,
+    ),
+    durationSeconds: Math.max(
+      0,
+      Math.round(entry.durationSeconds ?? existing?.durationSeconds ?? 0),
+    ),
+    completionState: entry.completionState ?? existing?.completionState ?? 'complete',
     completedAt,
-    hadClinicalToken: Boolean(entry.hadClinicalToken),
-    carePlanSteps: carePlan?.steps?.length ?? 0,
+    hadClinicalToken: entry.hadClinicalToken ?? existing?.hadClinicalToken ?? false,
+    carePlanSteps: carePlan?.steps?.length ?? existing?.carePlanSteps ?? 0,
     carePlanCompleted: Array.isArray(carePlan?.completedSteps)
       ? carePlan.completedSteps.filter(Boolean).length
-      : 0,
+      : existing?.carePlanCompleted ?? 0,
   };
 
   const next = [record, ...readIndex().filter((row) => row.sessionId !== entry.sessionId)];
   writeIndex(next);
   return record;
+}
+
+/** Refresh care-plan progress on an existing history row. */
+export function refreshRecoveryHistoryForSession(sessionId) {
+  if (!sessionId) return;
+  const existing = readIndex().find((row) => row.sessionId === sessionId);
+  if (!existing) return;
+  recordRecoveryHistory({
+    sessionId,
+    variantId: existing.variantId,
+    variantLabel: existing.variantLabel,
+    durationSeconds: existing.durationSeconds,
+    completionState: existing.completionState,
+    completedAt: existing.completedAt,
+    hadClinicalToken: existing.hadClinicalToken,
+  });
 }
 
 export function listRecoveryHistory(limit = 10) {

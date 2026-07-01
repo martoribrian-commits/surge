@@ -7,6 +7,8 @@ import { usePostSessionCarePlan } from '../../hooks/usePostSessionCarePlan';
 import { isCarePlanComplete } from '../../lib/craneCarePlanUtils';
 import { loadEphemeralNote } from '../../lib/ephemeralStore';
 import { isCustomVariantId } from '../../sequences';
+import { GROUNDING_OPTIONS, getGroundingOption } from '../../data/groundingGuide';
+import { integrationCopyForVariant } from '../../data/aftermathCopy';
 import EphemeralInput, { flushEphemeralNote } from './EphemeralInput';
 import CraneBodyInsight from '../crane/CraneBodyInsight';
 import CraneCarePlan from '../crane/CraneCarePlan';
@@ -16,13 +18,6 @@ import RecoveryHistoryPanel from './RecoveryHistoryPanel';
 import { BRAND } from '../../brand/tokens';
 
 const EASE = [0.25, 0.1, 0.25, 1];
-
-const GROUNDING = [
-  { id: 'cold', glyph: '◐', label: 'Cold water', hint: 'Face + wrists' },
-  { id: 'air', glyph: '◎', label: 'Fresh air', hint: '60 seconds outside' },
-  { id: 'see', glyph: '◉', label: 'Three objects', hint: 'Name without moving' },
-  { id: 'hands', glyph: '◌', label: 'Slow hands', hint: 'Tea, fold, texture' },
-];
 
 const STEPS = [
   { id: 'complete', label: 'Complete' },
@@ -130,19 +125,28 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
   useEffect(() => {
     if (fetchedPlan?.steps?.length) setPlan(fetchedPlan);
   }, [fetchedPlan, setPlan]);
+
   const [brainDumpText, setBrainDumpText] = useState('');
   const [activeGround, setActiveGround] = useState(null);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const palette = variant.palette;
   const planComplete = isCarePlanComplete(carePlan);
   const hasOffload = Boolean(brainDumpText.trim() || loadEphemeralNote(sessionId));
   const activeStep = planComplete || bodyInsight || carePlan ? 3 : hasOffload ? 2 : activeGround ? 1 : 0;
+  const integrationCopy = integrationCopyForVariant(variant.id, variant.name);
+  const selectedGround = getGroundingOption(activeGround);
 
-  const handleEnterCrane = () => {
+  useEffect(() => {
+    if (planComplete) setHistoryRefresh((n) => n + 1);
+  }, [planComplete]);
+
+  const handleEnterCrane = (groundingSeed) => {
     const dump =
       flushEphemeralNote(sessionId, brainDumpText.trim() || loadEphemeralNote(sessionId));
-    onEnterCrane?.(dump);
+    const parts = [dump, groundingSeed].filter(Boolean);
+    onEnterCrane?.(parts.join('\n\n'));
   };
 
   const handleTokenUnlocked = () => {
@@ -190,7 +194,7 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
             Cycle complete
           </h1>
           <p className="mx-auto mt-3 max-w-md font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
-            Your nervous system had {durationSeconds} seconds to downshift. Take what you need below.
+            {integrationCopy}
           </p>
           <div className="mt-8">
             <CompletionRing progress={1} accent={palette.accent} duration={durationSeconds} />
@@ -210,7 +214,7 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
               Ground · pick one
             </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {GROUNDING.map((item) => {
+              {GROUNDING_OPTIONS.map((item) => {
                 const selected = activeGround === item.id;
                 return (
                   <button
@@ -239,10 +243,27 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
                 );
               })}
             </div>
-            {activeGround ? (
-              <p className="mt-3 text-center font-sans text-[10px]" style={{ color: palette.accentCalm ?? palette.accent }}>
-                {GROUNDING.find((g) => g.id === activeGround)?.label} selected · stay with it a moment
-              </p>
+            {selectedGround ? (
+              <div className="mt-4 rounded-sm border border-white/[0.08] bg-white/[0.02] p-4">
+                <ol className="space-y-2">
+                  {selectedGround.steps.map((step, i) => (
+                    <li key={step} className="flex gap-3 font-sans text-xs leading-relaxed" style={{ color: BRAND.boneMuted }}>
+                      <span className="shrink-0 font-sans text-[10px] tabular-nums" style={{ color: palette.accent }}>
+                        {i + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+                <button
+                  type="button"
+                  onClick={() => handleEnterCrane(selectedGround.craneSeed)}
+                  className="mt-4 font-sans text-[10px] uppercase tracking-[0.16em] underline"
+                  style={{ color: BRAND.boneDim }}
+                >
+                  Continue in Crane with this grounding
+                </button>
+              </div>
             ) : null}
           </motion.section>
 
@@ -314,7 +335,7 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={handleEnterCrane}
+                onClick={() => handleEnterCrane()}
                 className="border px-6 py-3.5 font-sans text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors hover:brightness-110"
                 style={{
                   color: BRAND.bone,
@@ -345,7 +366,7 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
 
         <footer className="mt-10 flex flex-col items-center gap-4 border-t border-white/[0.06] pt-8">
           <div className="w-full max-w-md">
-            <RecoveryHistoryPanel compact refreshKey={sessionId} />
+            <RecoveryHistoryPanel compact refreshKey={`${sessionId}-${historyRefresh}`} />
           </div>
           <button
             type="button"

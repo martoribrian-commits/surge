@@ -4,7 +4,9 @@ import {
   listRecoveryHistory,
   clearRecoveryHistory,
   recoveryHistoryCount,
+  refreshRecoveryHistoryForSession,
 } from './recoveryHistoryStore';
+import { saveCarePlan } from './craneCarePlanUtils';
 
 describe('recoveryHistoryStore', () => {
   beforeEach(() => {
@@ -55,5 +57,20 @@ describe('recoveryHistoryStore', () => {
     recordRecoveryHistory({ sessionId: 'x', durationSeconds: 10 });
     clearRecoveryHistory();
     expect(recoveryHistoryCount()).toBe(0);
+  });
+
+  it('refreshes care plan counts on existing row', () => {
+    recordRecoveryHistory({ sessionId: 'plan-session', variantId: 'nova-gate', durationSeconds: 60 });
+    expect(listRecoveryHistory()[0].carePlanSteps).toBe(0);
+
+    saveCarePlan('plan-session', {
+      steps: [{ order: 1, text: 'A' }, { order: 2, text: 'B' }],
+      completedSteps: [1],
+    });
+    refreshRecoveryHistoryForSession('plan-session');
+
+    const row = listRecoveryHistory()[0];
+    expect(row.carePlanSteps).toBe(2);
+    expect(row.carePlanCompleted).toBe(1);
   });
 });

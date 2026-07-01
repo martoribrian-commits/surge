@@ -8,7 +8,7 @@ const STATUS_COLOR = {
   revoked: '#B6502E',
 };
 
-export default function ProviderTokenTable({ tokens, revoking, onRevoke, showIssuer = false }) {
+export default function ProviderTokenTable({ tokens, revoking, onRevoke, showIssuer = false, onFilterSessions }) {
   if (!tokens.length) {
     return (
       <p className="py-8 text-center font-sans text-sm" style={{ color: BRAND.boneDim }}>
@@ -35,7 +35,20 @@ export default function ProviderTokenTable({ tokens, revoking, onRevoke, showIss
         <tbody>
           {tokens.map((row) => (
             <tr key={row.token} className="border-b border-white/[0.05] last:border-0">
-              <td className="px-3 py-3 font-mono text-[13px] tracking-[0.2em]">{row.token}</td>
+              <td className="px-3 py-3 font-mono text-[13px] tracking-[0.2em]">
+                {onFilterSessions ? (
+                  <button
+                    type="button"
+                    onClick={() => onFilterSessions(row.token)}
+                    className="underline decoration-white/20 underline-offset-4 transition-colors hover:text-[#B6502E]"
+                    title="Filter sessions by this token"
+                  >
+                    {row.token}
+                  </button>
+                ) : (
+                  row.token
+                )}
+              </td>
               <td className="px-3 py-3 text-white/45">{row.patient_alias ?? '—'}</td>
               {showIssuer ? (
                 <td className="px-3 py-3 text-white/45">

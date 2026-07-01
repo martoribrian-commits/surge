@@ -67,7 +67,7 @@ export function useTokenManager() {
   }, [isCraneUnlocked]);
 
   const queryTokenValidity = useCallback(async (normalizedToken) => {
-    const queryPromise = validateClinicalToken(normalizedToken).then((r) => r.valid);
+    const queryPromise = validateClinicalToken(normalizedToken).then((r) => r);
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('timeout')), VALIDATION_TIMEOUT_MS);
     });
@@ -89,7 +89,8 @@ export function useTokenManager() {
       setError('');
 
       try {
-        const valid = await queryTokenValidity(normalized);
+        const result = await queryTokenValidity(normalized);
+        const valid = typeof result === 'boolean' ? result : result?.valid;
 
         if (seq !== validationSeqRef.current) {
           return { valid: false, offline: false };
@@ -99,7 +100,13 @@ export function useTokenManager() {
           persistToken(normalized);
           persistCraneUnlocked(true);
           setError('');
-          return { valid: true, offline: false };
+          const meta = typeof result === 'object' ? result : {};
+          return {
+            valid: true,
+            offline: false,
+            usesRemaining: meta.usesRemaining ?? null,
+            expiresAt: meta.expiresAt ?? null,
+          };
         }
 
         setError(INVALID_TOKEN_MESSAGE);

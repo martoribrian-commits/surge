@@ -6,7 +6,15 @@ import {
   applySessionFilters,
 } from './lib/portal-auth.js';
 
-const CSV_HEADERS = ['synced_at', 'token', 'variant_id', 'duration_seconds', 'completion_state'];
+const CSV_HEADERS = [
+  'synced_at',
+  'token',
+  'patient_alias',
+  'variant_id',
+  'duration_seconds',
+  'completion_state',
+  'client_session_id',
+];
 
 function csvEscape(value) {
   const str = value == null ? '' : String(value);
@@ -23,9 +31,11 @@ function toCsv(rows) {
       [
         row.synced_at,
         row.token_used,
+        row.clinical_tokens?.patient_alias ?? '',
         row.variant_id ?? '',
         row.duration,
         row.completion_state,
+        row.client_session_id ?? '',
       ]
         .map(csvEscape)
         .join(','),
@@ -96,7 +106,7 @@ export default async (request) => {
 
   let query = supabase
     .from('sessions')
-    .select('token_used, duration, completion_state, synced_at, variant_id')
+    .select('token_used, duration, completion_state, synced_at, variant_id, client_session_id, clinical_tokens(patient_alias)')
     .in('token_used', tokenCodes)
     .order('synced_at', { ascending: false })
     .limit(exportLimit);

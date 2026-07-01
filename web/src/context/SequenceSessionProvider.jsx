@@ -149,7 +149,40 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     dispatch({ type: SurgeEvent.RELEASE });
   }, [state.phase, variant.interactionMode, haptics]);
 
-  const reset = useCallback(() => {
+  const reset = useCallback((options = {}) => {
+    const { recordInterrupted = false } = options;
+
+    if (
+      recordInterrupted &&
+      state.sessionId &&
+      (state.phase === SurgePhase.REGULATION || state.phase === SurgePhase.PAUSED)
+    ) {
+      const elapsed = sessionStartRef.current
+        ? Math.max(1, Math.round((performance.now() - sessionStartRef.current) / 1000))
+        : Math.max(1, clock.elapsedSeconds ?? 1);
+
+      const payload = buildSessionPayload(elapsed, false, state.sessionId, variant.id);
+      cacheSessionPayload(payload);
+      submitSessionTelemetry(payload);
+
+      const hadClinicalToken = (() => {
+        try {
+          return Boolean(localStorage.getItem('surge.clinicalToken'));
+        } catch {
+          return false;
+        }
+      })();
+
+      recordRecoveryHistory({
+        sessionId: state.sessionId,
+        variantId: variant.id,
+        variantLabel: variant.name ?? null,
+        durationSeconds: elapsed,
+        completionState: 'interrupted',
+        hadClinicalToken,
+      });
+    }
+
     if (completionTimerRef.current) {
       clearTimeout(completionTimerRef.current);
       completionTimerRef.current = null;
@@ -162,7 +195,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     setCustomVariant(null);
     clearPersistedCustomVariant();
     dispatch({ type: SurgeEvent.RESET });
-  }, [clock, haptics]);
+  }, [clock, haptics, state.sessionId, state.phase, variant]);
 
   const enterDecompression = useCallback((brainDumpText) => {
     brainDumpSeedRef.current = brainDumpText?.trim() || null;
@@ -213,7 +246,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     recordRecoveryHistory({
       sessionId: state.sessionId,
       variantId: variant.id,
-      variantLabel: variant.title ?? variant.label ?? null,
+      variantLabel: variant.name ?? null,
       durationSeconds: Math.max(1, elapsed),
       completionState: 'complete',
       hadClinicalToken,

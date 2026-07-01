@@ -80,7 +80,11 @@ export default async (request) => {
     }
 
     if (checkOnly) {
-      return json({ valid: true });
+      return json({
+        valid: true,
+        usesRemaining: row.uses_remaining,
+        expiresAt: row.expires_at,
+      });
     }
 
     const updates = { uses_remaining: row.uses_remaining - 1 };
@@ -100,7 +104,11 @@ export default async (request) => {
       return json({ valid: false });
     }
 
-    return json({ valid: true });
+    return json({
+      valid: true,
+      usesRemaining: row.uses_remaining - 1,
+      expiresAt: row.expires_at,
+    });
   } catch (err) {
     console.error('[validate-token]', err);
     return json({ valid: false }, 500);

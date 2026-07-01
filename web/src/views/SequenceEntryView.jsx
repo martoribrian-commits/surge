@@ -4,6 +4,7 @@ import { useSequenceSession } from '../context/SequenceSessionProvider';
 import { useCraneOptional } from '../context/CraneProvider';
 import { unlockAudioContext } from '../lib/proceduralAudio/shared';
 import { SequencePicker, SequencePreview, CustomSequenceCreator } from '../components/sequence';
+import StateWizard from '../components/sequence/StateWizard';
 import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
 import { MarketingShell, SiteFooter } from '../components/marketing';
@@ -98,6 +99,10 @@ export default function SequenceEntryView() {
         </div>
 
         <DecayHero className="mb-5 py-2" compact />
+
+        {!isCustomSequence ? (
+          <StateWizard activeId={variantId} onSelectVariant={selectVariant} />
+        ) : null}
 
         <div className="mb-5 overflow-hidden rounded-sm border border-white/[0.08]">
           <SequencePreview variantId={isCustomSequence ? null : variantId} customVariant={isCustomSequence ? variant : null} />
