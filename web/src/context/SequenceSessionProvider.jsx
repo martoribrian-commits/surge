@@ -78,6 +78,11 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
 
     unlockAudioContext();
 
+    if (state.phase === SurgePhase.ENTRY) {
+      completionHandledRef.current = false;
+      clock.reset();
+    }
+
     sessionStartRef.current = performance.now();
     dispatch({
       type: SurgeEvent.ENGAGE,
@@ -88,7 +93,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
         durationSeconds: variant.durationSeconds,
       },
     });
-  }, [state.phase, variant]);
+  }, [state.phase, variant, clock]);
 
   const engageHold = useCallback(() => {
     unlockAudioContext();

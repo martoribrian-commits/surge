@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import { SequenceSessionProvider, useSequenceSession } from '../context/SequenceSessionProvider';
 import { SurgePhase } from '../state/surgeSessionMachine';
 import { resolveVariantId } from '../sequences';
@@ -58,8 +59,14 @@ function SequenceFlowRouter() {
  * @param {{ initialVariantId?: string }} props
  */
 export default function SequenceFlow({ initialVariantId = null }) {
+  const location = useLocation();
+  const sessionKey = `${location.pathname}${location.search}`;
+
   return (
-    <SequenceSessionProvider initialVariantId={resolveVariantId(initialVariantId)}>
+    <SequenceSessionProvider
+      key={sessionKey}
+      initialVariantId={resolveVariantId(initialVariantId)}
+    >
       <SequenceCraneBridge />
       <SequenceFlowRouter />
     </SequenceSessionProvider>
