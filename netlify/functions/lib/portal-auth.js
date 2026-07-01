@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
 };
 
 export function corsJson(body, status = 200) {
@@ -48,7 +48,7 @@ export async function verifyPortalRequest(request) {
 
   const { data: provider, error: providerError } = await supabase
     .from('providers')
-    .select('id, name, org_name, org_id, tier, active')
+    .select('id, name, org_name, org_id, tier, active, role')
     .eq('id', userId)
     .maybeSingle();
 
@@ -146,6 +146,23 @@ export function tokenStatus(row) {
 }
 
 const TOKEN_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+export function requireOrgAdmin(provider) {
+  if (provider.role !== 'admin') {
+    return { error: corsJson({ error: 'Admin access required' }, 403) };
+  }
+  return null;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function normalizeEmail(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+export function isValidInviteEmail(email) {
+  return EMAIL_RE.test(email) && email.length <= 254;
+}
 
 export function generateTokenCode() {
   let code = '';

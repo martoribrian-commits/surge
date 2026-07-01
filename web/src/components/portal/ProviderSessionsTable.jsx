@@ -1,8 +1,7 @@
 import { BRAND } from '../../brand/tokens';
-import { formatPortalDate } from '../../lib/portalClient';
 import { VARIANT_LABELS } from '../../lib/craneCarePlanUtils';
 
-export default function ProviderSessionsTable({ sessions, filtered = false }) {
+export default function ProviderSessionsTable({ sessions, filtered = false, onSelectSession }) {
   if (!sessions.length) {
     return (
       <p className="py-8 text-center font-sans text-sm" style={{ color: BRAND.boneDim }}>
@@ -27,7 +26,23 @@ export default function ProviderSessionsTable({ sessions, filtered = false }) {
         </thead>
         <tbody>
           {sessions.map((row) => (
-            <tr key={row.id} className="border-b border-white/[0.05] last:border-0">
+            <tr
+              key={row.id}
+              className={`border-b border-white/[0.05] last:border-0 ${onSelectSession ? 'cursor-pointer transition-colors hover:bg-white/[0.03]' : ''}`}
+              onClick={onSelectSession ? () => onSelectSession(row.id) : undefined}
+              onKeyDown={
+                onSelectSession
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectSession(row.id);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={onSelectSession ? 0 : undefined}
+              role={onSelectSession ? 'button' : undefined}
+            >
               <td className="px-3 py-3 text-white/45">
                 {new Date(row.syncedAt).toLocaleString(undefined, {
                   month: 'short',
@@ -37,7 +52,9 @@ export default function ProviderSessionsTable({ sessions, filtered = false }) {
                 })}
               </td>
               <td className="px-3 py-3 text-white/55">
-                {row.variantId ? (VARIANT_LABELS[row.variantId] ?? row.variantId) : '—'}
+                {row.variantId
+                  ? (VARIANT_LABELS[row.variantId] ?? (row.variantId.startsWith('custom-') ? 'Custom' : row.variantId))
+                  : '—'}
               </td>
               <td className="px-3 py-3 font-mono text-[13px] tracking-[0.2em]">{row.token}</td>
               <td className="px-3 py-3 tabular-nums text-white/45">{row.durationSeconds}s</td>

@@ -22,6 +22,7 @@ import {
   cacheSessionPayload,
   submitSessionTelemetry,
 } from '../lib/sessionPayload';
+import { recordRecoveryHistory } from '../lib/recoveryHistoryStore';
 import { getVariant, resolveVariantId, InteractionMode, isCustomVariantId, DEFAULT_VARIANT_ID } from '../sequences';
 import {
   buildCustomVariant,
@@ -200,6 +201,23 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     );
     cacheSessionPayload(payload);
     submitSessionTelemetry(payload);
+
+    const hadClinicalToken = (() => {
+      try {
+        return Boolean(localStorage.getItem('surge.clinicalToken'));
+      } catch {
+        return false;
+      }
+    })();
+
+    recordRecoveryHistory({
+      sessionId: state.sessionId,
+      variantId: variant.id,
+      variantLabel: variant.title ?? variant.label ?? null,
+      durationSeconds: Math.max(1, elapsed),
+      completionState: 'complete',
+      hadClinicalToken,
+    });
 
     dispatch({
       type: SurgeEvent.CYCLE_COMPLETE,
