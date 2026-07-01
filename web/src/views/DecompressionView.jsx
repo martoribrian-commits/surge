@@ -6,11 +6,13 @@ import { useCraneRetention } from '../hooks/useCraneRetention';
 import { useCraneAutoLaunch } from '../hooks/useCraneAutoLaunch';
 import { useCraneSessionMeta } from '../hooks/useCraneSessionMeta';
 import { useTokenManager } from '../hooks/useTokenManager';
-import { fetchCraneContext, requestCraneInference, requestPostSessionCarePlan } from '../lib/craneClient';
+import { usePostSessionCarePlan } from '../hooks/usePostSessionCarePlan';
+import { fetchCraneContext, requestCraneInference } from '../lib/craneClient';
 import { loadBodyInsight, loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
 import { useCarePlan } from '../hooks/useCarePlan';
 import CraneAutoLaunchBanner from '../components/crane/CraneAutoLaunch';
 import CraneClinicalGate from '../components/crane/CraneClinicalGate';
+import ClinicalTokenModal from '../components/crane/ClinicalTokenModal';
 import CraneLineInput from '../components/decompression/CraneLineInput';
 import CraneThread from '../components/decompression/CraneThread';
 import SaveInsightsToggle from '../components/decompression/SaveInsightsToggle';
@@ -34,11 +36,18 @@ export default function DecompressionView() {
 
   const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [tokenGateHint, setTokenGateHint] = useState(false);
   const { carePlan, setPlan, toggleStep } = useCarePlan(sessionId);
+  const { bodyInsight, refetch: refetchCarePlan } = usePostSessionCarePlan({
+    sessionId,
+    variantId: variant.id,
+    isCraneUnlocked,
+  });
   const inferenceLockRef = useRef(false);
   const scrollRef = useRef(null);
   const seededRef = useRef(false);
-  const carePlanFetchedRef = useRef(false);
+  const carePlanSeededRef = useRef(false);
 
   const { getSessionMeta, nextTurn, recordInferenceMeta } = useCraneSessionMeta();
   const autoLaunch = useCraneAutoLaunch({});
@@ -53,56 +62,18 @@ export default function DecompressionView() {
   }, [hydrated, messages.length, consumeBrainDumpSeed, appendMessage]);
 
   useEffect(() => {
-    if (!hydrated || !sessionId || carePlanFetchedRef.current) return;
+    if (!hydrated || !sessionId || carePlanSeededRef.current) return;
     const cached = loadCarePlan(sessionId);
     const cachedInsight = loadBodyInsight(sessionId);
-    if (cached?.steps?.length) {
-      setPlan(cached);
-      carePlanFetchedRef.current = true;
-    }
+    if (cached?.steps?.length) setPlan(cached);
     if (cachedInsight && cached?.steps?.length && messages.length === 0) {
       appendMessage('crane', '', { bodyInsight: cachedInsight, carePlan: cached });
+      carePlanSeededRef.current = true;
+    } else if (bodyInsight && carePlan && messages.length === 0) {
+      appendMessage('crane', '', { bodyInsight, carePlan });
+      carePlanSeededRef.current = true;
     }
-    if (cached && cachedInsight) return;
-
-    if (!isCraneUnlocked) return;
-    carePlanFetchedRef.current = true;
-
-    (async () => {
-      try {
-        const context = await fetchCraneContext(sessionId);
-        const inference = await requestPostSessionCarePlan({
-          supabaseContext: context,
-          sessionMeta: { advisorCallsTotal: 0, turnCount: 0 },
-          clinicalAccess: true,
-        });
-        const processed = processCraneInferenceResult(inference, {
-          sessionId,
-          variantId: variant.id,
-          recordMeta: recordInferenceMeta,
-        });
-        if (processed.carePlan) setPlan(processed.carePlan);
-        if (messages.length === 0 && (processed.text || processed.bodyInsight || processed.carePlan)) {
-          appendMessage('crane', processed.text ?? '', {
-            actions: processed.actions,
-            bodyInsight: processed.bodyInsight,
-            carePlan: processed.carePlan,
-          });
-        }
-      } catch {
-        /* optional */
-      }
-    })();
-  }, [
-    hydrated,
-    sessionId,
-    isCraneUnlocked,
-    recordInferenceMeta,
-    setPlan,
-    variant.id,
-    appendMessage,
-    messages.length,
-  ]);
+  }, [hydrated, sessionId, bodyInsight, carePlan, messages.length, appendMessage, setPlan]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -115,7 +86,10 @@ export default function DecompressionView() {
     setDraft('');
     appendMessage('user', trimmed);
 
-    if (!isCraneUnlocked || !sessionId) return;
+    if (!isCraneUnlocked || !sessionId) {
+      setTokenGateHint(true);
+      return;
+    }
 
     inferenceLockRef.current = true;
     setSubmitting(true);
@@ -144,7 +118,7 @@ export default function DecompressionView() {
         carePlan: inference.carePlan,
       });
     } catch {
-      appendMessage('crane', 'Held locally. No response sent.');
+      appendMessage('crane', 'Connection issue. Your note is saved locally — try again.');
     } finally {
       inferenceLockRef.current = false;
       setSubmitting(false);
@@ -176,6 +150,14 @@ export default function DecompressionView() {
       exit={{ opacity: 0 }}
       transition={{ duration: 1.1, ease: EASE }}
     >
+      <ClinicalTokenModal
+        open={tokenModalOpen}
+        onClose={() => setTokenModalOpen(false)}
+        onUnlocked={() => {
+          refetchCarePlan();
+          setTokenGateHint(false);
+        }}
+      />
       <motion.div
         className="pointer-events-none absolute inset-0"
         animate={{
@@ -242,9 +224,14 @@ export default function DecompressionView() {
           </div>
         ) : null}
 
-        {!isCraneUnlocked && messages.length === 0 ? (
+        {!isCraneUnlocked && (messages.length === 0 || tokenGateHint) ? (
           <div className="mb-8 w-full max-w-lg">
-            <CraneClinicalGate compact />
+            <CraneClinicalGate compact onRequestUnlock={() => setTokenModalOpen(true)} />
+            {tokenGateHint ? (
+              <p className="mt-3 font-sans text-[11px] text-white/40">
+                Your note is saved on this device. Enter a clinical token for Crane to respond.
+              </p>
+            ) : null}
           </div>
         ) : null}
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 /**
  * Upsell when proactive AI features require a clinical token.
  */
-export default function CraneClinicalGate({ compact = false }) {
+export default function CraneClinicalGate({ compact = false, onRequestUnlock = null }) {
   return (
     <div
       className={`rounded-sm border border-white/[0.08] bg-white/[0.02] ${
@@ -18,15 +18,25 @@ export default function CraneClinicalGate({ compact = false }) {
           compact ? 'text-[11px]' : 'text-[12px]'
         }`}
       >
-        Personalized recovery plans and body debriefs use Crane&apos;s clinical AI stack (Sonnet
-        executor + Opus advisor). Enter the token from your provider to unlock.
+        Personalized recovery plans and body debriefs use Crane&apos;s clinical AI stack. Enter the
+        token from your provider to unlock without leaving this session.
       </p>
-      <Link
-        to="/clinical-token"
-        className="mt-3 inline-block rounded-sm border border-[#B6502E]/40 px-3 py-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#F4F0EB] transition-colors hover:border-[#B6502E]/60"
-      >
-        Enter clinical token
-      </Link>
+      {onRequestUnlock ? (
+        <button
+          type="button"
+          onClick={onRequestUnlock}
+          className="mt-3 inline-block rounded-sm border border-[#B6502E]/40 px-3 py-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#F4F0EB] transition-colors hover:border-[#B6502E]/60"
+        >
+          Enter clinical token
+        </button>
+      ) : (
+        <Link
+          to="/clinical-token"
+          className="mt-3 inline-block rounded-sm border border-[#B6502E]/40 px-3 py-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#F4F0EB] transition-colors hover:border-[#B6502E]/60"
+        >
+          Enter clinical token
+        </Link>
+      )}
     </div>
   );
 }

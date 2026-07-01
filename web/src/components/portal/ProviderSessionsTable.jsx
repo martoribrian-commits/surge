@@ -2,11 +2,13 @@ import { BRAND } from '../../brand/tokens';
 import { formatPortalDate } from '../../lib/portalClient';
 import { VARIANT_LABELS } from '../../lib/craneCarePlanUtils';
 
-export default function ProviderSessionsTable({ sessions }) {
+export default function ProviderSessionsTable({ sessions, filtered = false }) {
   if (!sessions.length) {
     return (
       <p className="py-8 text-center font-sans text-sm" style={{ color: BRAND.boneDim }}>
-        No completed sessions yet. Sessions appear when patients use tokens during a sequence.
+        {filtered
+          ? 'No sessions match these filters.'
+          : 'No sessions yet. Sessions appear when patients use tokens during a sequence.'}
       </p>
     );
   }

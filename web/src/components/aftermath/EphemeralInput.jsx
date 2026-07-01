@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { loadEphemeralNote, saveEphemeralNote } from '../../lib/ephemeralStore';
 
+export function flushEphemeralNote(sessionId, text) {
+  if (!sessionId) return text ?? '';
+  saveEphemeralNote(sessionId, text ?? '');
+  return text ?? '';
+}
+
 /**
  * Secure brain dump — local only, 24h TTL. Ready for Supabase opt-in later.
  */
@@ -27,6 +33,7 @@ export default function EphemeralInput({ sessionId, onChange }) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onBlur={() => flushEphemeralNote(sessionId, text)}
         placeholder="What is still here..."
         rows={4}
         className="w-full resize-none rounded-sm border border-white/[0.08] bg-black/50 px-4 py-3 font-sans text-sm leading-relaxed text-[#c9ddd2] placeholder:text-[#4a5f54] focus:border-[#f5a623]/30 focus:outline-none"

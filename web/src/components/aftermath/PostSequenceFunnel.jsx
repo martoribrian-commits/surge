@@ -3,19 +3,15 @@ import { useEffect, useState } from 'react';
 import { useSequenceSession } from '../../context/SequenceSessionProvider';
 import { useTokenManager } from '../../hooks/useTokenManager';
 import { useCarePlan } from '../../hooks/useCarePlan';
-import { fetchCraneContext, requestPostSessionCarePlan } from '../../lib/craneClient';
-import {
-  isCarePlanComplete,
-  loadBodyInsight,
-  loadCarePlan,
-  processCraneInferenceResult,
-  saveBodyInsight,
-  saveCarePlan,
-} from '../../lib/craneCarePlanUtils';
-import EphemeralInput from './EphemeralInput';
+import { usePostSessionCarePlan } from '../../hooks/usePostSessionCarePlan';
+import { isCarePlanComplete } from '../../lib/craneCarePlanUtils';
+import { loadEphemeralNote } from '../../lib/ephemeralStore';
+import { isCustomVariantId } from '../../sequences';
+import EphemeralInput, { flushEphemeralNote } from './EphemeralInput';
 import CraneBodyInsight from '../crane/CraneBodyInsight';
 import CraneCarePlan from '../crane/CraneCarePlan';
 import CraneClinicalGate from '../crane/CraneClinicalGate';
+import ClinicalTokenModal from '../crane/ClinicalTokenModal';
 import { BRAND } from '../../brand/tokens';
 
 const EASE = [0.25, 0.1, 0.25, 1];
@@ -115,63 +111,51 @@ function StepRail({ activeIndex }) {
 export default function PostSequenceFunnel({ onEnterCrane }) {
   const { sessionId, durationSeconds, variant, reset } = useSequenceSession();
   const { isCraneUnlocked } = useTokenManager();
-  const { carePlan, setPlan, toggleStep } = useCarePlan(sessionId);
-  const [bodyInsight, setBodyInsight] = useState(null);
+  const { carePlan: managedPlan, setPlan, toggleStep } = useCarePlan(sessionId);
+  const {
+    carePlan: fetchedPlan,
+    bodyInsight,
+    loading,
+    error,
+    refetch,
+  } = usePostSessionCarePlan({
+    sessionId,
+    variantId: variant.id,
+    isCraneUnlocked,
+  });
+
+  const carePlan = managedPlan ?? fetchedPlan;
+
+  useEffect(() => {
+    if (fetchedPlan?.steps?.length) setPlan(fetchedPlan);
+  }, [fetchedPlan, setPlan]);
   const [brainDumpText, setBrainDumpText] = useState('');
-  const [loading, setLoading] = useState(false);
   const [activeGround, setActiveGround] = useState(null);
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
 
   const palette = variant.palette;
   const planComplete = isCarePlanComplete(carePlan);
-  const activeStep = planComplete ? 3 : bodyInsight || carePlan ? 3 : brainDumpText.trim() ? 2 : 1;
+  const hasOffload = Boolean(brainDumpText.trim() || loadEphemeralNote(sessionId));
+  const activeStep = planComplete || bodyInsight || carePlan ? 3 : hasOffload ? 2 : activeGround ? 1 : 0;
 
-  useEffect(() => {
-    if (!sessionId) return;
+  const handleEnterCrane = () => {
+    const dump =
+      flushEphemeralNote(sessionId, brainDumpText.trim() || loadEphemeralNote(sessionId));
+    onEnterCrane?.(dump);
+  };
 
-    const cachedPlan = loadCarePlan(sessionId);
-    const cachedInsight = loadBodyInsight(sessionId);
-    if (cachedPlan?.steps?.length) setPlan(cachedPlan);
-    if (cachedInsight) setBodyInsight(cachedInsight);
-    if (cachedPlan && cachedInsight) return;
-
-    if (!isCraneUnlocked) return;
-
-    let cancelled = false;
-    setLoading(true);
-
-    (async () => {
-      try {
-        const context = await fetchCraneContext(sessionId);
-        const inference = await requestPostSessionCarePlan({
-          supabaseContext: context,
-          sessionMeta: { advisorCallsTotal: 0, turnCount: 0 },
-          clinicalAccess: true,
-        });
-        if (cancelled || inference.requiresClinicalToken) return;
-
-        processCraneInferenceResult(inference, { sessionId, variantId: variant.id });
-        if (inference.carePlan) {
-          saveCarePlan(sessionId, inference.carePlan);
-          setPlan(inference.carePlan);
-        }
-        if (inference.bodyInsight) {
-          saveBodyInsight(sessionId, inference.bodyInsight);
-          setBodyInsight(inference.bodyInsight);
-        }
-      } catch {
-        /* optional */
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId, isCraneUnlocked, setPlan]);
+  const handleTokenUnlocked = () => {
+    refetch();
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      <ClinicalTokenModal
+        open={tokenModalOpen}
+        onClose={() => setTokenModalOpen(false)}
+        onUnlocked={handleTokenUnlocked}
+      />
+
       <motion.div
         className="pointer-events-none absolute inset-0"
         animate={{
@@ -196,6 +180,7 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
             style={{ color: palette.accent }}
           >
             {variant.name}
+            {isCustomVariantId(variant.id) ? ' · yours' : ''}
           </p>
           <h1
             className="mt-3 font-sans text-2xl font-extrabold tracking-tight md:text-3xl"
@@ -203,6 +188,9 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
           >
             Cycle complete
           </h1>
+          <p className="mx-auto mt-3 max-w-md font-sans text-sm leading-relaxed" style={{ color: BRAND.boneMuted }}>
+            Your nervous system had {durationSeconds} seconds to downshift. Take what you need below.
+          </p>
           <div className="mt-8">
             <CompletionRing progress={1} accent={palette.accent} duration={durationSeconds} />
           </div>
@@ -212,12 +200,14 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
         </motion.header>
 
         <div className="mt-10 flex flex-1 flex-col gap-6">
-          {/* Ground — visual chips */}
           <motion.section
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: EASE }}
           >
+            <p className="mb-3 font-sans text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.clay }}>
+              Ground · pick one
+            </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {GROUNDING.map((item) => {
                 const selected = activeGround === item.id;
@@ -238,25 +228,23 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
                     >
                       {item.glyph}
                     </span>
-                    <span
-                      className="mt-2 font-sans text-[11px] font-medium"
-                      style={{ color: BRAND.bone }}
-                    >
+                    <span className="mt-2 font-sans text-[11px] font-medium" style={{ color: BRAND.bone }}>
                       {item.label}
                     </span>
-                    <span
-                      className="mt-0.5 font-sans text-[9px]"
-                      style={{ color: BRAND.boneDim }}
-                    >
+                    <span className="mt-0.5 font-sans text-[9px]" style={{ color: BRAND.boneDim }}>
                       {item.hint}
                     </span>
                   </button>
                 );
               })}
             </div>
+            {activeGround ? (
+              <p className="mt-3 text-center font-sans text-[10px]" style={{ color: palette.accentCalm ?? palette.accent }}>
+                {GROUNDING.find((g) => g.id === activeGround)?.label} selected · stay with it a moment
+              </p>
+            ) : null}
           </motion.section>
 
-          {/* Offload — compact brain dump */}
           <motion.section
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -274,7 +262,6 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
             <EphemeralInput sessionId={sessionId} onChange={setBrainDumpText} />
           </motion.section>
 
-          {/* Crane — AI recovery zone */}
           <motion.section
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -283,7 +270,7 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
           >
             <div className="flex items-center justify-between gap-3">
               <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.clay }}>
-                Crane
+                Crane recovery
               </p>
               {loading ? (
                 <motion.span
@@ -295,6 +282,15 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
                 </motion.span>
               ) : null}
             </div>
+
+            {error ? (
+              <p className="mt-3 font-sans text-xs" style={{ color: BRAND.clay }}>
+                {error}{' '}
+                <button type="button" onClick={refetch} className="underline">
+                  Retry
+                </button>
+              </p>
+            ) : null}
 
             {bodyInsight ? (
               <div className="mt-4">
@@ -310,14 +306,14 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
 
             {!isCraneUnlocked && !carePlan && !loading ? (
               <div className="mt-4">
-                <CraneClinicalGate compact />
+                <CraneClinicalGate compact onRequestUnlock={() => setTokenModalOpen(true)} />
               </div>
             ) : null}
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => onEnterCrane(brainDumpText)}
+                onClick={handleEnterCrane}
                 className="border px-6 py-3.5 font-sans text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors hover:brightness-110"
                 style={{
                   color: BRAND.bone,
@@ -325,8 +321,18 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
                   background: `${BRAND.clay}14`,
                 }}
               >
-                {brainDumpText.trim() ? 'Continue in Crane' : 'Open Crane'}
+                {hasOffload ? 'Continue in Crane' : 'Open Crane'}
               </button>
+              {!isCraneUnlocked ? (
+                <button
+                  type="button"
+                  onClick={() => setTokenModalOpen(true)}
+                  className="font-sans text-[10px] uppercase tracking-[0.16em] underline"
+                  style={{ color: BRAND.boneDim }}
+                >
+                  I have a token
+                </button>
+              ) : null}
               {planComplete ? (
                 <span className="font-sans text-[10px]" style={{ color: palette.accentCalm ?? palette.accent }}>
                   Recovery plan complete

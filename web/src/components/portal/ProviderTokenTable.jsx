@@ -8,7 +8,7 @@ const STATUS_COLOR = {
   revoked: '#B6502E',
 };
 
-export default function ProviderTokenTable({ tokens, revoking, onRevoke }) {
+export default function ProviderTokenTable({ tokens, revoking, onRevoke, showIssuer = false }) {
   if (!tokens.length) {
     return (
       <p className="py-8 text-center font-sans text-sm" style={{ color: BRAND.boneDim }}>
@@ -24,6 +24,7 @@ export default function ProviderTokenTable({ tokens, revoking, onRevoke }) {
           <tr className="border-b border-white/[0.08] font-sans text-[9px] uppercase tracking-[0.18em]" style={{ color: BRAND.boneDim }}>
             <th className="px-3 py-3 font-normal">Token</th>
             <th className="px-3 py-3 font-normal">Alias</th>
+            {showIssuer ? <th className="px-3 py-3 font-normal">Issued by</th> : null}
             <th className="px-3 py-3 font-normal">Issued</th>
             <th className="px-3 py-3 font-normal">Expires</th>
             <th className="px-3 py-3 font-normal">Uses</th>
@@ -36,6 +37,16 @@ export default function ProviderTokenTable({ tokens, revoking, onRevoke }) {
             <tr key={row.token} className="border-b border-white/[0.05] last:border-0">
               <td className="px-3 py-3 font-mono text-[13px] tracking-[0.2em]">{row.token}</td>
               <td className="px-3 py-3 text-white/45">{row.patient_alias ?? '—'}</td>
+              {showIssuer ? (
+                <td className="px-3 py-3 text-white/45">
+                  {row.issuerName ?? '—'}
+                  {row.isOwn ? (
+                    <span className="ml-1 text-[9px] uppercase tracking-[0.12em]" style={{ color: BRAND.clay }}>
+                      you
+                    </span>
+                  ) : null}
+                </td>
+              ) : null}
               <td className="px-3 py-3 text-white/45">{formatPortalDate(row.issued_at)}</td>
               <td className="px-3 py-3 text-white/45">{formatPortalDate(row.expires_at)}</td>
               <td className="px-3 py-3 tabular-nums text-white/45">{row.uses_remaining}</td>

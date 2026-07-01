@@ -96,6 +96,7 @@ export async function resolveOrgTokenCodes(supabase, provider) {
 
 export function parseSessionFilters(url) {
   const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit')) || 50));
+  const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
   const variant = url.searchParams.get('variant')?.trim() || null;
   const completion = url.searchParams.get('completion')?.trim() || null;
   const token = url.searchParams.get('token')?.trim()?.toUpperCase() || null;
@@ -106,7 +107,7 @@ export function parseSessionFilters(url) {
     return { error: 'Invalid completion filter' };
   }
 
-  return { limit, variant, completion, token, from, to };
+  return { limit, offset, variant, completion, token, from, to };
 }
 
 export function applySessionFilters(query, filters) {
