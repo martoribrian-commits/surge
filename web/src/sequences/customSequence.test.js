@@ -7,6 +7,10 @@ import {
   buildFallbackCustomSequence,
   isCustomVariantId,
   normalizeCustomSpec,
+  persistCustomVariant,
+  loadPersistedCustomVariant,
+  clearPersistedCustomVariant,
+  CUSTOM_SEQUENCE_TTL_MS,
 } from './customSequence';
 import { InteractionMode } from './config';
 
@@ -54,5 +58,26 @@ describe('customSequence', () => {
     expect(spec.durationSeconds).toBe(60);
     expect(spec.audioProfile.baseFreq).toBe(220);
     expect(spec.audioProfile.noiseLevel).toBe(0.85);
+  });
+
+  it('persists custom variant in localStorage with TTL', () => {
+    const variant = buildCustomVariant({
+      name: 'Persist Test',
+      durationSeconds: 30,
+      interactionMode: 'auto',
+      visualType: 'pulse',
+      paletteMood: 'neutral',
+    });
+    persistCustomVariant(variant);
+    const loaded = loadPersistedCustomVariant();
+    expect(loaded?.name).toBe('Persist Test');
+    expect(loaded?.durationSeconds).toBe(30);
+
+    const raw = JSON.parse(localStorage.getItem('surge-custom-sequence-v1'));
+    expect(raw.expiresAt).toBeGreaterThan(Date.now());
+    expect(raw.expiresAt - raw.savedAt).toBe(CUSTOM_SEQUENCE_TTL_MS);
+
+    clearPersistedCustomVariant();
+    expect(loadPersistedCustomVariant()).toBeNull();
   });
 });

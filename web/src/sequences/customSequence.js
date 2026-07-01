@@ -190,30 +190,68 @@ function clamp(value, min, max) {
 }
 
 const SESSION_STORAGE_KEY = 'surge-custom-sequence-v1';
+const LOCAL_STORAGE_KEY = 'surge-custom-sequence-v1';
+const LEGACY_SESSION_KEY = 'surge-custom-sequence-v1';
+/** Custom sequences persist on device for 7 days. */
+export const CUSTOM_SEQUENCE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** @param {ReturnType<typeof buildCustomVariant>} variant */
 export function persistCustomVariant(variant) {
+  const spec = variant.customSpec ?? variant;
+  const record = {
+    spec,
+    savedAt: Date.now(),
+    expiresAt: Date.now() + CUSTOM_SEQUENCE_TTL_MS,
+  };
   try {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(variant.customSpec ?? variant));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(record));
+    sessionStorage.removeItem(LEGACY_SESSION_KEY);
   } catch {
-    /* quota / private mode */
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(spec));
+    } catch {
+      /* quota / private mode */
+    }
   }
 }
 
-/** @returns {ReturnType<typeof buildCustomVariant> | null} */
-export function loadPersistedCustomVariant() {
+function loadFromLocalStorageRecord() {
   try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return null;
-    return buildCustomVariant(JSON.parse(raw));
+    const record = JSON.parse(raw);
+    if (record.expiresAt && record.expiresAt < Date.now()) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return null;
+    }
+    return buildCustomVariant(record.spec ?? record);
   } catch {
     return null;
   }
 }
 
+function migrateFromSessionStorage() {
+  try {
+    const raw = sessionStorage.getItem(LEGACY_SESSION_KEY);
+    if (!raw) return null;
+    const variant = buildCustomVariant(JSON.parse(raw));
+    persistCustomVariant(variant);
+    return variant;
+  } catch {
+    return null;
+  }
+}
+
+/** @returns {ReturnType<typeof buildCustomVariant> | null} */
+export function loadPersistedCustomVariant() {
+  return loadFromLocalStorageRecord() ?? migrateFromSessionStorage();
+}
+
 export function clearPersistedCustomVariant() {
   try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(LEGACY_SESSION_KEY);
   } catch {
     /* ignore */
   }

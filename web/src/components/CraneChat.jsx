@@ -12,8 +12,10 @@ import {
 } from '../lib/craneClient';
 import { loadBodyInsight, loadCarePlan, processCraneInferenceResult } from '../lib/craneCarePlanUtils';
 import { getCachedSessionPayload } from '../lib/sessionPayload';
+import { CRANE_QUICK_PROMPTS, DECOMPRESSION_PROMPTS } from '../lib/craneQuickPrompts';
 import { useCarePlan } from '../hooks/useCarePlan';
 import { useCraneAutoLaunch } from '../hooks/useCraneAutoLaunch';
+import { useCraneRetention } from '../hooks/useCraneRetention';
 import { useCraneSessionMeta } from '../hooks/useCraneSessionMeta';
 import { useTokenManager } from '../hooks/useTokenManager';
 import CraneActions from './crane/CraneActions';
@@ -21,26 +23,10 @@ import CraneAutoLaunchBanner from './crane/CraneAutoLaunch';
 import CraneBodyInsight from './crane/CraneBodyInsight';
 import CraneCarePlan from './crane/CraneCarePlan';
 import CraneClinicalGate from './crane/CraneClinicalGate';
+import SaveInsightsToggle from './decompression/SaveInsightsToggle';
 
 const EASE = [0.25, 0.1, 0.25, 1];
-
-const QUICK_PROMPTS = [
-  'Which sequence should I pick?',
-  'My heart is racing',
-  'What should I do next?',
-];
-
-function createMessage(role, content, { reveal = false, actions = [], carePlan = null, bodyInsight = null } = {}) {
-  return {
-    id: crypto.randomUUID(),
-    role,
-    content,
-    actions,
-    carePlan,
-    bodyInsight,
-    reveal: role === 'crane' && reveal,
-  };
-}
+const GUIDE_RETENTION_KEY = 'crane-page-guide';
 
 function CinematicTextReveal({ text, onComplete }) {
   const tokens = text.match(/\S+|\s+/g) ?? [text];
@@ -64,8 +50,15 @@ function CinematicTextReveal({ text, onComplete }) {
   );
 }
 
-function StreamMessage({ message, isFocal, onRevealComplete, autoLaunchPath, onToggleStep }) {
-  const showReveal = message.role === 'crane' && message.reveal && isFocal;
+function StreamMessage({
+  message,
+  isFocal,
+  revealDismissed,
+  onRevealComplete,
+  autoLaunchPath,
+  onToggleStep,
+}) {
+  const showReveal = message.role === 'crane' && message.reveal && isFocal && !revealDismissed;
   const visibleActions = (message.actions ?? []).filter(
     (a) => !(a.autoLaunch && a.path === autoLaunchPath),
   );
@@ -119,25 +112,37 @@ export default function CraneChat() {
   const passedContext = location.state?.supabaseContext ?? null;
   const session = getCachedSessionPayload();
   const sessionId = session?.sessionId ?? null;
+  const retentionKey = sessionId ?? GUIDE_RETENTION_KEY;
 
-  const [messages, setMessages] = useState([]);
+  const {
+    messages,
+    appendMessage,
+    hydrated,
+    savePersistently,
+    retentionLabel,
+    toggleSavePersistently,
+  } = useCraneRetention(retentionKey);
+
   const [input, setInput] = useState('');
   const [supabaseContext, setSupabaseContext] = useState(passedContext);
   const [mode, setMode] = useState('guide');
   const [status, setStatus] = useState('connecting');
   const [carePlanLoading, setCarePlanLoading] = useState(false);
   const [bodyInsight, setBodyInsight] = useState(null);
+  const [dismissedReveals, setDismissedReveals] = useState(() => new Set());
   const { isCraneUnlocked } = useTokenManager();
   const { carePlan, setPlan, toggleStep } = useCarePlan(sessionId);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
-  const initializedRef = useRef(false);
+  const seededRef = useRef(false);
   const inferenceLockRef = useRef(false);
   const carePlanFetchedRef = useRef(false);
 
   const { getSessionMeta, nextTurn, recordInferenceMeta } = useCraneSessionMeta();
   const autoLaunch = useCraneAutoLaunch({});
+
+  const quickPrompts = mode === 'post-session' ? DECOMPRESSION_PROMPTS : CRANE_QUICK_PROMPTS;
 
   const handleInferenceResult = useCallback(
     (inference) => {
@@ -158,18 +163,15 @@ export default function CraneChat() {
   }, []);
 
   const markRevealed = useCallback((messageId) => {
-    setMessages((prev) =>
-      prev.map((msg) => (msg.id === messageId ? { ...msg, reveal: false } : msg)),
-    );
+    setDismissedReveals((prev) => new Set(prev).add(messageId));
   }, []);
 
   const runInference = useCallback(
     async (trimmed, history) => {
       nextTurn();
       const sessionMeta = getSessionMeta();
-      let inference;
       if (mode === 'post-session' && supabaseContext) {
-        inference = handleInferenceResult(
+        return handleInferenceResult(
           await requestCraneInference({
             userMessage: trimmed,
             supabaseContext,
@@ -178,25 +180,29 @@ export default function CraneChat() {
             clinicalAccess: isCraneUnlocked,
           }),
         );
-      } else {
-        inference = handleInferenceResult(
-          await requestCraneGuideInference({
-            userMessage: trimmed,
-            conversationHistory: history,
-            sessionMeta,
-          }),
-        );
       }
-      return inference;
+      return handleInferenceResult(
+        await requestCraneGuideInference({
+          userMessage: trimmed,
+          conversationHistory: history,
+          sessionMeta,
+        }),
+      );
     },
     [mode, supabaseContext, getSessionMeta, nextTurn, handleInferenceResult, isCraneUnlocked],
   );
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
+    if (!hydrated || seededRef.current) return;
+    seededRef.current = true;
 
     (async () => {
+      if (messages.length > 0) {
+        setStatus('ready');
+        setMode(sessionId ? 'post-session' : 'guide');
+        return;
+      }
+
       try {
         let context = passedContext;
         if (!context && sessionId) {
@@ -214,9 +220,7 @@ export default function CraneChat() {
           const cachedInsight = sessionId ? loadBodyInsight(sessionId) : null;
           if (cached) setPlan(cached);
           if (cachedInsight) setBodyInsight(cachedInsight);
-          setMessages([
-            createMessage('crane', buildCraneTelemetryOpener(context), { reveal: true }),
-          ]);
+          appendMessage('crane', buildCraneTelemetryOpener(context), { reveal: true });
           setStatus('ready');
 
           if (isCraneUnlocked && !cached && !carePlanFetchedRef.current) {
@@ -237,52 +241,59 @@ export default function CraneChat() {
           }
         } else {
           setMode('guide');
-          setMessages([createMessage('crane', buildCraneGuideOpener(), { reveal: true })]);
+          appendMessage('crane', buildCraneGuideOpener(), { reveal: true });
           setStatus('ready');
         }
       } catch {
         setMode('guide');
-        setMessages([createMessage('crane', buildCraneGuideOpener(), { reveal: true })]);
+        appendMessage('crane', buildCraneGuideOpener(), { reveal: true });
         setStatus('ready');
       }
     })();
-  }, [passedContext, sessionId, handleInferenceResult, isCraneUnlocked, setPlan]);
+  }, [
+    hydrated,
+    messages.length,
+    passedContext,
+    sessionId,
+    appendMessage,
+    handleInferenceResult,
+    isCraneUnlocked,
+    setPlan,
+  ]);
 
   useEffect(() => {
     scrollToPresent();
   }, [messages, carePlan, autoLaunch.pending, scrollToPresent]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const trimmed = input.trim();
+  const submitText = async (trimmed) => {
     if (!trimmed || status !== 'ready' || inferenceLockRef.current) return;
 
-    setInput('');
-    setMessages((prev) => [...prev, createMessage('user', trimmed)]);
-
+    appendMessage('user', trimmed);
     inferenceLockRef.current = true;
     try {
       const inference = await runInference(trimmed, messages);
-      setMessages((prev) => [
-        ...prev,
-        createMessage('crane', inference.text, {
-          reveal: true,
-          actions: inference.actions ?? [],
-          carePlan: inference.carePlan ?? null,
-          bodyInsight: inference.bodyInsight ?? null,
-        }),
-      ]);
+      appendMessage('crane', inference.text ?? '', {
+        reveal: true,
+        actions: inference.actions ?? [],
+        carePlan: inference.carePlan ?? null,
+        bodyInsight: inference.bodyInsight ?? null,
+      });
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        createMessage('crane', 'Signal lost. Try again — or pick a sequence from the home page.', {
-          reveal: true,
-        }),
-      ]);
+      appendMessage('crane', 'Signal lost. Try again — or pick a sequence from the home page.', {
+        reveal: true,
+      });
     } finally {
       inferenceLockRef.current = false;
       inputRef.current?.focus();
     }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setInput('');
+    await submitText(trimmed);
   };
 
   const handleKeyDown = (event) => {
@@ -292,32 +303,11 @@ export default function CraneChat() {
     }
   };
 
-  const sendQuick = async (text) => {
-    if (status !== 'ready' || inferenceLockRef.current) return;
-    setMessages((prev) => [...prev, createMessage('user', text)]);
-    inferenceLockRef.current = true;
-    try {
-      const inference = await runInference(text, messages);
-      setMessages((prev) => [
-        ...prev,
-        createMessage('crane', inference.text, {
-          reveal: true,
-          actions: inference.actions ?? [],
-          carePlan: inference.carePlan ?? null,
-          bodyInsight: inference.bodyInsight ?? null,
-        }),
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        createMessage('crane', 'Connection dropped. Try again.', { reveal: true }),
-      ]);
-    } finally {
-      inferenceLockRef.current = false;
-    }
-  };
-
   const focalIndex = messages.length - 1;
+
+  if (!hydrated) {
+    return <div className="h-screen w-screen bg-black" />;
+  }
 
   return (
     <motion.div
@@ -390,6 +380,7 @@ export default function CraneChat() {
                 key={message.id}
                 message={message}
                 isFocal={index === focalIndex}
+                revealDismissed={dismissedReveals.has(message.id)}
                 onRevealComplete={() => markRevealed(message.id)}
                 autoLaunchPath={autoLaunch.pending?.path}
                 onToggleStep={toggleStep}
@@ -399,13 +390,13 @@ export default function CraneChat() {
         </LayoutGroup>
       </div>
 
-      {status === 'ready' && messages.length <= 1 ? (
+      {status === 'ready' && messages.length <= 2 ? (
         <div className="relative z-10 flex flex-wrap justify-center gap-2 px-14 pb-4">
-          {QUICK_PROMPTS.map((prompt) => (
+          {quickPrompts.map((prompt) => (
             <button
               key={prompt}
               type="button"
-              onClick={() => sendQuick(prompt)}
+              onClick={() => submitText(prompt)}
               className="rounded-sm border border-white/10 px-3 py-2 font-sans text-[10px] text-white/40 transition-colors hover:border-[#B6502E]/40 hover:text-white/70"
             >
               {prompt}
@@ -414,7 +405,7 @@ export default function CraneChat() {
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="relative z-10 shrink-0 px-14 pb-14 pt-6">
+      <form onSubmit={handleSubmit} className="relative z-10 shrink-0 px-14 pb-4 pt-6">
         <textarea
           ref={inputRef}
           value={input}
@@ -427,6 +418,14 @@ export default function CraneChat() {
           className="mx-auto block w-full max-w-2xl resize-none border-0 bg-transparent text-center font-sans text-sm tracking-[0.28em] text-white/35 placeholder:text-white/12 focus:outline-none focus:ring-0 disabled:opacity-30"
         />
       </form>
+
+      <footer className="relative z-10 flex justify-center px-14 pb-10">
+        <SaveInsightsToggle
+          enabled={savePersistently}
+          onToggle={toggleSavePersistently}
+          retentionLabel={retentionLabel}
+        />
+      </footer>
     </motion.div>
   );
 }

@@ -142,6 +142,46 @@ export async function acceptPortalInvite(accessToken) {
   return parseJson(res);
 }
 
+export async function fetchPortalCaseload(accessToken) {
+  const res = await fetch(`${PORTAL_BASE}/portal-caseload`, {
+    headers: authHeaders(accessToken),
+  });
+  return parseJson(res);
+}
+
+export async function fetchPortalAnalytics(accessToken, days = 30) {
+  const res = await fetch(
+    `${PORTAL_BASE}/portal-analytics${buildQuery({ days })}`,
+    { headers: authHeaders(accessToken) },
+  );
+  return parseJson(res);
+}
+
+export async function fetchPortalSettings(accessToken) {
+  const res = await fetch(`${PORTAL_BASE}/portal-settings`, {
+    headers: authHeaders(accessToken),
+  });
+  return parseJson(res);
+}
+
+export async function updatePortalSettings(accessToken, payload) {
+  const res = await fetch(`${PORTAL_BASE}/portal-settings`, {
+    method: 'PATCH',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+  return parseJson(res);
+}
+
+export async function changePortalPassword(accessToken, { currentPassword, newPassword }) {
+  const res = await fetch(`${PORTAL_BASE}/portal-settings`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ action: 'changePassword', currentPassword, newPassword }),
+  });
+  return parseJson(res);
+}
+
 export function formatPortalDate(iso) {
   if (!iso) return 'No expiry';
   return new Date(iso).toLocaleDateString(undefined, {
