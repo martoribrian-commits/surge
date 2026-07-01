@@ -1,6 +1,6 @@
 import { BRAND } from '../../brand/tokens';
 
-export default function ProviderTeamStrip({ members, teamSize }) {
+export default function ProviderTeamStrip({ members, teamSize, isAdmin }) {
   if (!members?.length || teamSize <= 1) {
     return null;
   }
@@ -12,7 +12,7 @@ export default function ProviderTeamStrip({ members, teamSize }) {
           Clinical team
         </h2>
         <span className="font-sans text-[9px] uppercase tracking-[0.16em]" style={{ color: BRAND.boneDim }}>
-          {teamSize} clinicians
+          {teamSize} clinicians{isAdmin ? ' · you are admin' : ''}
         </span>
       </div>
       <ul className="flex flex-wrap gap-2">
@@ -27,6 +27,11 @@ export default function ProviderTeamStrip({ members, teamSize }) {
             }}
           >
             {member.name}
+            {member.role === 'admin' ? (
+              <span className="ml-1.5 font-sans text-[9px] uppercase tracking-[0.12em]" style={{ color: BRAND.boneDim }}>
+                Admin
+              </span>
+            ) : null}
             {member.isSelf ? (
               <span className="ml-1.5 font-sans text-[9px] uppercase tracking-[0.12em]" style={{ color: BRAND.clay }}>
                 You

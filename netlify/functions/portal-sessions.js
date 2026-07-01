@@ -44,7 +44,7 @@ export default async (request) => {
 
   let query = supabase
     .from('sessions')
-    .select('id, token_used, duration, completion_state, synced_at, variant_id')
+    .select('id, token_used, duration, completion_state, synced_at, variant_id, client_session_id')
     .in('token_used', tokenCodes)
     .order('synced_at', { ascending: false })
     .range(filters.offset, filters.offset + filters.limit - 1);
@@ -65,6 +65,7 @@ export default async (request) => {
     completionState: row.completion_state,
     syncedAt: row.synced_at,
     variantId: row.variant_id ?? null,
+    clientSessionId: row.client_session_id ?? null,
   }));
 
   return corsJson({

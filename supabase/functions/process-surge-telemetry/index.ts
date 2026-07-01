@@ -79,11 +79,15 @@ function validatePayload(body: unknown): SurgeTelemetryPayload | null {
   if (completionState === "complete" || completionState === "interrupted") {
     result.completionState = completionState;
   }
-  if (typeof variantId === "string" && VALID_VARIANT_IDS.has(variantId)) {
+  if (typeof variantId === "string" && isValidVariantId(variantId)) {
     result.variantId = variantId;
   }
 
   return result;
+}
+
+function isValidVariantId(variantId: string): boolean {
+  return VALID_VARIANT_IDS.has(variantId) || variantId.startsWith("custom-");
 }
 
 function isFetchContextBody(body: unknown): body is FetchContextBody {
@@ -256,6 +260,7 @@ export default {
         token_used: payload.clinicalToken,
         duration: payload.durationInSeconds,
         completion_state: state,
+        client_session_id: payload.sessionId,
       };
       if (payload.variantId) {
         sessionRow.variant_id = payload.variantId;

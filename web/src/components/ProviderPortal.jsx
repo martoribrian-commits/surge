@@ -5,6 +5,8 @@ import {
   fetchPortalTokens,
   fetchPortalSessions,
   fetchPortalTeam,
+  fetchPortalSessionDetail,
+  acceptPortalInvite,
   exportPortalSessions,
   generatePortalToken,
   revokePortalToken,
@@ -18,6 +20,8 @@ import ProviderVariantBreakdown from './portal/ProviderVariantBreakdown';
 import ProviderOnboardingGuide from './portal/ProviderOnboardingGuide';
 import ProviderSessionFilters, { EMPTY_SESSION_FILTERS } from './portal/ProviderSessionFilters';
 import ProviderTeamStrip from './portal/ProviderTeamStrip';
+import ProviderSessionDetail from './portal/ProviderSessionDetail';
+import ProviderInvitePanel from './portal/ProviderInvitePanel';
 import { BRAND } from '../brand/tokens';
 import { Link } from 'react-router-dom';
 
@@ -43,6 +47,8 @@ export default function ProviderPortal() {
   const [tier, setTier] = useState('');
   const [teamSize, setTeamSize] = useState(1);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [stats, setStats] = useState({
     tokensIssued: 0,
     tokensActivated: 0,
@@ -99,6 +105,7 @@ export default function ProviderPortal() {
       setOrgName(statsData.orgName ?? '');
       setTier(statsData.tier ?? '');
       setTeamSize(statsData.teamSize ?? 1);
+      setIsAdmin(Boolean(statsData.isAdmin));
       setStats(statsData.stats ?? {
         tokensIssued: 0,
         tokensActivated: 0,
@@ -111,8 +118,13 @@ export default function ProviderPortal() {
       setTeamMembers(teamData.members ?? []);
     } catch (err) {
       if (err.status === 401) {
-        setOrgName('');
-        setPortalError('No provider account linked to this email.');
+        try {
+          await acceptPortalInvite(accessToken);
+          return loadDashboard(accessToken, filters);
+        } catch {
+          setOrgName('');
+          setPortalError('No provider account linked to this email.');
+        }
       } else {
         setPortalError('Could not load dashboard. Try again.');
       }
@@ -367,7 +379,9 @@ export default function ProviderPortal() {
 
         {showOnboarding ? <ProviderOnboardingGuide onDismiss={handleDismissOnboarding} /> : null}
 
-        <ProviderTeamStrip members={teamMembers} teamSize={teamSize} />
+        <ProviderTeamStrip members={teamMembers} teamSize={teamSize} isAdmin={isAdmin} />
+
+        <ProviderInvitePanel accessToken={session?.access_token} isAdmin={isAdmin} />
 
         <ProviderStatsBar stats={stats} />
 
@@ -415,7 +429,11 @@ export default function ProviderPortal() {
             onExport={handleExport}
             exporting={exporting}
           />
-          <ProviderSessionsTable sessions={sessions} filtered={sessionsFiltered} />
+          <ProviderSessionsTable
+            sessions={sessions}
+            filtered={sessionsFiltered}
+            onSelectSession={setSelectedSessionId}
+          />
           {sessionsHasMore ? (
             <div className="mt-4 text-center">
               <button
@@ -430,6 +448,13 @@ export default function ProviderPortal() {
             </div>
           ) : null}
         </section>
+
+        <ProviderSessionDetail
+          sessionId={selectedSessionId}
+          accessToken={session?.access_token}
+          onClose={() => setSelectedSessionId(null)}
+          fetchDetail={fetchPortalSessionDetail}
+        />
       </main>
     </div>
   );

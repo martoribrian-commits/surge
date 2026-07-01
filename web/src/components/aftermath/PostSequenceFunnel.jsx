@@ -12,6 +12,7 @@ import CraneBodyInsight from '../crane/CraneBodyInsight';
 import CraneCarePlan from '../crane/CraneCarePlan';
 import CraneClinicalGate from '../crane/CraneClinicalGate';
 import ClinicalTokenModal from '../crane/ClinicalTokenModal';
+import RecoveryHistoryPanel from './RecoveryHistoryPanel';
 import { BRAND } from '../../brand/tokens';
 
 const EASE = [0.25, 0.1, 0.25, 1];
@@ -343,6 +344,9 @@ export default function PostSequenceFunnel({ onEnterCrane }) {
         </div>
 
         <footer className="mt-10 flex flex-col items-center gap-4 border-t border-white/[0.06] pt-8">
+          <div className="w-full max-w-md">
+            <RecoveryHistoryPanel compact refreshKey={sessionId} />
+          </div>
           <button
             type="button"
             onClick={reset}

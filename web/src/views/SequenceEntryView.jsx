@@ -7,6 +7,7 @@ import { SequencePicker, SequencePreview, CustomSequenceCreator } from '../compo
 import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
 import { MarketingShell, SiteFooter } from '../components/marketing';
+import RecoveryHistoryPanel from '../components/aftermath/RecoveryHistoryPanel';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PAGE_META } from '../data/pageMeta';
 import { BRAND } from '../brand/tokens';
@@ -149,6 +150,10 @@ export default function SequenceEntryView() {
         </div>
         ) : null}
       </motion.div>
+
+      <div className="mx-auto max-w-2xl px-5 pb-6">
+        <RecoveryHistoryPanel compact />
+      </div>
 
       <SiteFooter />
     </MarketingShell>

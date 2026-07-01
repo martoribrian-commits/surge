@@ -68,6 +68,24 @@
   force = true
 
 [[redirects]]
+  from = "/api/portal-session-detail"
+  to = "/.netlify/functions/portal-session-detail"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-invites"
+  to = "/.netlify/functions/portal-invites"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/portal-invite-accept"
+  to = "/.netlify/functions/portal-invite-accept"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/crane-inference"
   to = "/.netlify/functions/crane-inference"
   status = 200

@@ -21,7 +21,7 @@ export default async (request) => {
 
   const { data: rows, error } = await supabase
     .from('providers')
-    .select('id, name, org_name, tier, active')
+    .select('id, name, org_name, tier, active, role')
     .in('id', providerIds)
     .order('name', { ascending: true });
 
@@ -35,10 +35,12 @@ export default async (request) => {
     name: row.name,
     isSelf: row.id === userId,
     active: row.active,
+    role: row.role ?? 'member',
   }));
 
   return corsJson({
     orgName: provider.org_name,
     members,
+    isAdmin: provider.role === 'admin',
   });
 };

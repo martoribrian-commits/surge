@@ -76,6 +76,7 @@ export default async (request) => {
     providerName: provider.name,
     tier: provider.tier,
     teamSize: providerIds.length,
+    isAdmin: provider.role === 'admin',
     stats: {
       tokensIssued: issued ?? 0,
       tokensActivated: activated ?? 0,

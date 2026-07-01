@@ -101,6 +101,47 @@ export async function revokePortalToken(accessToken, token) {
   return parseJson(res);
 }
 
+export async function fetchPortalSessionDetail(accessToken, sessionId) {
+  const res = await fetch(
+    `${PORTAL_BASE}/portal-session-detail${buildQuery({ id: sessionId })}`,
+    { headers: authHeaders(accessToken) },
+  );
+  return parseJson(res);
+}
+
+export async function fetchPortalInvites(accessToken) {
+  const res = await fetch(`${PORTAL_BASE}/portal-invites`, {
+    headers: authHeaders(accessToken),
+  });
+  return parseJson(res);
+}
+
+export async function sendPortalInvite(accessToken, { email, role = 'member' }) {
+  const res = await fetch(`${PORTAL_BASE}/portal-invites`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ email, role }),
+  });
+  return parseJson(res);
+}
+
+export async function revokePortalInvite(accessToken, inviteId) {
+  const res = await fetch(`${PORTAL_BASE}/portal-invites`, {
+    method: 'DELETE',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ id: inviteId }),
+  });
+  return parseJson(res);
+}
+
+export async function acceptPortalInvite(accessToken) {
+  const res = await fetch(`${PORTAL_BASE}/portal-invite-accept`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+  });
+  return parseJson(res);
+}
+
 export function formatPortalDate(iso) {
   if (!iso) return 'No expiry';
   return new Date(iso).toLocaleDateString(undefined, {
