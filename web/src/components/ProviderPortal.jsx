@@ -32,6 +32,8 @@ export default function ProviderPortal() {
   const [loading, setLoading] = useState(true);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState('');
   const [portalError, setPortalError] = useState('');
 
   const [email, setEmail] = useState('');
@@ -49,6 +51,8 @@ export default function ProviderPortal() {
   });
   const [tokens, setTokens] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [sessionsHasMore, setSessionsHasMore] = useState(false);
+  const [loadingMoreSessions, setLoadingMoreSessions] = useState(false);
   const [sessionFilters, setSessionFilters] = useState({ ...EMPTY_SESSION_FILTERS });
   const [exporting, setExporting] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(() => {
@@ -103,6 +107,7 @@ export default function ProviderPortal() {
       });
       setTokens(tokensData.tokens ?? []);
       setSessions(sessionsData.sessions ?? []);
+      setSessionsHasMore(Boolean(sessionsData.hasMore));
       setTeamMembers(teamData.members ?? []);
     } catch (err) {
       if (err.status === 401) {
@@ -153,10 +158,49 @@ export default function ProviderPortal() {
   useEffect(() => {
     if (!session?.access_token) return;
     const timer = window.setTimeout(() => {
-      loadDashboard(session.access_token, sessionFilters);
+      loadDashboard(session.access_token, { ...sessionFilters, offset: 0 });
     }, 300);
     return () => window.clearTimeout(timer);
   }, [sessionFilters, session?.access_token, loadDashboard]);
+
+  const handleLoadMoreSessions = async () => {
+    if (!session?.access_token || loadingMoreSessions || !sessionsHasMore) return;
+    setLoadingMoreSessions(true);
+    try {
+      const data = await fetchPortalSessions(session.access_token, {
+        ...sessionFilters,
+        offset: sessions.length,
+      });
+      setSessions((prev) => [...prev, ...(data.sessions ?? [])]);
+      setSessionsHasMore(Boolean(data.hasMore));
+    } catch {
+      setPortalError('Could not load more sessions.');
+    } finally {
+      setLoadingMoreSessions(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setResetSent(false);
+    setResetError('');
+    if (!supabase || !email.trim()) {
+      setResetError('Enter your email above, then tap Forgot password.');
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/portal`,
+    });
+    if (error) setResetError(error.message);
+    else setResetSent(true);
+  };
+
+  const sessionsFiltered = Boolean(
+    sessionFilters.variant ||
+      sessionFilters.completion ||
+      sessionFilters.from ||
+      sessionFilters.to ||
+      sessionFilters.token,
+  );
 
   const handleSignIn = async (event) => {
     event.preventDefault();
@@ -252,9 +296,13 @@ export default function ProviderPortal() {
         email={email}
         password={password}
         authError={authError}
+        resetSent={resetSent}
+        resetError={resetError}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onSubmit={handleSignIn}
+        onForgotPassword={handleForgotPassword}
+        supabaseConfigured={Boolean(supabase)}
       />
     );
   }
@@ -348,7 +396,12 @@ export default function ProviderPortal() {
                 </span>
               ) : null}
             </div>
-            <ProviderTokenTable tokens={tokens} revoking={revoking} onRevoke={handleRevoke} />
+            <ProviderTokenTable
+              tokens={tokens}
+              revoking={revoking}
+              onRevoke={handleRevoke}
+              showIssuer={teamSize > 1}
+            />
           </section>
         </div>
 
@@ -362,7 +415,20 @@ export default function ProviderPortal() {
             onExport={handleExport}
             exporting={exporting}
           />
-          <ProviderSessionsTable sessions={sessions} />
+          <ProviderSessionsTable sessions={sessions} filtered={sessionsFiltered} />
+          {sessionsHasMore ? (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                disabled={loadingMoreSessions}
+                onClick={handleLoadMoreSessions}
+                className="font-sans text-[10px] uppercase tracking-[0.18em] transition-colors hover:text-[#B6502E] disabled:opacity-40"
+                style={{ color: BRAND.boneDim }}
+              >
+                {loadingMoreSessions ? 'Loading…' : 'Load more sessions'}
+              </button>
+            </div>
+          ) : null}
         </section>
       </main>
     </div>

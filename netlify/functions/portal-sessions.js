@@ -35,11 +35,11 @@ export default async (request) => {
   }
 
   if (!tokenCodes.length) {
-    return corsJson({ sessions: [] });
+    return corsJson({ sessions: [], hasMore: false, offset: 0 });
   }
 
   if (filters.token && !tokenCodes.includes(filters.token)) {
-    return corsJson({ sessions: [] });
+    return corsJson({ sessions: [], hasMore: false, offset: filters.offset });
   }
 
   let query = supabase
@@ -47,7 +47,7 @@ export default async (request) => {
     .select('id, token_used, duration, completion_state, synced_at, variant_id')
     .in('token_used', tokenCodes)
     .order('synced_at', { ascending: false })
-    .limit(filters.limit);
+    .range(filters.offset, filters.offset + filters.limit - 1);
 
   query = applySessionFilters(query, filters);
 
@@ -67,5 +67,9 @@ export default async (request) => {
     variantId: row.variant_id ?? null,
   }));
 
-  return corsJson({ sessions });
+  return corsJson({
+    sessions,
+    hasMore: sessions.length === filters.limit,
+    offset: filters.offset,
+  });
 };

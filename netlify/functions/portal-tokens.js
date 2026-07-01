@@ -31,6 +31,13 @@ export default async (request) => {
     return corsJson({ error: 'Failed to load tokens' }, 500);
   }
 
+  const { data: issuers } = await supabase
+    .from('providers')
+    .select('id, name')
+    .in('id', providerIds);
+
+  const issuerById = Object.fromEntries((issuers ?? []).map((p) => [p.id, p.name]));
+
   const tokens = (rows ?? []).map((row) => ({
     token: row.token,
     patient_alias: row.patient_alias,
@@ -38,6 +45,8 @@ export default async (request) => {
     expires_at: row.expires_at,
     uses_remaining: row.uses_remaining,
     activated_at: row.activated_at,
+    issuerName: issuerById[row.provider_id] ?? 'Clinician',
+    isOwn: row.provider_id === provider.id,
     status: tokenStatus(row),
   }));
 

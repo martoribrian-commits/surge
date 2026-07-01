@@ -1,4 +1,4 @@
-import { handleOptions, corsJson, verifyPortalRequest } from './lib/portal-auth.js';
+import { handleOptions, corsJson, verifyPortalRequest, resolveOrgProviderIds } from './lib/portal-auth.js';
 
 const TOKEN_PATTERN = /^[A-Z0-9]{6}$/;
 
@@ -27,13 +27,14 @@ export default async (request) => {
     return corsJson({ error: 'Invalid token' }, 400);
   }
 
-  const { supabase, userId } = auth;
+  const { supabase, provider } = auth;
+  const providerIds = await resolveOrgProviderIds(supabase, provider);
 
   const { data, error } = await supabase
     .from('clinical_tokens')
     .update({ uses_remaining: 0 })
     .eq('token', token)
-    .eq('provider_id', userId)
+    .in('provider_id', providerIds)
     .select('token')
     .maybeSingle();
 

@@ -55,7 +55,7 @@ export async function fetchPortalTeam(accessToken) {
  */
 export async function fetchPortalSessions(accessToken, filters = {}) {
   const res = await fetch(
-    `${PORTAL_BASE}/portal-sessions${buildQuery({ limit: 50, ...filters })}`,
+    `${PORTAL_BASE}/portal-sessions${buildQuery({ limit: 50, offset: 0, ...filters })}`,
     { headers: authHeaders(accessToken) },
   );
   return parseJson(res);
@@ -132,7 +132,10 @@ export const VARIANT_FILTER_OPTIONS = [
   { value: 'flash-freeze', label: 'Flash Freeze' },
   { value: 'orienting-anchor', label: 'Orienting Anchor' },
   { value: 'nova-gate', label: 'Nova Gate' },
+  { value: 'still-thaw', label: 'Still Thaw' },
   { value: 'coherence-ripple', label: 'Coherence Ripple' },
+  { value: 'heavy-tide', label: 'Heavy Tide' },
   { value: 'vagal-downshift', label: 'Vagal Downshift' },
   { value: 'static-field', label: 'Static Field' },
+  { value: 'deep-anchor', label: 'Deep Anchor' },
 ];
