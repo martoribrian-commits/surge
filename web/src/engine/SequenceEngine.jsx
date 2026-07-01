@@ -16,6 +16,8 @@ import {
   StaticFieldSequence,
   DeepAnchorSequence,
 } from '../components/sequence';
+import CustomSequence from '../components/sequence/CustomSequence';
+import { isCustomVariantId } from '../sequences';
 
 const SEQUENCE_BY_ID = {
   'instant-reset': InstantResetSequence,
@@ -54,6 +56,7 @@ export default function SequenceEngine() {
 
   const audio = useSequenceAudio({
     variantId: variant.id,
+    customAudioProfile: variant.isCustom ? variant.audioProfile : null,
     interactionMode: variant.interactionMode,
     clock,
     isEngaged,
@@ -92,7 +95,7 @@ export default function SequenceEngine() {
     if (!isActivePhase) return undefined;
 
     if (variant.interactionMode !== InteractionMode.HOLD) {
-      haptics.startProfile(variant.id);
+      haptics.startProfile(variant.isCustom ? 'custom-sequence' : variant.id);
     }
 
     markTactileAnchorReady(variant.interactionMode);
@@ -120,6 +123,23 @@ export default function SequenceEngine() {
   }, [haptics, audio, handleExit]);
 
   if (!isActivePhase) return null;
+
+  if (isCustomVariantId(variant.id) || variant.isCustom) {
+    return (
+      <CustomSequence
+        variant={variant}
+        clock={clock}
+        haptics={haptics}
+        audio={audio}
+        isEngaged={isEngaged}
+        onEngage={engageHold}
+        onRelease={handleRelease}
+        onStarted={handleStarted}
+        onExit={handleExit}
+        onChangeSequence={phase === SurgePhase.PAUSED ? handleChangeSequence : undefined}
+      />
+    );
+  }
 
   const SequenceComponent = SEQUENCE_BY_ID[variant.id] ?? CoherenceRippleSequence;
 

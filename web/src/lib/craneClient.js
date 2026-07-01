@@ -149,6 +149,31 @@ export async function requestCraneInference({
 }
 
 /**
+ * Crane sequence creator — generates a custom procedural sequence attuned to the user.
+ */
+export async function requestCustomSequenceGeneration({ userMessage, conversationHistory = [] }) {
+  const response = await fetch(CRANE_INFERENCE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userMessage: `[Custom sequence request] ${userMessage}`,
+      conversationHistory,
+      sequenceCatalog: SEQUENCE_GUIDE_CATALOG,
+      mode: 'creator',
+      sequenceCreator: true,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.error ?? 'Crane sequence creator failed');
+  }
+
+  return data;
+}
+
+/**
  * Proactively generate a post-session care plan (silent — not shown as user message).
  */
 export async function requestPostSessionCarePlan({

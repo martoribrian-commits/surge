@@ -28,3 +28,5 @@ export { default as VagalDownshiftVisual } from './VagalDownshiftVisual';
 export { default as StaticFieldSequence } from './StaticFieldSequence';
 export { default as StaticFieldVisual } from './StaticFieldVisual';
 export { default as SequencePicker } from './SequencePicker';
+export { default as CustomSequenceCreator } from './CustomSequenceCreator';
+export { default as CustomSequence } from './CustomSequence';

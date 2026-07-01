@@ -32,6 +32,7 @@ const EASE = [0.25, 0.1, 0.25, 1];
 
 const QUICK_PROMPTS = [
   'Which sequence should I pick?',
+  'Nothing here fits how I feel',
   'My heart is racing',
   'I feel stuck in my head',
   'What should I do next?',
@@ -41,7 +42,7 @@ function createMessage(role, content, { actions = [], carePlan = null, bodyInsig
   return { id: crypto.randomUUID(), role, content, actions, carePlan, bodyInsight };
 }
 
-function MessageBubble({ message, isLatest, autoLaunchPath, onToggleStep }) {
+function MessageBubble({ message, isLatest, autoLaunchPath, onToggleStep, onCustomSequence }) {
   const isUser = message.role === 'user';
   const visibleActions = (message.actions ?? []).filter(
     (a) => !(a.autoLaunch && a.path === autoLaunchPath),
@@ -75,7 +76,7 @@ function MessageBubble({ message, isLatest, autoLaunchPath, onToggleStep }) {
         </div>
       ) : null}
       {!isUser && visibleActions.length ? (
-        <CraneActions actions={visibleActions} compact />
+        <CraneActions actions={visibleActions} compact onCustomSequence={onCustomSequence} />
       ) : null}
     </motion.div>
   );
@@ -89,6 +90,7 @@ export default function CranePanel() {
   const location = useLocation();
   const sessionCtx = useSequenceSessionOptional();
   const sessionId = sessionCtx?.sessionId ?? getCachedSessionPayload()?.sessionId ?? null;
+  const applyCustomSequence = sessionCtx?.applyCustomSequence;
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -365,6 +367,7 @@ export default function CranePanel() {
                   isLatest={i === messages.length - 1}
                   autoLaunchPath={autoLaunch.pending?.path}
                   onToggleStep={toggleStep}
+                  onCustomSequence={applyCustomSequence}
                 />
               ))}
             </div>

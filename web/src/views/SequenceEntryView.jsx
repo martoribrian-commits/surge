@@ -3,14 +3,13 @@ import { Link } from 'react-router-dom';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
 import { useCraneOptional } from '../context/CraneProvider';
 import { unlockAudioContext } from '../lib/proceduralAudio/shared';
-import { SequencePicker, SequencePreview } from '../components/sequence';
+import { SequencePicker, SequencePreview, CustomSequenceCreator } from '../components/sequence';
 import SiteHeader from '../components/layout/SiteHeader';
 import DecayHero from '../components/brand/DecayHero';
 import { MarketingShell, SiteFooter } from '../components/marketing';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PAGE_META } from '../data/pageMeta';
 import { BRAND } from '../brand/tokens';
-import { getVariant } from '../sequences';
 
 const HEADLINE_BY_SECONDS = {
   30: 'Thirty seconds\nto bring your body back down.',
@@ -25,10 +24,12 @@ export default function SequenceEntryView() {
     description: PAGE_META.home.description,
   });
 
-  const { variantId, selectVariant, beginRegulation } = useSequenceSession();
+  const { variantId, selectVariant, beginRegulation, applyCustomSequence, clearCustomSequence, variant, isCustomSequence } =
+    useSequenceSession();
   const crane = useCraneOptional();
-  const variant = getVariant(variantId);
-  const headline = HEADLINE_BY_SECONDS[variant.durationSeconds] ?? HEADLINE_BY_SECONDS[90];
+  const headline = isCustomSequence
+    ? 'Your sequence\nis ready.'
+    : HEADLINE_BY_SECONDS[variant.durationSeconds] ?? HEADLINE_BY_SECONDS[90];
 
   return (
     <MarketingShell>
@@ -64,36 +65,55 @@ export default function SequenceEntryView() {
             className="mx-auto mt-3 max-w-md font-sans text-sm leading-relaxed"
             style={{ color: BRAND.boneMuted }}
           >
-            When your body will not wait for an appointment. No account. No jargon. Pick the
-            sequence that matches what you feel right now, or{' '}
-            {crane ? (
-              <button
-                type="button"
-                onClick={crane.openCrane}
-                className="underline decoration-[#B6502E]/50 underline-offset-2 transition-colors hover:text-[#B6502E]"
-              >
-                ask Crane
-              </button>
+            {isCustomSequence ? (
+              <>
+                Crane built this sequence from what you described. Procedural audio and visuals run for
+                the full {variant.durationSeconds} seconds. Headphones help.
+              </>
             ) : (
-              <Link
-                to="/crane"
-                className="underline decoration-[#B6502E]/50 underline-offset-2 transition-colors hover:text-[#B6502E]"
-              >
-                ask Crane
-              </Link>
-            )}{' '}
-            to explain which one fits.
+              <>
+                When your body will not wait for an appointment. No account. No jargon. Pick the
+                sequence that matches what you feel right now, or{' '}
+                {crane ? (
+                  <button
+                    type="button"
+                    onClick={crane.openCrane}
+                    className="underline decoration-[#B6502E]/50 underline-offset-2 transition-colors hover:text-[#B6502E]"
+                  >
+                    ask Crane
+                  </button>
+                ) : (
+                  <Link
+                    to="/crane"
+                    className="underline decoration-[#B6502E]/50 underline-offset-2 transition-colors hover:text-[#B6502E]"
+                  >
+                    ask Crane
+                  </Link>
+                )}{' '}
+                to explain which one fits.
+              </>
+            )}
           </motion.p>
         </div>
 
         <DecayHero className="mb-5 py-2" compact />
 
         <div className="mb-5 overflow-hidden rounded-sm border border-white/[0.08]">
-          <SequencePreview variantId={variantId} />
+          <SequencePreview variantId={isCustomSequence ? null : variantId} customVariant={isCustomSequence ? variant : null} />
         </div>
 
-        <SequencePicker activeId={variantId} onSelect={selectVariant} />
+        {isCustomSequence ? null : <SequencePicker activeId={variantId} onSelect={selectVariant} />}
 
+        <div className={isCustomSequence ? 'mb-5' : 'mt-6 mb-5'}>
+          <CustomSequenceCreator
+            customVariant={isCustomSequence ? variant : null}
+            onApply={applyCustomSequence}
+            onClear={clearCustomSequence}
+            onBegin={beginRegulation}
+          />
+        </div>
+
+        {!isCustomSequence ? (
         <div className="mt-auto pt-8">
           <motion.button
             type="button"
@@ -127,6 +147,7 @@ export default function SequenceEntryView() {
             </Link>
           </div>
         </div>
+        ) : null}
       </motion.div>
 
       <SiteFooter />

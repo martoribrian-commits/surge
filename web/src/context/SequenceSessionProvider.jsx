@@ -22,7 +22,13 @@ import {
   cacheSessionPayload,
   submitSessionTelemetry,
 } from '../lib/sessionPayload';
-import { getVariant, resolveVariantId, InteractionMode } from '../sequences';
+import { getVariant, resolveVariantId, InteractionMode, isCustomVariantId, DEFAULT_VARIANT_ID } from '../sequences';
+import {
+  buildCustomVariant,
+  clearPersistedCustomVariant,
+  loadPersistedCustomVariant,
+  persistCustomVariant,
+} from '../sequences/customSequence';
 import { unlockAudioContext } from '../lib/proceduralAudio/shared';
 
 const COMPLETION_HOLD_MS = 3200;
@@ -46,10 +52,16 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     return base;
   });
 
-  const variant = useMemo(
-    () => getVariant(state.variantId ?? initialVariantId),
-    [state.variantId, initialVariantId],
-  );
+  const [customVariant, setCustomVariant] = useState(() => loadPersistedCustomVariant());
+
+  const variant = useMemo(() => {
+    if (customVariant) return customVariant;
+    if (isCustomVariantId(state.variantId)) {
+      const persisted = loadPersistedCustomVariant();
+      if (persisted) return persisted;
+    }
+    return getVariant(state.variantId ?? initialVariantId);
+  }, [customVariant, state.variantId, initialVariantId]);
 
   const [isEngaged, setIsEngaged] = useState(false);
   const sessionStartRef = useRef(null);
@@ -66,10 +78,34 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
   });
 
   const selectVariant = useCallback((variantId) => {
+    setCustomVariant(null);
+    clearPersistedCustomVariant();
     const v = getVariant(variantId);
     dispatch({
       type: SurgeEvent.SELECT_VARIANT,
       payload: { variantId: v.id, durationSeconds: v.durationSeconds },
+    });
+  }, []);
+
+  const applyCustomSequence = useCallback((spec) => {
+    const built = buildCustomVariant(spec);
+    setCustomVariant(built);
+    persistCustomVariant(built);
+    completionHandledRef.current = false;
+    clock.reset();
+    dispatch({
+      type: SurgeEvent.SELECT_VARIANT,
+      payload: { variantId: built.id, durationSeconds: built.durationSeconds },
+    });
+  }, [clock]);
+
+  const clearCustomSequence = useCallback(() => {
+    setCustomVariant(null);
+    clearPersistedCustomVariant();
+    const fallback = getVariant(DEFAULT_VARIANT_ID);
+    dispatch({
+      type: SurgeEvent.SELECT_VARIANT,
+      payload: { variantId: fallback.id, durationSeconds: fallback.durationSeconds },
     });
   }, []);
 
@@ -122,6 +158,8 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     setIsEngaged(false);
     haptics.killAll();
     clock.reset();
+    setCustomVariant(null);
+    clearPersistedCustomVariant();
     dispatch({ type: SurgeEvent.RESET });
   }, [clock, haptics]);
 
@@ -204,6 +242,9 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
       clock,
       haptics,
       selectVariant,
+      applyCustomSequence,
+      clearCustomSequence,
+      isCustomSequence: Boolean(customVariant),
       beginRegulation,
       engageHold,
       releaseHold,
@@ -215,10 +256,13 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     [
       state,
       variant,
+      customVariant,
       clock,
       isEngaged,
       haptics,
       selectVariant,
+      applyCustomSequence,
+      clearCustomSequence,
       beginRegulation,
       engageHold,
       releaseHold,

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { createSequenceAudioEngine } from '../lib/proceduralAudio/engines';
+import { CustomSequenceAudioEngine } from '../lib/proceduralAudio/customSequenceEngine';
 import { unlockAudioContext } from '../lib/proceduralAudio/shared';
-import { InteractionMode } from '../sequences';
+import { InteractionMode, isCustomVariantId } from '../sequences';
 
 /**
  * Procedural Web Audio for all Release 1.33 sequences.
@@ -10,6 +11,7 @@ import { InteractionMode } from '../sequences';
  */
 export function useSequenceAudio({
   variantId,
+  customAudioProfile = null,
   interactionMode,
   clock,
   isEngaged,
@@ -27,7 +29,11 @@ export function useSequenceAudio({
 
   useEffect(() => {
     engineRef.current?.stop?.();
-    engineRef.current = createSequenceAudioEngine(variantId);
+    if (isCustomVariantId(variantId) && customAudioProfile) {
+      engineRef.current = new CustomSequenceAudioEngine(customAudioProfile);
+    } else {
+      engineRef.current = createSequenceAudioEngine(variantId);
+    }
     startedRef.current = false;
     wasEngagedRef.current = false;
     completedRef.current = false;
@@ -38,7 +44,7 @@ export function useSequenceAudio({
       engineRef.current?.stop?.();
       engineRef.current = null;
     };
-  }, [variantId]);
+  }, [variantId, customAudioProfile]);
 
   const unlockAudio = useCallback(() => {
     unlockAudioContext();
@@ -139,6 +145,8 @@ export function useSequenceAudio({
         engine.sync?.(c.elapsedSeconds, breathCycle ?? { inhale: 5, exhale: 7 });
       } else if (variantId === 'vagal-downshift' || variantId === 'static-field') {
         engine.sync?.(c.elapsedMs);
+      } else if (isCustomVariantId(variantId)) {
+        engine.sync?.(c.elapsedSeconds, c.progress, isEngaged, breathCycle ?? null);
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -150,7 +158,7 @@ export function useSequenceAudio({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [enabled, variantId, interactionMode, isEngaged, breathCycle]);
+  }, [enabled, variantId, interactionMode, isEngaged, breathCycle, customAudioProfile]);
 
   useEffect(() => {
     if (!clock.isComplete) completedRef.current = false;

@@ -15,13 +15,20 @@ import { useCraneOptional } from '../../context/CraneProvider';
 /**
  * Renders executable actions returned by Crane inference (sequence launch, care plan steps).
  */
-export default function CraneActions({ actions, compact = false, onNavigate }) {
+export default function CraneActions({ actions, compact = false, onNavigate, onCustomSequence }) {
   const navigate = useNavigate();
   const crane = useCraneOptional();
 
   if (!Array.isArray(actions) || actions.length === 0) return null;
 
   const handleClick = (action) => {
+    if (action.type === 'custom_sequence' && action.customSpec) {
+      crane?.closeCrane?.();
+      onCustomSequence?.(action.customSpec);
+      onNavigate?.(action);
+      navigate('/start');
+      return;
+    }
     if (action.type === 'navigate' && action.path) {
       crane?.closeCrane?.();
       onNavigate?.(action);
@@ -42,13 +49,13 @@ export default function CraneActions({ actions, compact = false, onNavigate }) {
       ) : null}
       <div className={`flex flex-wrap gap-2 ${compact ? '' : 'flex-col sm:flex-row'}`}>
         {actions.map((action, index) => {
-          if (action.type !== 'navigate') return null;
+          if (action.type !== 'navigate' && action.type !== 'custom_sequence') return null;
 
           const isPrimary = action.primary ?? index === 0;
 
           return (
             <button
-              key={`${action.path}-${action.label}-${index}`}
+              key={`${action.type}-${action.path ?? action.label}-${index}`}
               type="button"
               onClick={() => handleClick(action)}
               className={`rounded-sm border px-4 py-2.5 text-left font-sans transition-colors ${

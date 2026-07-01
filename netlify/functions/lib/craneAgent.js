@@ -199,7 +199,7 @@ function dedupeActions(actions) {
   const seen = new Set();
   const out = [];
   for (const action of actions) {
-    const key = `${action.type}:${action.path ?? action.label}:${action.variantId ?? ''}:${action.autoLaunch ?? false}`;
+    const key = `${action.type}:${action.path ?? action.label}:${action.variantId ?? action.customSpec?.name ?? ''}:${action.autoLaunch ?? false}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(action);

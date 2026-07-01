@@ -6,3 +6,15 @@ export {
   resolveVariantId,
   getVariant,
 } from './config';
+
+export {
+  CUSTOM_VARIANT_PREFIX,
+  isCustomVariantId,
+  buildCustomVariant,
+  normalizeCustomSpec,
+  persistCustomVariant,
+  loadPersistedCustomVariant,
+  clearPersistedCustomVariant,
+  buildFallbackCustomSequence,
+  phaseAtElapsed,
+} from './customSequence';

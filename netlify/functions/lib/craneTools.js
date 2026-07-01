@@ -5,9 +5,12 @@ const VARIANT_LABELS = {
   'flash-freeze': 'Flash Freeze',
   'orienting-anchor': 'Orienting Anchor',
   'nova-gate': 'Nova Gate',
+  'still-thaw': 'Still Thaw',
   'coherence-ripple': 'Coherence Ripple',
+  'heavy-tide': 'Heavy Tide',
   'vagal-downshift': 'Vagal Downshift',
   'static-field': 'Static Field',
+  'deep-anchor': 'Deep Anchor',
 };
 
 const VARIANT_PREP = {
@@ -15,9 +18,12 @@ const VARIANT_PREP = {
   'flash-freeze': 'Press and hold to freeze the ember field. Release to pause.',
   'orienting-anchor': 'Tap left, then right, in rhythm. Follow the visuals for 60 seconds.',
   'nova-gate': 'Sit back and watch. The gate opens automatically for 60 seconds.',
+  'still-thaw': 'Sit back and let thaw happen. The sequence runs on its own for 60 seconds.',
   'coherence-ripple': 'Press and hold anywhere below the header. Release to pause.',
-  'vagal-downshift': 'Press and hold. Watch the fog descend — no headphones required.',
+  'heavy-tide': 'Press and hold. Follow the slow tide of breath.',
+  'vagal-downshift': 'Press and hold. Watch the fog descend — headphones help.',
   'static-field': 'Use headphones. Press and hold. The static field is intentionally intense.',
+  'deep-anchor': 'Tap left, then right, slowly. Two minutes of bilateral grounding.',
 };
 
 /** Tuned for cancelability — acute still fast, standard gives time to read prep note. */
@@ -46,6 +52,72 @@ const STEP_SCHEMA = {
     },
   },
   required: ['order', 'action'],
+};
+
+const PHASE_SCHEMA = {
+  type: 'object',
+  properties: {
+    atSeconds: { type: 'number' },
+    label: { type: 'string' },
+    hint: { type: 'string' },
+  },
+  required: ['atSeconds', 'label'],
+};
+
+const GENERATE_CUSTOM_SEQUENCE_TOOL = {
+  name: 'generate_custom_sequence',
+  description:
+    'Generate a personalized procedural Surge sequence when no preset fits the user. Creates custom duration, interaction mode, visuals, procedural audio profile, and phase labels attuned to their reported body state. Use when they say nothing fits, presets feel wrong, or matchConfidence is low after interpret_body_state.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      reportedState: { type: 'string', description: 'What they said they feel' },
+      rationale: { type: 'string', description: 'Why this custom design fits their state' },
+      name: { type: 'string', description: 'Short evocative name, e.g. Warm Return' },
+      tagline: { type: 'string' },
+      feelsLike: { type: 'string' },
+      whatItDoes: { type: 'string' },
+      whenToUse: { type: 'string' },
+      durationSeconds: { type: 'number', enum: [30, 60, 90, 120] },
+      interactionMode: { type: 'string', enum: ['auto', 'hold', 'bilateral'] },
+      visualType: {
+        type: 'string',
+        enum: ['pulse', 'ripple', 'fog', 'ember', 'gate', 'field', 'thaw'],
+      },
+      paletteMood: { type: 'string', enum: ['warm', 'cool', 'neutral', 'clay', 'void'] },
+      breathCycle: {
+        type: 'object',
+        properties: {
+          inhale: { type: 'number' },
+          exhale: { type: 'number' },
+        },
+      },
+      bilateralBpm: { type: 'number' },
+      transitionAtSeconds: { type: 'number' },
+      audioProfile: {
+        type: 'object',
+        properties: {
+          baseFreq: { type: 'number', description: '40-220 Hz root tone' },
+          toneType: { type: 'string', enum: ['sine', 'triangle'] },
+          noiseLevel: { type: 'number', description: '0.05-0.85 pink noise bed' },
+          tempo: { type: 'string', enum: ['slow', 'medium', 'fast'] },
+          warmth: { type: 'string', enum: ['cool', 'neutral', 'warm'] },
+        },
+      },
+      phases: { type: 'array', maxItems: 5, items: PHASE_SCHEMA },
+    },
+    required: [
+      'reportedState',
+      'rationale',
+      'name',
+      'feelsLike',
+      'whatItDoes',
+      'durationSeconds',
+      'interactionMode',
+      'visualType',
+      'audioProfile',
+    ],
+  },
 };
 
 const BASE_TOOLS = [
@@ -177,10 +249,13 @@ const DELIVER_BODY_DEBRIEF_TOOL = {
 };
 
 export function buildCraneClientTools(mode = 'guide') {
-  if (mode === 'post-session') {
-    return [...BASE_TOOLS, POST_SESSION_CARE_PLAN_TOOL, DELIVER_BODY_DEBRIEF_TOOL];
+  if (mode === 'creator') {
+    return [GENERATE_CUSTOM_SEQUENCE_TOOL];
   }
-  return [...BASE_TOOLS];
+  if (mode === 'post-session') {
+    return [...BASE_TOOLS, POST_SESSION_CARE_PLAN_TOOL, DELIVER_BODY_DEBRIEF_TOOL, GENERATE_CUSTOM_SEQUENCE_TOOL];
+  }
+  return [...BASE_TOOLS, GENERATE_CUSTOM_SEQUENCE_TOOL];
 }
 
 function normalizeVariantId(variantId) {
@@ -245,6 +320,64 @@ function buildCarePlanFromSteps(steps, { clinicalNote, completedVariantId, planT
   };
 
   return { carePlan, actions, normalizedSteps };
+}
+
+function normalizeServerCustomSpec(args) {
+  const input = args && typeof args === 'object' ? args : {};
+  const durations = [30, 60, 90, 120];
+  const modes = ['auto', 'hold', 'bilateral'];
+  const visuals = ['pulse', 'ripple', 'fog', 'ember', 'gate', 'field', 'thaw'];
+  const moods = ['warm', 'cool', 'neutral', 'clay', 'void'];
+
+  const durationSeconds = durations.includes(input.durationSeconds) ? input.durationSeconds : 60;
+  const interactionMode = modes.includes(input.interactionMode) ? input.interactionMode : 'auto';
+  const visualType = visuals.includes(input.visualType) ? input.visualType : 'pulse';
+  const paletteMood = moods.includes(input.paletteMood) ? input.paletteMood : 'neutral';
+
+  const audio = input.audioProfile && typeof input.audioProfile === 'object' ? input.audioProfile : {};
+
+  return {
+    reportedState: String(input.reportedState ?? '').trim(),
+    rationale: String(input.rationale ?? '').trim(),
+    name: String(input.name ?? 'Your Sequence').slice(0, 48),
+    tagline: String(input.tagline ?? 'Attuned to you right now').slice(0, 120),
+    feelsLike: String(input.feelsLike ?? '').slice(0, 280),
+    whatItDoes: String(
+      input.whatItDoes ?? 'Procedural sound and motion tuned to your nervous system.',
+    ).slice(0, 280),
+    whenToUse: String(input.whenToUse ?? 'When preset sequences do not match.').slice(0, 280),
+    durationSeconds,
+    interactionMode,
+    visualType,
+    paletteMood,
+    breathCycle:
+      input.breathCycle &&
+      typeof input.breathCycle.inhale === 'number' &&
+      typeof input.breathCycle.exhale === 'number'
+        ? { inhale: input.breathCycle.inhale, exhale: input.breathCycle.exhale }
+        : interactionMode === 'hold'
+          ? { inhale: 4, exhale: 6 }
+          : undefined,
+    bilateralBpm: typeof input.bilateralBpm === 'number' ? input.bilateralBpm : 54,
+    transitionAtSeconds:
+      typeof input.transitionAtSeconds === 'number'
+        ? input.transitionAtSeconds
+        : Math.round(durationSeconds * 0.35),
+    audioProfile: {
+      baseFreq: Math.min(220, Math.max(40, Number(audio.baseFreq ?? 110))),
+      toneType: audio.toneType === 'triangle' ? 'triangle' : 'sine',
+      noiseLevel: Math.min(0.85, Math.max(0.05, Number(audio.noiseLevel ?? 0.35))),
+      tempo: ['slow', 'medium', 'fast'].includes(audio.tempo) ? audio.tempo : 'medium',
+      warmth: ['cool', 'neutral', 'warm'].includes(audio.warmth) ? audio.warmth : 'neutral',
+    },
+    phases: Array.isArray(input.phases)
+      ? input.phases.slice(0, 5).map((phase, index) => ({
+          atSeconds: Number(phase.atSeconds ?? index * 15),
+          label: String(phase.label ?? `Phase ${index + 1}`).slice(0, 40),
+          hint: phase.hint ? String(phase.hint).slice(0, 60) : undefined,
+        }))
+      : [],
+  };
 }
 
 /**
@@ -378,6 +511,29 @@ export function executeCraneTool(name, input) {
         },
         actions,
         carePlan,
+      };
+    }
+
+    case 'generate_custom_sequence': {
+      const customSpec = normalizeServerCustomSpec(args);
+      const action = {
+        type: 'custom_sequence',
+        label: `Begin ${customSpec.name}`,
+        customSpec,
+        primary: true,
+        prepNote: 'Headphones help. Procedural audio runs for the full sequence.',
+      };
+      return {
+        result: {
+          ok: true,
+          customSpec,
+          name: customSpec.name,
+          durationSeconds: customSpec.durationSeconds,
+          interactionMode: customSpec.interactionMode,
+          actionPrepared: true,
+        },
+        action,
+        customSequence: customSpec,
       };
     }
 
