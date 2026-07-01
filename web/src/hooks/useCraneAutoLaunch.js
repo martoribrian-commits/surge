@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -76,13 +76,16 @@ export function useCraneAutoLaunch({ onLaunch, onCancel, closeCrane }) {
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  return {
-    pending,
-    secondsLeft,
-    progress,
-    schedule,
-    cancel,
-    launchNow,
-    isActive: Boolean(pending),
-  };
+  return useMemo(
+    () => ({
+      pending,
+      secondsLeft,
+      progress,
+      schedule,
+      cancel,
+      launchNow,
+      isActive: Boolean(pending),
+    }),
+    [pending, secondsLeft, progress, schedule, cancel, launchNow],
+  );
 }

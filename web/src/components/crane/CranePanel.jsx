@@ -109,7 +109,14 @@ export default function CranePanel() {
   const carePlanFetchedRef = useRef(false);
 
   const { getSessionMeta, nextTurn, recordInferenceMeta, resetSessionMeta } = useCraneSessionMeta();
-  const autoLaunch = useCraneAutoLaunch({ closeCrane });
+  const {
+    pending: autoLaunchPending,
+    secondsLeft: autoLaunchSecondsLeft,
+    progress: autoLaunchProgress,
+    schedule: scheduleAutoLaunch,
+    cancel: cancelAutoLaunch,
+    launchNow: launchAutoLaunchNow,
+  } = useCraneAutoLaunch({ closeCrane });
 
   const resetPanel = useCallback(() => {
     setMessages([]);
@@ -122,21 +129,21 @@ export default function CranePanel() {
     initializedRef.current = false;
     carePlanFetchedRef.current = false;
     resetSessionMeta();
-    autoLaunch.cancel();
-  }, [resetSessionMeta, autoLaunch]);
+    cancelAutoLaunch();
+  }, [resetSessionMeta, cancelAutoLaunch]);
 
   const handleInferenceResult = useCallback(
     (inference) => {
       processCraneInferenceResult(inference, {
         sessionId,
-        scheduleAutoLaunch: autoLaunch.schedule,
+        scheduleAutoLaunch,
         recordMeta: recordInferenceMeta,
       });
       if (inference.carePlan) setPlan(inference.carePlan);
       if (inference.bodyInsight) setBodyInsight(inference.bodyInsight);
       return inference;
     },
-    [sessionId, autoLaunch.schedule, recordInferenceMeta, setPlan],
+    [sessionId, scheduleAutoLaunch, recordInferenceMeta, setPlan],
   );
 
   const fetchProactiveCarePlan = useCallback(
@@ -170,11 +177,16 @@ export default function CranePanel() {
     [sessionId, getSessionMeta, handleInferenceResult, isCraneUnlocked, setPlan],
   );
 
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (!isOpen) {
+    if (wasOpenRef.current && !isOpen) {
       resetPanel();
-      return;
     }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, resetPanel]);
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -204,7 +216,7 @@ export default function CranePanel() {
         setStatus('ready');
       }
     })();
-  }, [isOpen, sessionId, resetPanel, fetchProactiveCarePlan, isCraneUnlocked, setPlan]);
+  }, [isOpen, sessionId, fetchProactiveCarePlan, isCraneUnlocked, setPlan]);
 
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
@@ -212,7 +224,7 @@ export default function CranePanel() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, carePlan, autoLaunch.pending]);
+  }, [messages, carePlan, autoLaunchPending]);
 
   const sendMessage = async (text) => {
     const trimmed = text.trim();
@@ -327,11 +339,11 @@ export default function CranePanel() {
             </header>
 
             <CraneAutoLaunchBanner
-              pending={autoLaunch.pending}
-              secondsLeft={autoLaunch.secondsLeft}
-              progress={autoLaunch.progress}
-              onCancel={autoLaunch.cancel}
-              onLaunchNow={() => autoLaunch.launchNow()}
+              pending={autoLaunchPending}
+              secondsLeft={autoLaunchSecondsLeft}
+              progress={autoLaunchProgress}
+              onCancel={cancelAutoLaunch}
+              onLaunchNow={() => launchAutoLaunchNow()}
             />
 
             <div ref={scrollRef} className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-6">
@@ -360,7 +372,7 @@ export default function CranePanel() {
                   key={msg.id}
                   message={msg}
                   isLatest={i === messages.length - 1}
-                  autoLaunchPath={autoLaunch.pending?.path}
+                  autoLaunchPath={autoLaunchPending?.path}
                   onToggleStep={toggleStep}
                   onCustomSequence={applyCustomSequence}
                 />
