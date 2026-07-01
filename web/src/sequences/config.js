@@ -9,7 +9,7 @@ export const InteractionMode = {
   HOLD: 'hold',
 };
 
-/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'still-thaw' | 'coherence-ripple' | 'heavy-tide' | 'vagal-downshift' | 'static-field' | 'deep-anchor'} SequenceVariantId */
+/** @typedef {'instant-reset' | 'flash-freeze' | 'orienting-anchor' | 'nova-gate' | 'still-thaw' | 'coherence-ripple' | 'heavy-tide' | 'vagal-downshift' | 'static-field' | 'dead-mans-switch' | 'deep-anchor'} SequenceVariantId */
 
 /**
  * @typedef {Object} SequencePalette
@@ -263,6 +263,31 @@ export const SEQUENCE_VARIANTS = {
       copy: '#f4f0eb',
     },
   },
+  'dead-mans-switch': {
+    id: 'dead-mans-switch',
+    name: "Dead-Man's Switch",
+    modality: 'Physical anchoring · chaos-to-baseline curve',
+    tagline: 'Hold to run the curve — release pauses, nothing lost',
+    tabLabel: '90 · switch',
+    feelsLike:
+      'Your body will not settle without touch — restless, overloaded, or stuck in sympathetic noise until something physically anchors you.',
+    whatItDoes:
+      'Press and hold your thumb on the screen. A single normalized curve drives every sensory channel from chaotic peak down to baseline. Release anytime — progress pauses and the field gently pulses, waiting for you to return. Ninety seconds when held through. No streaks, badges, or congratulations — the reward is physical relief.',
+    whenToUse:
+      'When you need the classic Surge dead-man switch: maximum somatic impact with mandatory physical anchoring before Crane recovery.',
+    science:
+      'Dead-man switch entrainment — sustained tactile anchor with phase-locked visual strobe (≤2.5 Hz), white-noise-to-sub-bass decay, and haptic chaos-to-heartbeat curve.',
+    durationSeconds: 90,
+    interactionMode: InteractionMode.HOLD,
+    palette: {
+      background: '#0A0A0A',
+      backgroundEnd: '#121212',
+      accent: '#FFF8E8',
+      accentCalm: '#FFB347',
+      muted: 'rgba(244,240,235,0.4)',
+      copy: '#f4f0eb',
+    },
+  },
   'deep-anchor': {
     id: 'deep-anchor',
     name: 'Deep Anchor',
@@ -290,7 +315,7 @@ export const SEQUENCE_VARIANTS = {
   },
 };
 
-export const DEFAULT_VARIANT_ID = 'static-field';
+export const DEFAULT_VARIANT_ID = 'dead-mans-switch';
 
 /** @param {string | undefined | null} id */
 export function resolveVariantId(id) {

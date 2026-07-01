@@ -1125,6 +1125,7 @@ const ENGINE_FACTORIES = {
   'heavy-tide': () => new HeavyTideAudioEngine(),
   'vagal-downshift': () => new VagalDownshiftAudioEngine(),
   'static-field': () => new StaticFieldAudioAdapter(),
+  'dead-mans-switch': () => new StaticFieldAudioAdapter(),
   'deep-anchor': () => new DeepAnchorAudioEngine(),
 };
 

@@ -136,6 +136,7 @@ const VALID_VARIANT_IDS = [
   'heavy-tide',
   'vagal-downshift',
   'static-field',
+  'dead-mans-switch',
   'deep-anchor',
 ];
 

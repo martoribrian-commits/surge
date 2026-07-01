@@ -31,7 +31,7 @@ const SECTIONS = [
   },
   {
     label: 'What patients experience',
-    title: 'Ten sequences. 30, 60, 90, or 120 seconds.',
+    title: 'Eleven sequences. 30, 60, 90, or 120 seconds.',
     body: 'From physiological sigh and thermal freeze to bilateral grounding, hyperspace transit, resonant breath, visual decay, and the original sonic static field. Release to pause. Hold to resume. No streaks. Optional Crane handoff when a token is present.',
   },
   {

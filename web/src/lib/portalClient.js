@@ -218,5 +218,6 @@ export const VARIANT_FILTER_OPTIONS = [
   { value: 'heavy-tide', label: 'Heavy Tide' },
   { value: 'vagal-downshift', label: 'Vagal Downshift' },
   { value: 'static-field', label: 'Static Field' },
+  { value: 'dead-mans-switch', label: "Dead-Man's Switch" },
   { value: 'deep-anchor', label: 'Deep Anchor' },
 ];

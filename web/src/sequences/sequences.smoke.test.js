@@ -16,9 +16,10 @@ describe('sequence ground styles', () => {
 });
 
 describe('sequence variant registry', () => {
-  it('includes all ten release sequences', () => {
+  it('includes all eleven release sequences', () => {
     expect(Object.keys(SEQUENCE_VARIANTS).sort()).toEqual([
       'coherence-ripple',
+      'dead-mans-switch',
       'deep-anchor',
       'flash-freeze',
       'heavy-tide',

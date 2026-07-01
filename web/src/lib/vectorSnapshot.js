@@ -6,6 +6,7 @@ const VALID_VARIANTS = new Set([
   'coherence-ripple',
   'vagal-downshift',
   'static-field',
+  'dead-mans-switch',
 ]);
 
 /**
