@@ -54,6 +54,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
   const [isEngaged, setIsEngaged] = useState(false);
   const sessionStartRef = useRef(null);
   const completionTimerRef = useRef(null);
+  const completionHandledRef = useRef(false);
   const brainDumpSeedRef = useRef(null);
   const haptics = useSequenceHaptics();
 
@@ -77,6 +78,11 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
 
     unlockAudioContext();
 
+    if (state.phase === SurgePhase.ENTRY) {
+      completionHandledRef.current = false;
+      clock.reset();
+    }
+
     sessionStartRef.current = performance.now();
     dispatch({
       type: SurgeEvent.ENGAGE,
@@ -87,7 +93,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
         durationSeconds: variant.durationSeconds,
       },
     });
-  }, [state.phase, variant]);
+  }, [state.phase, variant, clock]);
 
   const engageHold = useCallback(() => {
     unlockAudioContext();
@@ -111,6 +117,7 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
       clearTimeout(completionTimerRef.current);
       completionTimerRef.current = null;
     }
+    completionHandledRef.current = false;
     sessionStartRef.current = null;
     setIsEngaged(false);
     haptics.killAll();
@@ -133,9 +140,12 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
     return seed;
   }, []);
 
-  // Sequence completion → telemetry → aftermath bridge
+  // Sequence completion → telemetry → COMPLETING overlay
   useEffect(() => {
-    if (!clock.isComplete || state.phase !== SurgePhase.REGULATION) return;
+    if (!clock.isComplete || state.phase !== SurgePhase.REGULATION || completionHandledRef.current) {
+      return;
+    }
+    completionHandledRef.current = true;
 
     setIsEngaged(false);
     haptics.sequenceComplete();
@@ -160,15 +170,24 @@ export function SequenceSessionProvider({ children, initialVariantId = null }) {
         durationSeconds: Math.max(1, elapsed),
       },
     });
+  }, [clock.isComplete, state.phase, state.sessionId, variant, haptics]);
+
+  // COMPLETING hold → post-sequence dashboard (AftermathView)
+  useEffect(() => {
+    if (state.phase !== SurgePhase.COMPLETING) return;
 
     completionTimerRef.current = setTimeout(() => {
       dispatch({ type: SurgeEvent.ENTER_AFTERMATH });
+      completionTimerRef.current = null;
     }, COMPLETION_HOLD_MS);
 
     return () => {
-      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+      if (completionTimerRef.current) {
+        clearTimeout(completionTimerRef.current);
+        completionTimerRef.current = null;
+      }
     };
-  }, [clock.isComplete, state.phase, state.sessionId, variant, haptics]);
+  }, [state.phase]);
 
   const value = useMemo(
     () => ({

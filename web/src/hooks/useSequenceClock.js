@@ -110,6 +110,12 @@ export function useSequenceClock({
     else pause();
   }, [interactionMode, isEngaged, enabled, isComplete, start, pause]);
 
+  // AUTO mode: start once regulation is enabled (covers late mount after beginRegulation)
+  useEffect(() => {
+    if (interactionMode !== 'auto' || !enabled || isComplete || isRunning) return;
+    start();
+  }, [interactionMode, enabled, isComplete, isRunning, start]);
+
   useEffect(() => () => stopLoop(), [stopLoop]);
 
   return {

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useSequenceSession } from '../context/SequenceSessionProvider';
+import { InteractionMode } from '../sequences';
 import FilmGrainOverlay from '../components/FilmGrainOverlay';
 import { BRAND } from '../brand/tokens';
 
@@ -10,6 +11,12 @@ const EASE = [0.25, 0.1, 0.25, 1];
  */
 export default function SequenceCompletingView() {
   const { variant, durationSeconds } = useSequenceSession();
+  const subcopy =
+    variant.interactionMode === InteractionMode.HOLD
+      ? `You held for ${durationSeconds} seconds. Release when ready.`
+      : variant.interactionMode === InteractionMode.BILATERAL
+        ? `${durationSeconds} seconds of bilateral grounding complete.`
+        : `${durationSeconds} seconds complete. Steady breath.`;
 
   return (
     <motion.div
@@ -50,7 +57,7 @@ export default function SequenceCompletingView() {
           The system has reset.
         </p>
         <p className="mt-3 font-sans text-sm tracking-[0.06em]" style={{ color: BRAND.boneMuted }}>
-          You held for {durationSeconds} seconds. Release when ready.
+          {subcopy}
         </p>
       </motion.div>
     </motion.div>
